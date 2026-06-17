@@ -1,0 +1,8 @@
+pandas
+requests
+tqdm
+pyarrow
+python-dotenv
+lxml
+fastapi
+uvicorn[standard]

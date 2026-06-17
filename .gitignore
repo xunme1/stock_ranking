@@ -1,0 +1,12 @@
+.env
+.venv/
+.tmp/
+node_modules/
+frontend/dist/
+data/raw/daily/*.csv
+data/processed/
+data/processed/*.parquet
+data/processed/*.csv
+logs/*.csv
+__pycache__/
+*.pyc
