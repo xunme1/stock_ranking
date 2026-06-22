@@ -2,6 +2,9 @@ export type RankingRow = {
   rank: number;
   ticker: string;
   type: string;
+  has_options: "Y" | "N";
+  sector: string;
+  stock_type: string;
   date: string;
   close: number;
   latest_ma: number | null;
@@ -9,7 +12,11 @@ export type RankingRow = {
   atr: number;
   atr_score: number;
   price_vs_center_pct: number;
+  price_change_3d_pct: number | null;
   excess_atr_vs_benchmark: number;
+  previous_rank_1: number | null;
+  previous_rank_2: number | null;
+  rank_change: number | null;
 };
 
 export type RankingResponse = {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -27,10 +27,43 @@ import {
 } from "./api";
 
 const DEFAULT_WINDOW = 10;
+const WINDOW_OPTIONS = [10, 20];
 const APPLY_ANNOUNCED_REBALANCE = true;
 const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
+const ALL_SECTORS = "全部";
+const SECTOR_ORDER = [
+  "科技",
+  "通信传媒",
+  "可选消费",
+  "必选消费",
+  "医疗健康",
+  "工业",
+  "公用事业",
+  "能源",
+  "材料",
+  "金融",
+  "房地产",
+  "ETF",
+  "其他"
+];
+
+const SECTOR_LABELS: Record<string, string> = {
+  "Information Technology": "科技",
+  "Communication Services": "通信传媒",
+  "Consumer Discretionary": "可选消费",
+  "Consumer Staples": "必选消费",
+  "Health Care": "医疗健康",
+  Industrials: "工业",
+  Utilities: "公用事业",
+  Energy: "能源",
+  Materials: "材料",
+  Financials: "金融",
+  "Real Estate": "房地产",
+  ETF: "ETF",
+  Unknown: "其他"
+};
 
 type RouteState = {
   page: "dashboard" | "stock";
@@ -57,6 +90,32 @@ function volumeText(value: number | null | undefined) {
 function percentText(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   return `${value >= 0 ? "+" : ""}${numberText(value, 2)}%`;
+}
+
+function sectorLabel(sector: string | null | undefined) {
+  if (!sector) return "其他";
+  return SECTOR_LABELS[sector] ?? sector;
+}
+
+function sectorSortValue(label: string) {
+  const index = SECTOR_ORDER.indexOf(label);
+  return index === -1 ? SECTOR_ORDER.length : index;
+}
+
+function rankTrend(row: RankingRow) {
+  if (row.rank_change === null || row.rank_change === undefined || row.rank_change === 0) {
+    return { symbol: "－", className: "rankFlat", label: "排名持平" };
+  }
+  if (row.rank_change > 0) return { symbol: "↑", className: "rankUp", label: `排名提升 ${row.rank_change} 位` };
+  return { symbol: "↓", className: "rankDown", label: `排名下降 ${Math.abs(row.rank_change)} 位` };
+}
+
+function rankTooltip(row: RankingRow) {
+  return [
+    `今日排名：${row.rank}`,
+    `昨日排名：${row.previous_rank_1 ?? "--"}`,
+    `前日排名：${row.previous_rank_2 ?? "--"}`
+  ].join("\n");
 }
 
 function toTimestamp(date: string) {
@@ -369,20 +428,68 @@ function RankingTable({
   onPreview: (ticker: string) => void;
   onOpen: (ticker: string) => void;
 }) {
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
+
+  const startDrag = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, input, select, textarea")) return;
+    const wrapper = tableWrapRef.current;
+    if (!wrapper) return;
+    dragStateRef.current = {
+      active: true,
+      startX: event.clientX,
+      scrollLeft: wrapper.scrollLeft,
+      moved: false
+    };
+    wrapper.classList.add("dragging");
+  };
+
+  const moveDrag = (event: MouseEvent<HTMLDivElement>) => {
+    const wrapper = tableWrapRef.current;
+    const dragState = dragStateRef.current;
+    if (!wrapper || !dragState.active) return;
+    const delta = event.clientX - dragState.startX;
+    if (Math.abs(delta) > 3) dragState.moved = true;
+    wrapper.scrollLeft = dragState.scrollLeft - delta;
+  };
+
+  const stopDrag = () => {
+    tableWrapRef.current?.classList.remove("dragging");
+    dragStateRef.current.active = false;
+  };
+
+  const suppressDragClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!dragStateRef.current.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragStateRef.current.moved = false;
+  };
+
   return (
-    <div className="tableWrap">
+    <div
+      className="tableWrap"
+      ref={tableWrapRef}
+      onClickCapture={suppressDragClick}
+      onMouseDown={startDrag}
+      onMouseMove={moveDrag}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+    >
       <table>
         <thead>
           <tr>
             <th className="rankCell">排名</th>
             <th>代码</th>
-            <th>收盘日期</th>
+            <th>期权</th>
+            <th>股票类型</th>
             <th>收盘</th>
-            <th>最新均线</th>
             <th>均线重心</th>
             <th>ATR</th>
             <th>ATR倍数</th>
             <th>较重心</th>
+            <th>较3日前</th>
             <th>超额ATR</th>
           </tr>
         </thead>
@@ -390,6 +497,7 @@ function RankingTable({
           {rows.map((row) => {
             const isBenchmark = row.ticker === benchmark;
             const isSelected = row.ticker === selectedTicker;
+            const trend = rankTrend(row);
             return (
               <tr
                 key={row.ticker}
@@ -397,7 +505,14 @@ function RankingTable({
                 onClick={() => onPreview(row.ticker)}
                 onDoubleClick={() => onOpen(row.ticker)}
               >
-                <td className="rankCell">{row.rank}</td>
+                <td className="rankCell">
+                  <span className="rankWithTrend" title={rankTooltip(row)}>
+                    <span>{row.rank}</span>
+                    <span className={trend.className} aria-label={trend.label}>
+                      {trend.symbol}
+                    </span>
+                  </span>
+                </td>
                 <td>
                   <button
                     className="tickerButton"
@@ -412,14 +527,17 @@ function RankingTable({
                     {row.ticker}
                   </button>
                 </td>
-                <td>{row.date}</td>
+                <td className={row.has_options === "Y" ? "optionYes" : "optionNo"}>{row.has_options}</td>
+                <td>{sectorLabel(row.sector)}</td>
                 <td>{numberText(row.close)}</td>
-                <td>{numberText(row.latest_ma)}</td>
                 <td>{numberText(row.ma_center)}</td>
                 <td>{numberText(row.atr)}</td>
                 <td className={row.atr_score >= 0 ? "positive" : "negative"}>{numberText(row.atr_score, 3)}</td>
                 <td className={row.price_vs_center_pct >= 0 ? "positive" : "negative"}>
                   {percentText(row.price_vs_center_pct)}
+                </td>
+                <td className={(row.price_change_3d_pct ?? 0) >= 0 ? "positive" : "negative"}>
+                  {percentText(row.price_change_3d_pct)}
                 </td>
                 <td className={row.excess_atr_vs_benchmark >= 0 ? "positive" : "negative"}>
                   {numberText(row.excess_atr_vs_benchmark, 3)}
@@ -440,13 +558,14 @@ function DashboardPage() {
   const [ranking, setRanking] = useState<RankingResponse | null>(null);
   const [selectedTicker, setSelectedTicker] = useState("QQQ");
   const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState(ALL_SECTORS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadRanking = (requestedDate = asOfDate) => {
+  const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
     setError("");
-    fetchRanking(windowSize, requestedDate, APPLY_ANNOUNCED_REBALANCE)
+    fetchRanking(requestedWindow, requestedDate, APPLY_ANNOUNCED_REBALANCE)
       .then((result) => {
         setRanking(result);
         setAsOfDate(result.as_of_date);
@@ -466,9 +585,21 @@ function DashboardPage() {
   const filteredRows = useMemo(() => {
     const rows = ranking?.data ?? [];
     const term = query.trim().toUpperCase();
-    if (!term) return rows;
-    return rows.filter((row) => row.ticker.includes(term));
-  }, [ranking, query]);
+    return rows.filter((row) => {
+      const matchesQuery = !term || row.ticker.includes(term);
+      const matchesType = typeFilter === ALL_SECTORS || sectorLabel(row.sector) === typeFilter;
+      return matchesQuery && matchesType;
+    });
+  }, [ranking, query, typeFilter]);
+
+  const typeOptions = useMemo(() => {
+    const rows = ranking?.data ?? [];
+    const types = Array.from(new Set(rows.map((row) => sectorLabel(row.sector)))).sort((a, b) => {
+      const orderDiff = sectorSortValue(a) - sectorSortValue(b);
+      return orderDiff || a.localeCompare(b, "zh-CN");
+    });
+    return [ALL_SECTORS, ...types];
+  }, [ranking]);
 
   const selectedRow = ranking?.data.find((row) => row.ticker === selectedTicker);
   const openStock = (ticker: string) => navigateTo(`/stocks/${ticker}?date=${ranking?.as_of_date ?? asOfDate}`);
@@ -490,17 +621,33 @@ function DashboardPage() {
       </header>
 
       <section className="toolbar">
-        <label className="field">
+        <div className="segmentedControl" aria-label="重心窗口">
           <span>重心窗口</span>
-          <input
-            type="number"
-            min={2}
-            max={60}
-            value={windowSize}
-            onChange={(event) => setWindowSize(Number(event.target.value))}
-          />
-        </label>
+          {WINDOW_OPTIONS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={windowSize === value ? "active" : ""}
+              onClick={() => {
+                setWindowSize(value);
+                loadRanking(asOfDate, value);
+              }}
+            >
+              {value}日
+            </button>
+          ))}
+        </div>
         <TradingCalendar value={asOfDate} availableDates={availableDates} onChange={setAsOfDate} />
+        <label className="selectBox">
+          <span>股票类型</span>
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+            {typeOptions.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="searchBox">
           <Search size={16} aria-hidden="true" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索代码" />

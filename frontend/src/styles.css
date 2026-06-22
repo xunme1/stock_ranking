@@ -95,6 +95,7 @@ h2 {
 
 .field,
 .searchBox,
+.selectBox,
 .calendarTrigger {
   display: inline-flex;
   align-items: center;
@@ -106,6 +107,39 @@ h2 {
   padding: 0 11px;
   color: #415168;
   font-size: 14px;
+}
+
+.segmentedControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  border: 1px solid #d8e0eb;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 0 6px 0 11px;
+  color: #415168;
+  font-size: 14px;
+}
+
+.segmentedControl span {
+  margin-right: 4px;
+}
+
+.segmentedControl button {
+  height: 28px;
+  min-width: 48px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #415168;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.segmentedControl button.active {
+  background: #1f6feb;
+  color: #ffffff;
 }
 
 .calendarControl {
@@ -234,6 +268,14 @@ h2 {
   width: 130px;
   border: 0;
   outline: 0;
+}
+
+.selectBox select {
+  min-width: 112px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #18212f;
 }
 
 .primaryButton,
@@ -374,11 +416,18 @@ h2 {
   border: 1px solid #d8e0eb;
   background: #ffffff;
   border-radius: 8px;
+  cursor: grab;
+  user-select: auto;
+}
+
+.tableWrap.dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 table {
   width: 100%;
-  min-width: 1060px;
+  min-width: 1080px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -419,11 +468,38 @@ tbody td {
 }
 
 .rankCell {
-  width: 58px;
+  width: 72px;
   text-align: center;
   background: #f7f1e6;
   color: #7b5726;
   font-weight: 800;
+}
+
+.rankWithTrend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 46px;
+}
+
+.rankUp,
+.rankDown,
+.rankFlat {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.rankUp {
+  color: #08764f;
+}
+
+.rankDown {
+  color: #b42318;
+}
+
+.rankFlat {
+  color: #8a96a6;
 }
 
 .tickerButton {
@@ -463,6 +539,20 @@ tbody td {
 .negative {
   color: #b42318;
   font-weight: 700;
+}
+
+.optionYes,
+.optionNo {
+  font-weight: 900;
+  text-align: center;
+}
+
+.optionYes {
+  color: #08764f;
+}
+
+.optionNo {
+  color: #9aa5b1;
 }
 
 .chartShell {
@@ -774,8 +864,10 @@ tbody td {
   }
 
   .field,
+  .segmentedControl,
   .calendarControl,
   .calendarTrigger,
+  .selectBox,
   .searchBox,
   .primaryButton {
     width: 100%;

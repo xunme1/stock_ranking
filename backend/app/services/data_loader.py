@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.core.config import NASDAQ100_FILE, RAW_DAILY_DIR
+from app.core.config import NASDAQ100_FILE, NASDAQ100_OPTIONABLE_FILE, RAW_DAILY_DIR, STOCK_PROFILES_FILE
 
 
 def normalize_ticker(ticker: str) -> str:
@@ -49,3 +49,27 @@ def load_ticker_file(path: Path = NASDAQ100_FILE) -> list[str]:
         seen.add(ticker)
         tickers.append(ticker)
     return tickers
+
+
+@lru_cache(maxsize=16)
+def load_ticker_set(path: Path = NASDAQ100_OPTIONABLE_FILE) -> set[str]:
+    if not path.exists():
+        return set()
+    return set(load_ticker_file(path))
+
+
+@lru_cache(maxsize=16)
+def load_stock_profiles(path: Path = STOCK_PROFILES_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    profiles: dict[str, dict[str, str]] = {}
+    for row in df.fillna("").itertuples(index=False):
+        ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        profiles[ticker] = {
+            "sector": str(getattr(row, "sector", "")).strip() or "Unknown",
+            "stock_type": str(getattr(row, "stock_type", "")).strip() or "其他",
+        }
+    return profiles

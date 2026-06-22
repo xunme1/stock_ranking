@@ -7,7 +7,7 @@ from datetime import date
 import pandas as pd
 
 from app.core.config import DEFAULT_BENCHMARK
-from app.services.data_loader import load_daily_data, load_ticker_file, normalize_ticker
+from app.services.data_loader import load_daily_data, load_stock_profiles, load_ticker_file, load_ticker_set, normalize_ticker
 
 
 ANNOUNCED_2026_06_22_ADDS = ["ALAB", "CRWV", "NBIS", "RKLB", "TER"]
@@ -78,6 +78,8 @@ def calculate_ticker_score(
     window: int,
     benchmark: str,
     as_of_date: date | None,
+    optionable_tickers: set[str],
+    stock_profiles: dict[str, dict[str, str]],
 ) -> dict[str, object] | None:
     df = load_daily_data(ticker)
     df = trim_to_as_of_date(df, as_of_date)
@@ -98,11 +100,18 @@ def calculate_ticker_score(
 
     atr_score = (close - float(center)) / atr
     price_vs_center_pct = (close / float(center) - 1) * 100
+    close_3d_ago = clean_number(df.iloc[-4]["close"]) if len(df) >= 4 else None
+    price_change_3d_pct = (close / close_3d_ago - 1) * 100 if close_3d_ago else None
     ticker = normalize_ticker(ticker)
+    profile = stock_profiles.get(ticker, {})
+    is_benchmark = ticker == benchmark
 
     return {
         "ticker": ticker,
-        "type": "Nasdaq-100 ETF" if ticker == benchmark else "Nasdaq-100 Stock",
+        "type": "Nasdaq-100 ETF" if is_benchmark else "Nasdaq-100 Stock",
+        "has_options": "Y" if is_benchmark or ticker in optionable_tickers else "N",
+        "sector": profile.get("sector", "ETF" if is_benchmark else "Unknown"),
+        "stock_type": profile.get("stock_type", "ETF" if is_benchmark else "其他"),
         "date": latest["date"].date().isoformat(),
         "close": close,
         "latest_ma": clean_number(latest["ma"]),
@@ -110,25 +119,30 @@ def calculate_ticker_score(
         "atr": atr,
         "atr_score": atr_score,
         "price_vs_center_pct": price_vs_center_pct,
+        "price_change_3d_pct": price_change_3d_pct,
     }
 
 
-def build_ranking(config: RankingConfig) -> dict[str, object]:
-    benchmark = normalize_ticker(config.benchmark)
-    effective_as_of_date = config.as_of_date or latest_available_date(benchmark)
-    tickers = load_ticker_file()
-    if config.apply_announced_rebalance:
-        tickers = apply_rebalance(tickers)
-
-    universe = list(tickers)
-    if benchmark not in universe:
-        universe.append(benchmark)
-
+def build_ranking_frame(
+    universe: list[str],
+    window: int,
+    benchmark: str,
+    as_of_date: date,
+    optionable_tickers: set[str],
+    stock_profiles: dict[str, dict[str, str]],
+) -> tuple[pd.DataFrame, list[str], float]:
     rows = []
     skipped: list[str] = []
     for ticker in universe:
         try:
-            row = calculate_ticker_score(ticker, config.window, benchmark, effective_as_of_date)
+            row = calculate_ticker_score(
+                ticker,
+                window,
+                benchmark,
+                as_of_date,
+                optionable_tickers,
+                stock_profiles,
+            )
         except FileNotFoundError:
             row = None
         if row is None:
@@ -148,6 +162,82 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
     df["excess_atr_vs_benchmark"] = df["atr_score"] - benchmark_score
     df = df.sort_values("atr_score", ascending=False).reset_index(drop=True)
     df.insert(0, "rank", range(1, len(df) + 1))
+    return df, skipped, benchmark_score
+
+
+def previous_trading_dates(benchmark: str, as_of_date: date, count: int) -> list[date]:
+    df = load_daily_data(benchmark)
+    df = trim_to_as_of_date(df, as_of_date)
+    dates = [item.date() for item in df["date"].tail(count + 1)]
+    return list(reversed(dates[:-1]))[:count]
+
+
+def rank_map_for_date(
+    universe: list[str],
+    window: int,
+    benchmark: str,
+    as_of_date: date,
+    optionable_tickers: set[str],
+    stock_profiles: dict[str, dict[str, str]],
+) -> dict[str, int]:
+    try:
+        df, _, _ = build_ranking_frame(universe, window, benchmark, as_of_date, optionable_tickers, stock_profiles)
+    except ValueError:
+        return {}
+    return {str(row.ticker): int(row.rank) for row in df.itertuples(index=False)}
+
+
+def build_ranking(config: RankingConfig) -> dict[str, object]:
+    benchmark = normalize_ticker(config.benchmark)
+    effective_as_of_date = config.as_of_date or latest_available_date(benchmark)
+    optionable_tickers = load_ticker_set()
+    stock_profiles = load_stock_profiles()
+    tickers = load_ticker_file()
+    if config.apply_announced_rebalance:
+        tickers = apply_rebalance(tickers)
+
+    universe = list(tickers)
+    if benchmark not in universe:
+        universe.append(benchmark)
+
+    df, skipped, benchmark_score = build_ranking_frame(
+        universe,
+        config.window,
+        benchmark,
+        effective_as_of_date,
+        optionable_tickers,
+        stock_profiles,
+    )
+
+    prior_dates = previous_trading_dates(benchmark, effective_as_of_date, 2)
+    previous_rank_1 = (
+        rank_map_for_date(
+            universe,
+            config.window,
+            benchmark,
+            prior_dates[0],
+            optionable_tickers,
+            stock_profiles,
+        )
+        if len(prior_dates) >= 1
+        else {}
+    )
+    previous_rank_2 = (
+        rank_map_for_date(
+            universe,
+            config.window,
+            benchmark,
+            prior_dates[1],
+            optionable_tickers,
+            stock_profiles,
+        )
+        if len(prior_dates) >= 2
+        else {}
+    )
+
+    df["previous_rank_1"] = df["ticker"].map(previous_rank_1).astype("Int64")
+    df["previous_rank_2"] = df["ticker"].map(previous_rank_2).astype("Int64")
+    df["rank_change"] = df["previous_rank_1"] - df["rank"]
 
     return {
         "window": config.window,
