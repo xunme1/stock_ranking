@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.core.config import NASDAQ100_FILE, NASDAQ100_OPTIONABLE_FILE, RAW_DAILY_DIR, STOCK_PROFILES_FILE
+from app.core.config import (
+    COMPANY_PROFILES_FILE,
+    EARNINGS_CALENDAR_FILE,
+    NASDAQ100_FILE,
+    NASDAQ100_OPTIONABLE_FILE,
+    RAW_DAILY_DIR,
+    STOCK_PROFILES_FILE,
+)
 
 
 def normalize_ticker(ticker: str) -> str:
@@ -71,5 +78,53 @@ def load_stock_profiles(path: Path = STOCK_PROFILES_FILE) -> dict[str, dict[str,
         profiles[ticker] = {
             "sector": str(getattr(row, "sector", "")).strip() or "Unknown",
             "stock_type": str(getattr(row, "stock_type", "")).strip() or "其他",
+        }
+    return profiles
+
+
+@lru_cache(maxsize=16)
+def load_earnings_calendar(path: Path = EARNINGS_CALENDAR_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    calendar: dict[str, dict[str, str]] = {}
+    for row in df.fillna("").itertuples(index=False):
+        ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        calendar[ticker] = {
+            "earnings_date": str(getattr(row, "earnings_date", "")).strip(),
+            "earnings_time": str(getattr(row, "earnings_time", "")).strip(),
+            "earnings_estimate": str(getattr(row, "earnings_estimate", "")).strip(),
+            "earnings_currency": str(getattr(row, "earnings_currency", "")).strip(),
+        }
+    return calendar
+
+
+@lru_cache(maxsize=16)
+def load_company_profiles(path: Path = COMPANY_PROFILES_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    profiles: dict[str, dict[str, str]] = {}
+    for row in df.fillna("").itertuples(index=False):
+        ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        profiles[ticker] = {
+            "ticker": ticker,
+            "name": str(getattr(row, "name", "")).strip(),
+            "market": str(getattr(row, "market", "")).strip(),
+            "exchange": str(getattr(row, "exchange", "")).strip(),
+            "locale": str(getattr(row, "locale", "")).strip(),
+            "primary_exchange": str(getattr(row, "primary_exchange", "")).strip(),
+            "currency_name": str(getattr(row, "currency_name", "")).strip(),
+            "market_cap": str(getattr(row, "market_cap", "")).strip(),
+            "sic_description": str(getattr(row, "sic_description", "")).strip(),
+            "homepage_url": str(getattr(row, "homepage_url", "")).strip(),
+            "description": str(getattr(row, "description", "")).strip(),
+            "summary_zh": str(getattr(row, "summary_zh", "")).strip(),
+            "source": str(getattr(row, "source", "")).strip(),
+            "updated_at": str(getattr(row, "updated_at", "")).strip(),
         }
     return profiles

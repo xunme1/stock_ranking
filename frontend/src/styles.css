@@ -86,6 +86,21 @@ h2 {
   white-space: nowrap;
 }
 
+.monitorButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #bfd0e6;
+  border-radius: 6px;
+  background: #edf4ff;
+  color: #1f5fbf;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
 .toolbar {
   gap: 12px;
   flex-wrap: wrap;
@@ -368,6 +383,185 @@ h2 {
   margin: 6px 0;
 }
 
+.rankingAlertCard {
+  position: fixed;
+  top: 82px;
+  right: 24px;
+  z-index: 35;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  border: 1px solid #cbd6e4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 20px 46px rgba(24, 33, 47, 0.2);
+  padding: 18px;
+}
+
+.alertHeader,
+.alertSectionTitle,
+.alertRow {
+  display: flex;
+  align-items: center;
+}
+
+.alertHeader {
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.alertIntro {
+  margin: 0 0 14px;
+  color: #415168;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.alertSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 12px;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  background: #f8fbff;
+  padding: 5px 6px 5px 10px;
+  color: #415168;
+  font-size: 13px;
+}
+
+.alertSwitch span {
+  margin-right: 4px;
+  font-weight: 800;
+}
+
+.alertSwitch button {
+  height: 28px;
+  min-width: 48px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #415168;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.alertSwitch button.active {
+  background: #1f6feb;
+  color: #ffffff;
+}
+
+.alertSwitch button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.alertGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.alertSection {
+  min-width: 0;
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #f9fbfd;
+  padding: 11px;
+}
+
+.alertSection:first-child {
+  grid-column: 1 / -1;
+}
+
+.alertSectionTitle {
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.alertSectionTitle h3 {
+  margin: 0;
+  color: #18212f;
+  font-size: 14px;
+}
+
+.alertSectionTitle span {
+  min-width: 24px;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #1f5fbf;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 7px;
+  text-align: center;
+}
+
+.alertRows {
+  display: grid;
+  gap: 6px;
+  max-height: 236px;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-color: #aab7c7 #edf1f6;
+  scrollbar-width: thin;
+}
+
+.alertRows::-webkit-scrollbar {
+  width: 8px;
+}
+
+.alertRows::-webkit-scrollbar-track {
+  background: #edf1f6;
+  border-radius: 999px;
+}
+
+.alertRows::-webkit-scrollbar-thumb {
+  background: #aab7c7;
+  border-radius: 999px;
+}
+
+.alertRow {
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.alertRow strong {
+  min-width: 48px;
+  color: #1f5fbf;
+  font-size: 13px;
+}
+
+.alertRow span {
+  color: #18212f;
+  font-weight: 800;
+  text-align: right;
+}
+
+.alertRow em {
+  color: #607086;
+  font-style: normal;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.emptyAlert {
+  margin: 0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #8a96a6;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  text-align: center;
+}
+
 .positivePill,
 .negativePill {
   font-weight: 800;
@@ -481,6 +675,7 @@ tbody td {
   justify-content: center;
   gap: 4px;
   min-width: 46px;
+  position: relative;
 }
 
 .rankUp,
@@ -500,6 +695,127 @@ tbody td {
 
 .rankFlat {
   color: #8a96a6;
+}
+
+.rankPopover {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  z-index: 12;
+  width: 230px;
+  border: 1px solid #cbd6e4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(24, 33, 47, 0.18);
+  color: #18212f;
+  opacity: 0;
+  padding: 10px 12px 12px;
+  pointer-events: none;
+  text-align: left;
+  transform: translate(0, calc(-50% + 4px));
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.rankWithTrend:hover .rankPopover {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.rankPopover::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid #cbd6e4;
+  border-bottom: 1px solid #cbd6e4;
+  background: #ffffff;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.rankPopoverTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.rankPopoverTop strong {
+  font-size: 13px;
+}
+
+.rankPopoverTop span {
+  color: #607086;
+  font-size: 12px;
+}
+
+.rankSparkline {
+  display: block;
+  width: 100%;
+  height: 58px;
+  margin: 2px 0 8px;
+}
+
+.rankSparkline line {
+  stroke: #edf1f6;
+  stroke-width: 1;
+}
+
+.rankSparkline polyline {
+  fill: none;
+  stroke: #1f6feb;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.rankSparkline circle {
+  fill: #ffffff;
+  stroke: #1f6feb;
+  stroke-width: 2;
+}
+
+.rankAxisHints {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  margin: -3px 0 8px;
+  color: #607086;
+  font-size: 11px;
+}
+
+.rankAxisHints span {
+  font-weight: 800;
+}
+
+.rankAxisHints strong {
+  color: #18212f;
+  font-size: 11px;
+}
+
+.rankAnchorGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.rankAnchorGrid span {
+  display: grid;
+  gap: 2px;
+  border-radius: 6px;
+  background: #f6f8fb;
+  color: #607086;
+  font-size: 11px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.rankAnchorGrid strong {
+  color: #18212f;
+  font-size: 12px;
 }
 
 .tickerButton {
@@ -666,6 +982,203 @@ tbody td {
   margin-bottom: 20px;
 }
 
+.detailInsightGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+.rankingTrendCard {
+  min-width: 0;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.trendHeader {
+  margin-top: 0;
+}
+
+.compactSwitch {
+  margin: 0;
+}
+
+.rankTrendSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rankTrendSummary div,
+.rankAnchorCards div {
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 10px 12px;
+}
+
+.rankTrendSummary span,
+.rankAnchorCards span {
+  display: block;
+  color: #607086;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.rankTrendSummary strong {
+  color: #18212f;
+  font-size: 20px;
+}
+
+.rankingTrendChart {
+  display: block;
+  width: 100%;
+  height: 260px;
+  border: 1px solid #edf1f6;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(31, 111, 235, 0.04), rgba(255, 255, 255, 0) 42%),
+    #ffffff;
+}
+
+.trendGrid {
+  stroke: #e9eef5;
+  stroke-width: 1;
+}
+
+.trendAxis {
+  stroke: #cfd8e5;
+  stroke-width: 1.2;
+}
+
+.trendArea {
+  stroke: none;
+}
+
+.trendLine {
+  fill: none;
+  stroke: #1f6feb;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trendDotHalo {
+  fill: rgba(31, 111, 235, 0.12);
+}
+
+.trendDot {
+  fill: #ffffff;
+  stroke: #1f6feb;
+  stroke-width: 3;
+}
+
+.trendDotLabel,
+.trendDateLabel,
+.trendAxisText {
+  fill: #607086;
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.trendDotLabel {
+  fill: #18212f;
+  font-size: 11px;
+}
+
+.trendAxisText {
+  text-anchor: start;
+}
+
+.rankingTrendEmpty {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  border: 1px solid #edf1f6;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #607086;
+  font-weight: 800;
+}
+
+.rankAnchorCards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.rankAnchorCards strong {
+  color: #18212f;
+  font-size: 18px;
+}
+
+.compactMetricGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.companyProfileCard {
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.profileMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.profileMeta strong {
+  color: #18212f;
+  font-size: 16px;
+}
+
+.profileMeta span,
+.profileMeta a {
+  border: 1px solid #d8e0eb;
+  border-radius: 999px;
+  color: #415168;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 9px;
+  text-decoration: none;
+}
+
+.profileMeta a {
+  color: #1f5fbf;
+  background: #edf4ff;
+}
+
+.profileSummary {
+  color: #263448;
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.profileUpdated {
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 10px 0 0;
+}
+
+.mutedText {
+  color: #607086;
+}
+
 .metricItem {
   border: 1px solid #d8e0eb;
   border-radius: 8px;
@@ -820,6 +1333,7 @@ tbody td {
   }
 
   .metricGrid,
+  .detailInsightGrid,
   .analysisGrid,
   .lowerCharts {
     grid-template-columns: 1fr;
@@ -840,6 +1354,10 @@ tbody td {
 
   .tableWrap {
     max-height: 58vh;
+  }
+
+  .compactMetricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -875,6 +1393,24 @@ tbody td {
 
   .calendarPopover {
     width: min(292px, calc(100vw - 32px));
+  }
+
+  .rankingAlertCard {
+    top: 66px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    padding: 14px;
+  }
+
+  .alertGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rankTrendSummary,
+  .compactMetricGrid,
+  .rankAnchorCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .searchBox input {

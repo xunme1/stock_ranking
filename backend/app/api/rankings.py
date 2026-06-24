@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.config import MAX_WINDOW, MIN_WINDOW
-from app.services.ranking_service import RankingConfig, available_dates, build_ranking
+from app.services.ranking_service import RankingConfig, available_dates, build_ranking, build_ranking_alerts
 
 
 router = APIRouter(prefix="/api/rankings", tags=["rankings"])
@@ -41,3 +41,25 @@ def get_ranking_dates(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return {"benchmark": benchmark.upper(), "count": len(dates), "dates": dates}
+
+
+@router.get("/alerts")
+def get_ranking_alerts(
+    window: int = Query(10, ge=MIN_WINDOW, le=MAX_WINDOW),
+    as_of_date: date | None = Query(None),
+    benchmark: str = Query("QQQ", min_length=1, max_length=12),
+    days: int = Query(5, ge=3, le=20),
+    top_n: int = Query(20, ge=5, le=100),
+    move_threshold: int = Query(10, ge=1, le=100),
+) -> dict[str, object]:
+    try:
+        return build_ranking_alerts(
+            window=window,
+            benchmark=benchmark,
+            as_of_date=as_of_date,
+            days=days,
+            top_n=top_n,
+            move_threshold=move_threshold,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

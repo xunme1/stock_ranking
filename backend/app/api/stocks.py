@@ -4,7 +4,7 @@ from datetime import date
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.services.data_loader import load_daily_data, normalize_ticker
+from app.services.data_loader import load_company_profiles, load_daily_data, normalize_ticker
 from app.services.ranking_service import trim_to_as_of_date
 
 
@@ -38,3 +38,27 @@ def get_stock_daily(
         )
 
     return {"ticker": normalized, "count": len(rows), "data": rows}
+
+
+@router.get("/{ticker}/profile")
+def get_stock_profile(ticker: str) -> dict[str, object]:
+    normalized = normalize_ticker(ticker)
+    profile = load_company_profiles().get(normalized)
+    if not profile:
+        return {
+            "ticker": normalized,
+            "name": "",
+            "market": "",
+            "exchange": "",
+            "locale": "",
+            "primary_exchange": "",
+            "currency_name": "",
+            "market_cap": "",
+            "sic_description": "",
+            "homepage_url": "",
+            "description": "",
+            "summary_zh": "",
+            "source": "",
+            "updated_at": "",
+        }
+    return profile

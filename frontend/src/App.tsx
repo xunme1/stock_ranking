@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BarChart3,
   CalendarDays,
+  Activity,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
@@ -20,8 +21,13 @@ import {
 import {
   fetchDailyBars,
   fetchRanking,
+  fetchRankingAlerts,
   fetchRankingDates,
+  fetchStockProfile,
+  type CompanyProfile,
   type DailyBar,
+  type RankingAlertItem,
+  type RankingAlerts,
   type RankingResponse,
   type RankingRow
 } from "./api";
@@ -116,6 +122,195 @@ function rankTooltip(row: RankingRow) {
     `昨日排名：${row.previous_rank_1 ?? "--"}`,
     `前日排名：${row.previous_rank_2 ?? "--"}`
   ].join("\n");
+}
+
+function priorRank(row: RankingRow, daysAgo: number) {
+  const history = [...(row.rank_history ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const item = history[history.length - 1 - daysAgo];
+  return item?.rank ?? null;
+}
+
+function RankHistoryPopover({ row }: { row: RankingRow }) {
+  const history = [...(row.rank_history ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const valid = history.filter((item) => item.rank !== null && item.rank !== undefined) as Array<{
+    date: string;
+    rank: number;
+  }>;
+  const width = 190;
+  const height = 58;
+  const padX = 10;
+  const padY = 8;
+  const minRank = valid.length ? Math.min(...valid.map((item) => item.rank)) : row.rank;
+  const maxRank = valid.length ? Math.max(...valid.map((item) => item.rank)) : row.rank;
+  const spread = Math.max(maxRank - minRank, 1);
+  const points = valid.map((item, index) => {
+    const x = valid.length <= 1 ? width / 2 : padX + (index / (valid.length - 1)) * (width - padX * 2);
+    const y = padY + ((item.rank - minRank) / spread) * (height - padY * 2);
+    return { ...item, x, y };
+  });
+  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const anchors = [
+    { label: "前1日", value: priorRank(row, 1) },
+    { label: "前3日", value: priorRank(row, 3) },
+    { label: "前5日", value: priorRank(row, 5) },
+    { label: "前10日", value: priorRank(row, 10) }
+  ];
+
+  return (
+    <div className="rankPopover">
+      <div className="rankPopoverTop">
+        <strong>{row.ticker} 近10日排名</strong>
+        <span>今日 #{row.rank}</span>
+      </div>
+      <svg className="rankSparkline" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${row.ticker} 排名变化`}>
+        <line x1={padX} y1={padY} x2={width - padX} y2={padY} />
+        <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} />
+        {polyline ? <polyline points={polyline} /> : null}
+        {points.map((point) => (
+          <circle key={`${point.date}-${point.rank}`} cx={point.x} cy={point.y} r="3" />
+        ))}
+      </svg>
+      <div className="rankAxisHints">
+        <span>上方更好</span>
+        <strong>最佳 #{minRank}</strong>
+        <strong>最差 #{maxRank}</strong>
+      </div>
+      <div className="rankAnchorGrid">
+        {anchors.map((anchor) => (
+          <span key={anchor.label}>
+            {anchor.label}
+            <strong>{anchor.value ? `#${anchor.value}` : "--"}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RankingTrendChart({ row }: { row: RankingRow | undefined }) {
+  const history = [...(row?.rank_history ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const valid = history.filter((item) => item.rank !== null && item.rank !== undefined) as Array<{
+    date: string;
+    rank: number;
+  }>;
+  const width = 720;
+  const height = 260;
+  const padLeft = 54;
+  const padRight = 24;
+  const padTop = 28;
+  const padBottom = 42;
+  const minRank = valid.length ? Math.min(...valid.map((item) => item.rank)) : 1;
+  const maxRank = valid.length ? Math.max(...valid.map((item) => item.rank)) : 20;
+  const spread = Math.max(maxRank - minRank, 1);
+  const points = valid.map((item, index) => {
+    const x = valid.length <= 1 ? width / 2 : padLeft + (index / (valid.length - 1)) * (width - padLeft - padRight);
+    const y = padTop + ((item.rank - minRank) / spread) * (height - padTop - padBottom);
+    return { ...item, x, y };
+  });
+  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = points.length
+    ? `${padLeft},${height - padBottom} ${line} ${width - padRight},${height - padBottom}`
+    : "";
+  const labels = points.filter((_, index) => index === 0 || index === points.length - 1 || index % 3 === 0);
+
+  if (!row || !valid.length) {
+    return <div className="rankingTrendEmpty">暂无排名历史数据</div>;
+  }
+
+  return (
+    <svg className="rankingTrendChart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${row.ticker} 排名变化`}>
+      <defs>
+        <linearGradient id={`rankArea-${row.ticker}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#1f6feb" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#1f6feb" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <line className="trendGrid" x1={padLeft} x2={width - padRight} y1={padTop} y2={padTop} />
+      <line className="trendGrid" x1={padLeft} x2={width - padRight} y1={height - padBottom} y2={height - padBottom} />
+      <line className="trendAxis" x1={padLeft} x2={padLeft} y1={padTop} y2={height - padBottom} />
+      <text className="trendAxisText" x={14} y={padTop + 4}>最佳 #{minRank}</text>
+      <text className="trendAxisText" x={14} y={height - padBottom + 4}>最差 #{maxRank}</text>
+      {area ? <polygon className="trendArea" points={area} fill={`url(#rankArea-${row.ticker})`} /> : null}
+      {line ? <polyline className="trendLine" points={line} /> : null}
+      {points.map((point) => (
+        <g key={`${point.date}-${point.rank}`}>
+          <circle className="trendDotHalo" cx={point.x} cy={point.y} r="7" />
+          <circle className="trendDot" cx={point.x} cy={point.y} r="4" />
+          <text className="trendDotLabel" x={point.x} y={point.y - 12}>#{point.rank}</text>
+        </g>
+      ))}
+      {labels.map((point) => (
+        <text key={`label-${point.date}`} className="trendDateLabel" x={point.x} y={height - 14}>
+          {point.date.slice(5)}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function RankingTrendCard({
+  row,
+  windowSize,
+  loading,
+  onWindowChange
+}: {
+  row: RankingRow | undefined;
+  windowSize: number;
+  loading: boolean;
+  onWindowChange: (window: number) => void;
+}) {
+  const anchors = [1, 3, 5, 10].map((days) => ({ days, rank: row ? priorRank(row, days) : null }));
+  const change = row?.rank_change ?? null;
+
+  return (
+    <section className="rankingTrendCard">
+      <div className="panelHeader trendHeader">
+        <div>
+          <p className="eyebrow">Ranking Trend</p>
+          <h2>排名变化</h2>
+        </div>
+        <div className="alertSwitch compactSwitch" aria-label="排名窗口">
+          <span>窗口</span>
+          {WINDOW_OPTIONS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={windowSize === value ? "active" : ""}
+              disabled={loading}
+              onClick={() => onWindowChange(value)}
+            >
+              {value}日
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="rankTrendSummary">
+        <div>
+          <span>当前排名</span>
+          <strong>{row ? `#${row.rank}` : "--"}</strong>
+        </div>
+        <div>
+          <span>较前日</span>
+          <strong className={change !== null && change >= 0 ? "positive" : "negative"}>
+            {change === null ? "--" : change > 0 ? `提升 ${change}` : change < 0 ? `下降 ${Math.abs(change)}` : "持平"}
+          </strong>
+        </div>
+        <div>
+          <span>ATR倍数</span>
+          <strong className={row && row.atr_score >= 0 ? "positive" : "negative"}>{numberText(row?.atr_score, 3)}</strong>
+        </div>
+      </div>
+      <RankingTrendChart row={row} />
+      <div className="rankAnchorCards">
+        {anchors.map((anchor) => (
+          <div key={anchor.days}>
+            <span>前{anchor.days}日</span>
+            <strong>{anchor.rank ? `#${anchor.rank}` : "--"}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function toTimestamp(date: string) {
@@ -386,6 +581,107 @@ function MiniChartPanel({ ticker, asOfDate }: { ticker: string; asOfDate: string
   );
 }
 
+function alertRankText(item: RankingAlertItem) {
+  if (item.previous_rank === null || item.previous_rank === undefined || item.rank_change === null) {
+    return `#${item.rank}`;
+  }
+  const changeText =
+    item.rank_change > 0 ? `↑${item.rank_change}` : item.rank_change < 0 ? `↓${Math.abs(item.rank_change)}` : "持平";
+  return `#${item.rank} / 昨 #${item.previous_rank} / ${changeText}`;
+}
+
+function AlertList({
+  title,
+  items,
+  tone,
+  metric
+}: {
+  title: string;
+  items: RankingAlertItem[];
+  tone?: "up" | "down" | "stable";
+  metric: "stable" | "move";
+}) {
+  return (
+    <section className="alertSection">
+      <div className="alertSectionTitle">
+        <h3>{title}</h3>
+        <span>{items.length}</span>
+      </div>
+      {items.length ? (
+        <div className="alertRows">
+          {items.map((item) => (
+            <div className="alertRow" key={`${title}-${item.ticker}`}>
+              <strong>{item.ticker}</strong>
+              <span className={tone === "up" ? "positive" : tone === "down" ? "negative" : ""}>
+                {metric === "stable"
+                  ? `#${item.rank} / 均 ${numberText(item.avg_rank_5, 1)}`
+                  : alertRankText(item)}
+              </span>
+              <em>
+                {item.best_rank_5 && item.worst_rank_5 ? `5日 ${item.best_rank_5}-${item.worst_rank_5}` : "--"}
+              </em>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="emptyAlert">暂无</p>
+      )}
+    </section>
+  );
+}
+
+function RankingAlertCard({
+  alerts,
+  activeWindow,
+  loading,
+  onWindowChange,
+  onClose
+}: {
+  alerts: RankingAlerts;
+  activeWindow: number;
+  loading: boolean;
+  onWindowChange: (window: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <aside className="rankingAlertCard" role="dialog" aria-label="排名异常监测">
+      <div className="alertHeader">
+        <div>
+          <p className="eyebrow">Ranking Monitor</p>
+          <h2>排名稳定性与异常监测</h2>
+        </div>
+        <button className="iconButton" type="button" onClick={onClose} aria-label="关闭排名监测">
+          ×
+        </button>
+      </div>
+      <div className="alertSwitch" aria-label="监测窗口">
+        <span>监测窗口</span>
+        {WINDOW_OPTIONS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={activeWindow === value ? "active" : ""}
+            disabled={loading}
+            onClick={() => onWindowChange(value)}
+          >
+            {value}日
+          </button>
+        ))}
+      </div>
+      <p className="alertIntro">
+        窗口 {alerts.window}日 / 截止 {alerts.as_of_date}。监测最近5个交易日稳定前20，以及今日相对昨日排名变化超过10名的股票。
+      </p>
+      <div className="alertGrid">
+        <AlertList title="近5日稳定前20" items={alerts.stable_top20} tone="stable" metric="stable" />
+        <AlertList title="大幅上升" items={alerts.upward_moves} tone="up" metric="move" />
+        <AlertList title="大幅下降" items={alerts.downward_moves} tone="down" metric="move" />
+        <AlertList title="当日进入前20" items={alerts.entered_top20} tone="up" metric="move" />
+        <AlertList title="当日跌出前20" items={alerts.dropped_top20} tone="down" metric="move" />
+      </div>
+    </aside>
+  );
+}
+
 function baseChartOptions(height: number) {
   return {
     height,
@@ -484,6 +780,7 @@ function RankingTable({
             <th>代码</th>
             <th>期权</th>
             <th>股票类型</th>
+            <th>预计财报日</th>
             <th>收盘</th>
             <th>均线重心</th>
             <th>ATR</th>
@@ -506,11 +803,12 @@ function RankingTable({
                 onDoubleClick={() => onOpen(row.ticker)}
               >
                 <td className="rankCell">
-                  <span className="rankWithTrend" title={rankTooltip(row)}>
+                  <span className="rankWithTrend">
                     <span>{row.rank}</span>
                     <span className={trend.className} aria-label={trend.label}>
                       {trend.symbol}
                     </span>
+                    <RankHistoryPopover row={row} />
                   </span>
                 </td>
                 <td>
@@ -529,6 +827,7 @@ function RankingTable({
                 </td>
                 <td className={row.has_options === "Y" ? "optionYes" : "optionNo"}>{row.has_options}</td>
                 <td>{sectorLabel(row.sector)}</td>
+                <td>{row.earnings_date || "--"}</td>
                 <td>{numberText(row.close)}</td>
                 <td>{numberText(row.ma_center)}</td>
                 <td>{numberText(row.atr)}</td>
@@ -561,6 +860,21 @@ function DashboardPage() {
   const [typeFilter, setTypeFilter] = useState(ALL_SECTORS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [alerts, setAlerts] = useState<RankingAlerts | null>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const [alertWindow, setAlertWindow] = useState(DEFAULT_WINDOW);
+  const [alertLoading, setAlertLoading] = useState(false);
+
+  const loadAlerts = (requestedWindow = alertWindow, requestedDate = ranking?.as_of_date ?? asOfDate) => {
+    setAlertLoading(true);
+    fetchRankingAlerts(requestedWindow, requestedDate)
+      .then((alertResult) => {
+        setAlerts(alertResult);
+        setAlertWindow(alertResult.window);
+      })
+      .catch(() => setAlerts(null))
+      .finally(() => setAlertLoading(false));
+  };
 
   const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
@@ -570,9 +884,20 @@ function DashboardPage() {
         setRanking(result);
         setAsOfDate(result.as_of_date);
         if (!result.data.some((row) => row.ticker === selectedTicker)) setSelectedTicker(result.benchmark);
+        loadAlerts(alertWindow, result.as_of_date);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
+  };
+
+  const openAlerts = () => {
+    setAlertDismissed(false);
+    if (!alerts) loadAlerts(alertWindow, ranking?.as_of_date ?? asOfDate);
+  };
+
+  const changeAlertWindow = (value: number) => {
+    setAlertWindow(value);
+    loadAlerts(value, ranking?.as_of_date ?? asOfDate);
   };
 
   useEffect(() => {
@@ -617,8 +942,22 @@ function DashboardPage() {
           <span>基准排名 {ranking?.benchmark_rank ?? "--"}</span>
           <span>计算日期 {(ranking?.as_of_date ?? asOfDate) || "--"}</span>
           <span>已应用 2026-06-22 调整名单</span>
+          <button className="monitorButton" type="button" onClick={openAlerts}>
+            <Activity size={16} aria-hidden="true" />
+            排名监测
+          </button>
         </div>
       </header>
+
+      {alerts && !alertDismissed ? (
+        <RankingAlertCard
+          alerts={alerts}
+          activeWindow={alertWindow}
+          loading={alertLoading}
+          onWindowChange={changeAlertWindow}
+          onClose={() => setAlertDismissed(true)}
+        />
+      ) : null}
 
       <section className="toolbar">
         <div className="segmentedControl" aria-label="重心窗口">
@@ -890,6 +1229,48 @@ function RelativeStrengthChart({ stockBars, benchmarkBars }: { stockBars: DailyB
   return <div className="subChartShell" ref={containerRef} />;
 }
 
+function compactMarketCap(value: string) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "--";
+  if (numeric >= 1_000_000_000_000) return `${numberText(numeric / 1_000_000_000_000, 2)}T`;
+  if (numeric >= 1_000_000_000) return `${numberText(numeric / 1_000_000_000, 1)}B`;
+  if (numeric >= 1_000_000) return `${numberText(numeric / 1_000_000, 1)}M`;
+  return numberText(numeric, 0);
+}
+
+function CompanyProfileCard({ profile }: { profile: CompanyProfile | null }) {
+  return (
+    <section className="companyProfileCard">
+      <div className="panelHeader">
+        <div>
+          <p className="eyebrow">Company Profile</p>
+          <h2>公司简介</h2>
+        </div>
+        <span className="statusText">{profile?.source ? `来源 ${profile.source}` : "暂无缓存"}</span>
+      </div>
+      {profile?.summary_zh ? (
+        <>
+          <div className="profileMeta">
+            <strong>{profile.name || profile.ticker}</strong>
+            <span>{profile.primary_exchange || profile.exchange || "--"}</span>
+            <span>{profile.sic_description || "--"}</span>
+            <span>市值 {compactMarketCap(profile.market_cap)}</span>
+            {profile.homepage_url ? (
+              <a href={profile.homepage_url} target="_blank" rel="noreferrer">
+                官网
+              </a>
+            ) : null}
+          </div>
+          <p className="profileSummary">{profile.summary_zh}</p>
+          <p className="profileUpdated">更新 {profile.updated_at || "--"}</p>
+        </>
+      ) : (
+        <p className="profileSummary mutedText">当前还没有这只股票的公司简介缓存。可以运行公司资料更新脚本后再查看。</p>
+      )}
+    </section>
+  );
+}
+
 function ChartGuide({ onClose }: { onClose: () => void }) {
   return (
     <aside className="guidePanel">
@@ -923,6 +1304,9 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
   const [asOfDate, setAsOfDate] = useState(initialDate);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [ranking, setRanking] = useState<RankingResponse | null>(null);
+  const [rankWindow, setRankWindow] = useState(DEFAULT_WINDOW);
+  const [rankLoading, setRankLoading] = useState(false);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const { stockBars, benchmarkBars, loading, error } = useStockData(ticker, asOfDate);
 
@@ -938,17 +1322,35 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
   useEffect(() => {
     if (!asOfDate) return;
     let alive = true;
-    fetchRanking(DEFAULT_WINDOW, asOfDate, APPLY_ANNOUNCED_REBALANCE)
+    setRankLoading(true);
+    fetchRanking(rankWindow, asOfDate, APPLY_ANNOUNCED_REBALANCE)
       .then((result) => {
         if (alive) setRanking(result);
       })
       .catch(() => {
         if (alive) setRanking(null);
+      })
+      .finally(() => {
+        if (alive) setRankLoading(false);
       });
     return () => {
       alive = false;
     };
-  }, [asOfDate]);
+  }, [asOfDate, rankWindow]);
+
+  useEffect(() => {
+    let alive = true;
+    fetchStockProfile(ticker)
+      .then((result) => {
+        if (alive) setCompanyProfile(result);
+      })
+      .catch(() => {
+        if (alive) setCompanyProfile(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [ticker]);
 
   const latest = stockBars.length ? stockBars[stockBars.length - 1] : undefined;
   const previous = stockBars.length > 1 ? stockBars[stockBars.length - 2] : undefined;
@@ -1010,35 +1412,45 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
 
       {error ? <div className="errorLine">{error}</div> : null}
 
-      <section className="metricGrid">
-        <div className="metricItem">
-          <span>20日高点</span>
-          <strong>{numberText(high20)}</strong>
-        </div>
-        <div className="metricItem">
-          <span>20日低点</span>
-          <strong>{numberText(low20)}</strong>
-        </div>
-        <div className="metricItem">
-          <span>ATR20</span>
-          <strong>{numberText(atr20)}</strong>
-        </div>
-        <div className="metricItem">
-          <span>成交量/20日均量</span>
-          <strong>{numberText(volumeRatio, 2)}x</strong>
-        </div>
-        <div className="metricItem">
-          <span>20D相对QQQ</span>
-          <strong className={relative20 !== null && relative20 >= 0 ? "positive" : "negative"}>
-            {percentText(relative20)}
-          </strong>
-        </div>
-        <div className="metricItem">
-          <span>超额ATR强度</span>
-          <strong className={excessAtrStrength !== null && excessAtrStrength >= 0 ? "positive" : "negative"}>
-            {numberText(excessAtrStrength, 3)}
-          </strong>
-        </div>
+      <CompanyProfileCard profile={companyProfile} />
+
+      <section className="detailInsightGrid">
+        <RankingTrendCard
+          row={rankingRow}
+          windowSize={rankWindow}
+          loading={rankLoading}
+          onWindowChange={setRankWindow}
+        />
+        <section className="metricGrid compactMetricGrid">
+          <div className="metricItem">
+            <span>20日高点</span>
+            <strong>{numberText(high20)}</strong>
+          </div>
+          <div className="metricItem">
+            <span>20日低点</span>
+            <strong>{numberText(low20)}</strong>
+          </div>
+          <div className="metricItem">
+            <span>ATR20</span>
+            <strong>{numberText(atr20)}</strong>
+          </div>
+          <div className="metricItem">
+            <span>成交量/20日均量</span>
+            <strong>{numberText(volumeRatio, 2)}x</strong>
+          </div>
+          <div className="metricItem">
+            <span>20D相对QQQ</span>
+            <strong className={relative20 !== null && relative20 >= 0 ? "positive" : "negative"}>
+              {percentText(relative20)}
+            </strong>
+          </div>
+          <div className="metricItem">
+            <span>超额ATR强度</span>
+            <strong className={excessAtrStrength !== null && excessAtrStrength >= 0 ? "positive" : "negative"}>
+              {numberText(excessAtrStrength, 3)}
+            </strong>
+          </div>
+        </section>
       </section>
 
       <section className="analysisGrid">
