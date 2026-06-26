@@ -49,10 +49,21 @@ cd "$PROJECT_ROOT"
 
   echo "Checking API health..."
   if command -v curl >/dev/null 2>&1; then
-    curl -fsS http://127.0.0.1:8001/api/health || true
-    echo
+    HEALTH_OK=0
+    for attempt in $(seq 1 12); do
+      if curl -fsS http://127.0.0.1:8001/api/health; then
+        echo
+        echo "API health check passed."
+        HEALTH_OK=1
+        break
+      fi
+      echo "API not ready yet, retry $attempt/12..."
+      sleep 2
+    done
+    if [[ "$HEALTH_OK" -ne 1 ]]; then
+      echo "WARNING: API health check did not pass after retries. Check: systemctl status $SERVICE_NAME"
+    fi
   fi
 
   echo "Daily update finished at $(date '+%F %T %Z')"
 } 2>&1 | tee -a "$RUN_LOG"
-
