@@ -858,7 +858,8 @@ tbody td {
 }
 
 .optionYes,
-.optionNo {
+.optionNo,
+.optionUnknown {
   font-weight: 900;
   text-align: center;
 }
@@ -869,6 +870,10 @@ tbody td {
 
 .optionNo {
   color: #9aa5b1;
+}
+
+.optionUnknown {
+  color: #7b5f00;
 }
 
 .chartShell {

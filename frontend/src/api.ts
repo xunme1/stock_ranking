@@ -2,7 +2,7 @@ export type RankingRow = {
   rank: number;
   ticker: string;
   type: string;
-  has_options: "Y" | "N";
+  has_options: "Y" | "N" | "U";
   sector: string;
   stock_type: string;
   earnings_date: string;

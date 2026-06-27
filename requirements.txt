@@ -6,3 +6,4 @@ python-dotenv
 lxml
 fastapi
 uvicorn[standard]
+reportlab

@@ -11,9 +11,9 @@ from app.core.config import DEFAULT_BENCHMARK, RANKING_CACHE_DIR
 from app.services.data_loader import (
     load_daily_data,
     load_earnings_calendar,
+    load_optionable_status,
     load_stock_profiles,
     load_ticker_file,
-    load_ticker_set,
     normalize_ticker,
 )
 
@@ -271,7 +271,7 @@ def calculate_ticker_score(
     window: int,
     benchmark: str,
     as_of_date: date | None,
-    optionable_tickers: set[str],
+    optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
 ) -> dict[str, object] | None:
     df = load_daily_data(ticker)
@@ -298,11 +298,12 @@ def calculate_ticker_score(
     ticker = normalize_ticker(ticker)
     profile = stock_profiles.get(ticker, {})
     is_benchmark = ticker == benchmark
+    has_options = "Y" if is_benchmark else optionable_status.get(ticker, "U")
 
     return {
         "ticker": ticker,
         "type": "Nasdaq-100 ETF" if is_benchmark else "Nasdaq-100 Stock",
-        "has_options": "Y" if is_benchmark or ticker in optionable_tickers else "N",
+        "has_options": has_options if has_options in {"Y", "N", "U"} else "U",
         "sector": profile.get("sector", "ETF" if is_benchmark else "Unknown"),
         "stock_type": profile.get("stock_type", "ETF" if is_benchmark else "其他"),
         "date": latest["date"].date().isoformat(),
@@ -321,7 +322,7 @@ def build_ranking_frame(
     window: int,
     benchmark: str,
     as_of_date: date,
-    optionable_tickers: set[str],
+    optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
 ) -> tuple[pd.DataFrame, list[str], float]:
     rows = []
@@ -333,7 +334,7 @@ def build_ranking_frame(
                 window,
                 benchmark,
                 as_of_date,
-                optionable_tickers,
+                optionable_status,
                 stock_profiles,
             )
         except FileNotFoundError:
@@ -363,7 +364,7 @@ def build_and_cache_ranking_frame(
     window: int,
     benchmark: str,
     as_of_date: date,
-    optionable_tickers: set[str],
+    optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
 ) -> tuple[pd.DataFrame, list[str], float]:
     df, skipped, benchmark_score = build_ranking_frame(
@@ -371,7 +372,7 @@ def build_and_cache_ranking_frame(
         window,
         benchmark,
         as_of_date,
-        optionable_tickers,
+        optionable_status,
         stock_profiles,
     )
     cache_rows = df.copy()
@@ -394,7 +395,7 @@ def rank_map_for_date(
     window: int,
     benchmark: str,
     as_of_date: date,
-    optionable_tickers: set[str],
+    optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
     use_cache: bool = True,
 ) -> dict[str, int]:
@@ -402,7 +403,7 @@ def rank_map_for_date(
     if cached is not None:
         return {str(row.ticker): int(row.rank) for row in cached.itertuples(index=False)}
     try:
-        df, _, _ = build_ranking_frame(universe, window, benchmark, as_of_date, optionable_tickers, stock_profiles)
+        df, _, _ = build_ranking_frame(universe, window, benchmark, as_of_date, optionable_status, stock_profiles)
     except ValueError:
         return {}
     return {str(row.ticker): int(row.rank) for row in df.itertuples(index=False)}
@@ -411,7 +412,7 @@ def rank_map_for_date(
 def build_ranking(config: RankingConfig) -> dict[str, object]:
     benchmark = normalize_ticker(config.benchmark)
     effective_as_of_date = config.as_of_date or latest_available_date(benchmark)
-    optionable_tickers = load_ticker_set()
+    optionable_status = load_optionable_status()
     stock_profiles = load_stock_profiles()
     earnings_calendar = load_earnings_calendar()
     tickers = load_ticker_file()
@@ -429,7 +430,7 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
             config.window,
             benchmark,
             effective_as_of_date,
-            optionable_tickers,
+            optionable_status,
             stock_profiles,
         )
     else:
@@ -444,7 +445,7 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
             config.window,
             benchmark,
             prior_date,
-            optionable_tickers,
+            optionable_status,
             stock_profiles,
             config.apply_announced_rebalance,
         )

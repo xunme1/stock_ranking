@@ -825,7 +825,9 @@ function RankingTable({
                     {row.ticker}
                   </button>
                 </td>
-                <td className={row.has_options === "Y" ? "optionYes" : "optionNo"}>{row.has_options}</td>
+                <td className={row.has_options === "Y" ? "optionYes" : row.has_options === "N" ? "optionNo" : "optionUnknown"}>
+                  {row.has_options}
+                </td>
                 <td>{sectorLabel(row.sector)}</td>
                 <td>{row.earnings_date || "--"}</td>
                 <td>{numberText(row.close)}</td>

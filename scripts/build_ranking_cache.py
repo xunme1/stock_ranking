@@ -14,9 +14,9 @@ if str(BACKEND_DIR) not in sys.path:
 from app.core.config import DEFAULT_BENCHMARK  # noqa: E402
 from app.services.data_loader import (  # noqa: E402
     load_daily_data,
+    load_optionable_status,
     load_stock_profiles,
     load_ticker_file,
-    load_ticker_set,
     normalize_ticker,
 )
 from app.services.ranking_service import (  # noqa: E402
@@ -64,7 +64,7 @@ def main() -> None:
     if benchmark not in universe:
         universe.append(benchmark)
 
-    optionable_tickers = load_ticker_set()
+    optionable_status = load_optionable_status()
     stock_profiles = load_stock_profiles()
 
     print(f"Benchmark: {benchmark}")
@@ -80,7 +80,7 @@ def main() -> None:
                 window=window,
                 benchmark=benchmark,
                 as_of_date=as_of_date,
-                optionable_tickers=optionable_tickers,
+                optionable_status=optionable_status,
                 stock_profiles=stock_profiles,
             )
             print(

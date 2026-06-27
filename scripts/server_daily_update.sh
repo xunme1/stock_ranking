@@ -36,6 +36,11 @@ cd "$PROJECT_ROOT"
     --download-missing \
     --max-retries 2
 
+  echo "Updating option availability..."
+  "$PYTHON_BIN" -B scripts/update_optionable_tickers.py --max-retries 2 || {
+    echo "WARNING: option availability update failed. Ranking cache will use the previous option cache if available."
+  }
+
   echo "Rebuilding ranking cache..."
   "$PYTHON_BIN" -B scripts/build_ranking_cache.py --windows 10,20 --days 20
 

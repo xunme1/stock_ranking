@@ -10,6 +10,7 @@ from app.core.config import (
     EARNINGS_CALENDAR_FILE,
     NASDAQ100_FILE,
     NASDAQ100_OPTIONABLE_FILE,
+    OPTIONABLE_TICKERS_FILE,
     RAW_DAILY_DIR,
     STOCK_PROFILES_FILE,
 )
@@ -63,6 +64,27 @@ def load_ticker_set(path: Path = NASDAQ100_OPTIONABLE_FILE) -> set[str]:
     if not path.exists():
         return set()
     return set(load_ticker_file(path))
+
+
+@lru_cache(maxsize=16)
+def load_optionable_tickers(path: Path = OPTIONABLE_TICKERS_FILE) -> set[str]:
+    return {ticker for ticker, has_options in load_optionable_status(path).items() if has_options == "Y"}
+
+
+@lru_cache(maxsize=16)
+def load_optionable_status(path: Path = OPTIONABLE_TICKERS_FILE) -> dict[str, str]:
+    if path.exists() and path.stat().st_size > 0:
+        df = pd.read_csv(path)
+        if {"ticker", "has_options"}.issubset(df.columns):
+            status: dict[str, str] = {}
+            for row in df.fillna("").itertuples(index=False):
+                ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+                has_options = str(getattr(row, "has_options", "")).strip().upper()
+                if ticker:
+                    status[ticker] = has_options if has_options in {"Y", "N", "U"} else "U"
+            return status
+
+    return {}
 
 
 @lru_cache(maxsize=16)

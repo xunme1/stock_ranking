@@ -1,115 +1,118 @@
-ticker,sector,stock_type
-ADBE,Information Technology,科技股
-AMD,Information Technology,半导体
-ABNB,Consumer Discretionary,互联网消费
-ALNY,Health Care,医药医疗
-GOOGL,Communication Services,互联网平台
-GOOG,Communication Services,互联网平台
-AMZN,Consumer Discretionary,互联网消费
-AEP,Utilities,公用事业
-AMGN,Health Care,医药医疗
-ADI,Information Technology,半导体
+﻿ticker,sector,stock_type
 AAPL,Information Technology,科技股
+ABNB,Consumer Discretionary,互联网消费
+ADBE,Information Technology,科技股
+ADI,Information Technology,半导体
+ADP,Industrials,企业服务
+ADSK,Information Technology,软件服务
+AEP,Utilities,公用事业
+ALAB,Information Technology,半导体
+ALNY,Health Care,医药医疗
 AMAT,Information Technology,半导体设备
+AMD,Information Technology,半导体
+AMGN,Health Care,医药医疗
+AMZN,Consumer Discretionary,互联网消费
 APP,Information Technology,软件服务
 ARM,Information Technology,半导体
 ASML,Information Technology,半导体设备
-ADSK,Information Technology,软件服务
-ADP,Industrials,企业服务
-AXON,Industrials,工业科技
-BKR,Energy,能源
-BKNG,Consumer Discretionary,互联网消费
 AVGO,Information Technology,半导体
-CDNS,Information Technology,软件服务
-CHTR,Communication Services,通信服务
-CTAS,Industrials,企业服务
-CSCO,Information Technology,网络设备
+AXON,Industrials,工业科技
+BKNG,Consumer Discretionary,互联网消费
+BKR,Energy,能源
+BRK.B,Financials,综合金融
+CBRS,Information Technology,AI芯片
 CCEP,Consumer Staples,快消股
-CTSH,Information Technology,IT服务
-CMCSA,Communication Services,媒体通信
+CDNS,Information Technology,软件服务
 CEG,Utilities,公用事业
-CPRT,Industrials,商业服务
+CHTR,Communication Services,通信服务
+CMCSA,Communication Services,媒体通信
 COST,Consumer Staples,零售消费
+CPRT,Industrials,商业服务
 CRWD,Information Technology,软件服务
+CRWV,Information Technology,云计算
+CSCO,Information Technology,网络设备
 CSX,Industrials,运输物流
-DDOG,Information Technology,软件服务
-DXCM,Health Care,医药医疗
-FANG,Energy,能源
+CTAS,Industrials,企业服务
+CTSH,Information Technology,IT服务
 DASH,Consumer Discretionary,互联网消费
+DDOG,Information Technology,软件服务
+DELL,Information Technology,硬件设备
+DXCM,Health Care,医药医疗
 EA,Communication Services,游戏娱乐
 EXC,Utilities,公用事业
+FANG,Energy,能源
 FAST,Industrials,工业分销
 FER,Industrials,基建工业
 FTNT,Information Technology,网络安全
 GEHC,Health Care,医药医疗
 GILD,Health Care,医药医疗
+GLW,Information Technology,光通信材料
+GOOG,Communication Services,互联网平台
+GOOGL,Communication Services,互联网平台
 HON,Industrials,工业制造
 IDXX,Health Care,医药医疗
 INSM,Health Care,医药医疗
 INTC,Information Technology,半导体
 INTU,Information Technology,软件服务
 ISRG,Health Care,医药医疗
+JNJ,Health Care,医药医疗
+JPM,Financials,金融
 KDP,Consumer Staples,快消股
-KLAC,Information Technology,半导体设备
 KHC,Consumer Staples,快消股
-LRCX,Information Technology,半导体设备
+KLAC,Information Technology,半导体设备
 LIN,Materials,化工材料
 LITE,Information Technology,光通信
+LLY,Health Care,医药医疗
+LRCX,Information Technology,半导体设备
 MAR,Consumer Discretionary,酒店旅游
-MRVL,Information Technology,半导体
+MCHP,Information Technology,半导体
+MDLZ,Consumer Staples,快消股
 MELI,Consumer Discretionary,互联网消费
 META,Communication Services,互联网平台
-MCHP,Information Technology,半导体
-MU,Information Technology,半导体
+MNST,Consumer Staples,快消股
+MPWR,Information Technology,半导体
+MRK,Health Care,医药医疗
+MRVL,Information Technology,半导体
 MSFT,Information Technology,软件服务
 MSTR,Information Technology,软件服务
-MDLZ,Consumer Staples,快消股
-MPWR,Information Technology,半导体
-MNST,Consumer Staples,快消股
+MU,Information Technology,半导体
+NBIS,Information Technology,云计算
 NFLX,Communication Services,流媒体
 NVDA,Information Technology,半导体
 NXPI,Information Technology,半导体
-ORLY,Consumer Discretionary,零售消费
 ODFL,Industrials,运输物流
-PCAR,Industrials,工业制造
-PLTR,Information Technology,软件服务
+ORLY,Consumer Discretionary,零售消费
 PANW,Information Technology,网络安全
 PAYX,Industrials,企业服务
-PYPL,Financials,金融科技
+PCAR,Industrials,工业制造
 PDD,Consumer Discretionary,互联网消费
 PEP,Consumer Staples,快消股
+PLTR,Information Technology,软件服务
+PYPL,Financials,金融科技
 QCOM,Information Technology,半导体
+QQQ,ETF,ETF
 REGN,Health Care,医药医疗
+RKLB,Industrials,航天工业
 ROP,Information Technology,软件服务
 ROST,Consumer Discretionary,零售消费
-SNDK,Information Technology,半导体
-STX,Information Technology,存储硬件
-SHOP,Information Technology,软件服务
 SBUX,Consumer Discretionary,餐饮消费
+SHOP,Information Technology,软件服务
+SNDK,Information Technology,半导体
 SNPS,Information Technology,软件服务
+STX,Information Technology,存储硬件
+TER,Information Technology,半导体设备
 TMUS,Communication Services,通信服务
-TTWO,Communication Services,游戏娱乐
-TSLA,Consumer Discretionary,汽车
-TXN,Information Technology,半导体
 TRI,Industrials,信息服务
+TSLA,Consumer Discretionary,汽车
+TTWO,Communication Services,游戏娱乐
+TXN,Information Technology,半导体
+V,Financials,支付网络
 VRSK,Industrials,信息服务
 VRTX,Health Care,医药医疗
-WMT,Consumer Staples,零售消费
 WBD,Communication Services,媒体通信
-WDC,Information Technology,存储硬件
 WDAY,Information Technology,软件服务
+WDC,Information Technology,存储硬件
+WMT,Consumer Staples,零售消费
 XEL,Utilities,公用事业
-ZS,Information Technology,网络安全
-ALAB,Information Technology,半导体
-CRWV,Information Technology,云计算
-NBIS,Information Technology,云计算
-RKLB,Industrials,航天工业
-TER,Information Technology,半导体设备
-QQQ,ETF,ETF
-BRK.B,Financials,综合金融
-LLY,Health Care,医药医疗
-JPM,Financials,金融
-V,Financials,支付网络
-JNJ,Health Care,医药医疗
 XOM,Energy,能源
-DELL,Information Technology,硬件设备
+ZS,Information Technology,网络安全
