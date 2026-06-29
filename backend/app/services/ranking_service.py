@@ -163,6 +163,7 @@ def _alert_item(
     latest_rank: int,
     previous_rank: int | None,
     recent_ranks: list[int],
+    daily_change_pct: float | None = None,
 ) -> dict[str, object]:
     rank_change = previous_rank - latest_rank if previous_rank is not None else None
     return {
@@ -170,6 +171,7 @@ def _alert_item(
         "rank": latest_rank,
         "previous_rank": previous_rank,
         "rank_change": rank_change,
+        "daily_change_pct": daily_change_pct,
         "avg_rank_5": sum(recent_ranks) / len(recent_ranks) if recent_ranks else None,
         "best_rank_5": min(recent_ranks) if recent_ranks else None,
         "worst_rank_5": max(recent_ranks) if recent_ranks else None,
@@ -214,37 +216,50 @@ def build_ranking_alerts(
     }
     previous_rank = {str(row.ticker): int(row.rank) for row in previous.itertuples(index=False)}
     latest_rank = {str(row.ticker): int(row.rank) for row in latest.itertuples(index=False)}
+    previous_close = {str(row.ticker): float(row.close) for row in previous.itertuples(index=False)}
+    latest_close = {str(row.ticker): float(row.close) for row in latest.itertuples(index=False)}
+    daily_change_pct = {
+        ticker: (latest_close[ticker] / previous_close[ticker] - 1) * 100
+        for ticker in latest_close
+        if ticker in previous_close and previous_close[ticker]
+    }
 
     stable_top20 = [
-        _alert_item(ticker, latest_rank[ticker], previous_rank.get(ticker), ranks)
+        _alert_item(ticker, latest_rank[ticker], previous_rank.get(ticker), ranks, daily_change_pct.get(ticker))
         for ticker, ranks in rank_lists.items()
         if len(ranks) == len(recent_dates) and max(ranks) <= top_n and ticker in latest_rank
     ]
     stable_top20.sort(key=lambda item: (float(item["avg_rank_5"] or 999), int(item["rank"])))
 
     movers = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []))
+        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if ticker in previous_rank and abs(previous_rank[ticker] - rank) > move_threshold
     ]
     upward = sorted(
         [item for item in movers if (item["rank_change"] or 0) > 0],
-        key=lambda item: int(item["rank"]),
+        key=lambda item: (
+            -(float(item["daily_change_pct"]) if item["daily_change_pct"] is not None else float("-inf")),
+            int(item["rank"]),
+        ),
     )
     downward = sorted(
         [item for item in movers if (item["rank_change"] or 0) < 0],
-        key=lambda item: int(item["rank"]),
+        key=lambda item: (
+            -(float(item["daily_change_pct"]) if item["daily_change_pct"] is not None else float("-inf")),
+            int(item["rank"]),
+        ),
     )
 
     entered_top20 = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []))
+        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if rank <= top_n and previous_rank.get(ticker, top_n + 1) > top_n
     ]
     entered_top20.sort(key=lambda item: int(item["rank"]))
 
     dropped_top20 = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []))
+        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if rank > top_n and previous_rank.get(ticker, top_n + 1) <= top_n
     ]

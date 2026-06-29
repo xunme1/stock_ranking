@@ -37,6 +37,7 @@ export type RankingAlertItem = {
   rank: number;
   previous_rank: number | null;
   rank_change: number | null;
+  daily_change_pct: number | null;
   avg_rank_5: number | null;
   best_rank_5: number | null;
   worst_rank_5: number | null;
