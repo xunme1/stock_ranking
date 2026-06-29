@@ -7,3 +7,5 @@ lxml
 fastapi
 uvicorn[standard]
 reportlab
+akshare
+tushare

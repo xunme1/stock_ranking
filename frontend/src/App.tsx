@@ -23,13 +23,16 @@ import {
   fetchRanking,
   fetchRankingAlerts,
   fetchRankingDates,
+  fetchStockPeers,
   fetchStockProfile,
+  type AShareLeader,
   type CompanyProfile,
   type DailyBar,
   type RankingAlertItem,
   type RankingAlerts,
   type RankingResponse,
-  type RankingRow
+  type RankingRow,
+  type StockPeers
 } from "./api";
 
 const DEFAULT_WINDOW = 10;
@@ -1240,6 +1243,18 @@ function compactMarketCap(value: string) {
   return numberText(numeric, 0);
 }
 
+function cnyMarketCapText(value: string) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "--";
+  return `${numberText(numeric, 0)}亿`;
+}
+
+function cnPercentText(value: string) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "--";
+  return percentText(numeric);
+}
+
 function CompanyProfileCard({ profile }: { profile: CompanyProfile | null }) {
   return (
     <section className="companyProfileCard">
@@ -1269,6 +1284,70 @@ function CompanyProfileCard({ profile }: { profile: CompanyProfile | null }) {
       ) : (
         <p className="profileSummary mutedText">当前还没有这只股票的公司简介缓存。可以运行公司资料更新脚本后再查看。</p>
       )}
+    </section>
+  );
+}
+
+function StockPeersCard({ peers }: { peers: StockPeers | null }) {
+  const leaders = peers?.a_share_leaders ?? [];
+  const keywords = (peers?.a_share_keywords ?? "")
+    .split(";")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return (
+    <section className="stockPeersCard">
+      <div className="panelHeader">
+        <div>
+          <p className="eyebrow">Sector Peers</p>
+          <h2>细分赛道与 A股对标</h2>
+        </div>
+        <span className="statusText">{peers?.source === "manual_rule" ? "人工规则" : "行业兜底"}</span>
+      </div>
+      <div className="peerSummary">
+        <div>
+          <span>细分类型</span>
+          <strong>{peers?.sub_type_cn || "暂无分类"}</strong>
+        </div>
+        <div>
+          <span>匹配关键词</span>
+          <p>{keywords.length ? keywords.join(" / ") : "--"}</p>
+        </div>
+      </div>
+      {leaders.length ? (
+        <div className="peerLeaderGrid">
+          {leaders.map((leader: AShareLeader) => (
+            <article key={`${leader.code}-${leader.rank}`} className="peerLeaderCard">
+              <div className="peerLeaderTop">
+                <span>#{leader.rank}</span>
+                <strong>{leader.name}</strong>
+                <em>{leader.code}</em>
+              </div>
+              <div className="peerLeaderMetrics">
+                <div>
+                  <span>总市值</span>
+                  <strong>{cnyMarketCapText(leader.market_cap_100m_cny)}</strong>
+                </div>
+                <div>
+                  <span>涨跌幅</span>
+                  <strong className={Number(leader.change_pct) >= 0 ? "positive" : "negative"}>
+                    {cnPercentText(leader.change_pct)}
+                  </strong>
+                </div>
+                <div>
+                  <span>行业</span>
+                  <strong>{leader.industry_boards || "--"}</strong>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="profileSummary mutedText">
+          当前细分类型还没有匹配到 A股龙头。可以补充细分规则或概念板块缓存后重新生成。
+        </p>
+      )}
+      <p className="peerFootnote">A股对标仅用于产业链和情绪参照，不代表业务完全一致或投资替代关系。</p>
     </section>
   );
 }
@@ -1309,6 +1388,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
   const [rankWindow, setRankWindow] = useState(DEFAULT_WINDOW);
   const [rankLoading, setRankLoading] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [stockPeers, setStockPeers] = useState<StockPeers | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const { stockBars, benchmarkBars, loading, error } = useStockData(ticker, asOfDate);
 
@@ -1348,6 +1428,20 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
       })
       .catch(() => {
         if (alive) setCompanyProfile(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [ticker]);
+
+  useEffect(() => {
+    let alive = true;
+    fetchStockPeers(ticker)
+      .then((result) => {
+        if (alive) setStockPeers(result);
+      })
+      .catch(() => {
+        if (alive) setStockPeers(null);
       });
     return () => {
       alive = false;
@@ -1415,6 +1509,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
       {error ? <div className="errorLine">{error}</div> : null}
 
       <CompanyProfileCard profile={companyProfile} />
+      <StockPeersCard peers={stockPeers} />
 
       <section className="detailInsightGrid">
         <RankingTrendCard

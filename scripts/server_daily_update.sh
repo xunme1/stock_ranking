@@ -24,7 +24,7 @@ cd "$PROJECT_ROOT"
   fi
 
   if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-    echo "WARNING: .env not found at $PROJECT_ROOT/.env. Polygon/Alpha keys must be configured on the server."
+    echo "WARNING: .env not found at $PROJECT_ROOT/.env. Polygon/Alpha/Tushare keys must be configured on the server."
   fi
 
   TICKERS="$(grep -v '^[[:space:]]*#' config/nasdaq100_tickers.txt | sed '/^[[:space:]]*$/d' | tr '\n' ','),QQQ"
@@ -39,6 +39,21 @@ cd "$PROJECT_ROOT"
   echo "Updating option availability..."
   "$PYTHON_BIN" -B scripts/update_optionable_tickers.py --max-retries 2 || {
     echo "WARNING: option availability update failed. Ranking cache will use the previous option cache if available."
+  }
+
+  echo "Updating A-share market cap and industry cache..."
+  "$PYTHON_BIN" -B scripts/update_a_share_universe.py --source hybrid --retries 2 --retry-wait-seconds 10 || {
+    echo "WARNING: A-share universe update failed. A-share peer cards will use the previous cache if available."
+  }
+
+  echo "Refreshing US stock subtype cache..."
+  "$PYTHON_BIN" -B scripts/build_stock_subtypes.py || {
+    echo "WARNING: stock subtype cache rebuild failed. A-share peer leaders will use the previous subtype cache if available."
+  }
+
+  echo "Rebuilding A-share subtype leader cache..."
+  "$PYTHON_BIN" -B scripts/build_a_share_leaders.py || {
+    echo "WARNING: A-share subtype leader cache rebuild failed. Detail pages will use the previous leader cache if available."
   }
 
   echo "Rebuilding ranking cache..."

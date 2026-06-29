@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from app.core.config import (
+    A_SHARE_SUBTYPE_LEADERS_FILE,
     COMPANY_PROFILES_FILE,
     EARNINGS_CALENDAR_FILE,
     NASDAQ100_FILE,
@@ -13,6 +14,7 @@ from app.core.config import (
     OPTIONABLE_TICKERS_FILE,
     RAW_DAILY_DIR,
     STOCK_PROFILES_FILE,
+    STOCK_SUBTYPES_FILE,
 )
 
 
@@ -102,6 +104,60 @@ def load_stock_profiles(path: Path = STOCK_PROFILES_FILE) -> dict[str, dict[str,
             "stock_type": str(getattr(row, "stock_type", "")).strip() or "其他",
         }
     return profiles
+
+
+@lru_cache(maxsize=16)
+def load_stock_subtypes(path: Path = STOCK_SUBTYPES_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    subtypes: dict[str, dict[str, str]] = {}
+    for row in df.fillna("").itertuples(index=False):
+        ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        subtypes[ticker] = {
+            "ticker": ticker,
+            "name": str(getattr(row, "name", "")).strip(),
+            "sector": str(getattr(row, "sector", "")).strip(),
+            "stock_type": str(getattr(row, "stock_type", "")).strip(),
+            "sub_type": str(getattr(row, "sub_type", "")).strip(),
+            "sub_type_cn": str(getattr(row, "sub_type_cn", "")).strip(),
+            "a_share_keywords": str(getattr(row, "a_share_keywords", "")).strip(),
+            "sic_description": str(getattr(row, "sic_description", "")).strip(),
+            "source": str(getattr(row, "source", "")).strip(),
+        }
+    return subtypes
+
+
+@lru_cache(maxsize=16)
+def load_a_share_subtype_leaders(path: Path = A_SHARE_SUBTYPE_LEADERS_FILE) -> dict[str, list[dict[str, str]]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, dtype={"code": str}).fillna("")
+    leaders: dict[str, list[dict[str, str]]] = {}
+    for row in df.itertuples(index=False):
+        sub_type = str(getattr(row, "sub_type", "")).strip()
+        if not sub_type:
+            continue
+        item = {
+            "sub_type": sub_type,
+            "sub_type_cn": str(getattr(row, "sub_type_cn", "")).strip(),
+            "a_share_keywords": str(getattr(row, "a_share_keywords", "")).strip(),
+            "rank": int(getattr(row, "rank", 0) or 0),
+            "code": str(getattr(row, "code", "")).strip().zfill(6),
+            "name": str(getattr(row, "name", "")).strip(),
+            "market_cap_cny": str(getattr(row, "market_cap_cny", "")).strip(),
+            "market_cap_100m_cny": str(getattr(row, "market_cap_100m_cny", "")).strip(),
+            "latest_price": str(getattr(row, "latest_price", "")).strip(),
+            "change_pct": str(getattr(row, "change_pct", "")).strip(),
+            "industry_boards": str(getattr(row, "industry_boards", "")).strip(),
+            "concept_boards": str(getattr(row, "concept_boards", "")).strip(),
+        }
+        leaders.setdefault(sub_type, []).append(item)
+    for items in leaders.values():
+        items.sort(key=lambda item: item["rank"])
+    return leaders
 
 
 @lru_cache(maxsize=16)

@@ -1,0 +1,112 @@
+﻿ticker,name,sector,stock_type,sub_type,sub_type_cn,a_share_keywords,sic_description,source
+ADBE,Adobe Inc.,Information Technology,科技股,creative_software,创意软件,软件开发;AIGC,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+AMD,Advanced Micro Devices,Information Technology,半导体,ai_chip,AI芯片,AI芯片;半导体;算力,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+ABNB,"Airbnb, Inc. Class A Common Stock",Consumer Discretionary,互联网消费,travel_platform,在线旅游,旅游;在线旅游,SERVICES-TO DWELLINGS & OTHER BUILDINGS,manual_rule
+ALNY,"Alnylam Pharmaceuticals, Inc.",Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,PHARMACEUTICAL PREPARATIONS,sector_default
+GOOGL,Alphabet Inc. Class A Common Stock,Communication Services,互联网平台,internet_ads_ai,互联网广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
+GOOG,Alphabet Inc. Class C Capital Stock,Communication Services,互联网平台,internet_ads_ai,互联网广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
+AMZN,Amazon.Com Inc,Consumer Discretionary,互联网消费,ecommerce_cloud,电商与云计算,跨境电商;云计算,RETAIL-CATALOG & MAIL-ORDER HOUSES,manual_rule
+AEP,"American Electric Power Company, Inc.",Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC SERVICES,sector_default
+AMGN,Amgen Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",manual_rule
+ADI,"Analog Devices, Inc.",Information Technology,半导体,analog_chip,模拟芯片,模拟芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+AAPL,Apple Inc.,Information Technology,科技股,consumer_electronics,消费电子,消费电子;苹果概念;智能穿戴,ELECTRONIC COMPUTERS,manual_rule
+AMAT,Applied Materials Inc,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+APP,Applovin Corporation Class A Common Stock,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",sector_default
+ARM,Arm Holdings plc American Depositary Shares,Information Technology,半导体,chip_ip,芯片IP,半导体;芯片设计,,manual_rule
+ASML,ASML Holding NV,Information Technology,半导体设备,lithography_equipment,光刻设备,半导体;光刻机;半导体设备,,manual_rule
+ADSK,Autodesk Inc,Information Technology,软件服务,industrial_software,工业软件,工业软件;软件开发,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+ADP,Automatic Data Processing,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,sector_default
+AXON,"Axon Enterprise, Inc. Common Stock",Industrials,工业科技,industrials,工业,工业设备;机器人;物流,"ORDNANCE & ACCESSORIES, (NO VEHICLES/GUIDED MISSILES)",sector_default
+BKR,Baker Hughes Company,Energy,能源,energy,能源,油气;能源,OIL & GAS FIELD MACHINERY & EQUIPMENT,sector_default
+BKNG,Booking Holdings Inc. Common Stock,Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,TRANSPORTATION SERVICES,sector_default
+AVGO,Broadcom Inc. Common Stock,Information Technology,半导体,semiconductor_networking,网络通信芯片,半导体;通信设备;光通信模块;数据中心,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+CDNS,Cadence Design Systems,Information Technology,软件服务,eda_software,EDA软件,EDA;半导体,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+CHTR,,Communication Services,通信服务,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,,sector_default
+CTAS,Cintas Corp,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,"MEN'S & BOYS' FURNISHGS, WORK CLOTHG, & ALLIED GARMENTS",sector_default
+CSCO,"Cisco Systems, Inc. Common Stock (DE)",Information Technology,网络设备,network_equipment,网络设备,通信设备;数据中心;网络安全,COMPUTER COMMUNICATIONS EQUIPMENT,manual_rule
+CCEP,Coca-Cola Europacific Partners plc Ordinary Shares,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,,sector_default
+CTSH,,Information Technology,IT服务,technology,科技综合,科技;软件开发;半导体,,sector_default
+CMCSA,Comcast Corp,Communication Services,媒体通信,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,CABLE & OTHER PAY TELEVISION SERVICES,sector_default
+CEG,Constellation Energy Corporation Common Stock,Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC SERVICES,sector_default
+CPRT,Copart Inc,Industrials,商业服务,industrials,工业,工业设备;机器人;物流,RETAIL-AUTO DEALERS & GASOLINE STATIONS,sector_default
+COST,Costco Wholesale Corp,Consumer Staples,零售消费,consumer_staples,必选消费,食品饮料;零售,RETAIL-VARIETY STORES,sector_default
+CRWD,"CrowdStrike Holdings, Inc. Class A Common Stock",Information Technology,软件服务,cybersecurity,网络安全,网络安全,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+CSX,CSX Corporation,Industrials,运输物流,industrials,工业,工业设备;机器人;物流,"RAILROADS, LINE-HAUL OPERATING",sector_default
+DDOG,"Datadog, Inc. Class A Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
+DXCM,"DexCom, Inc.",Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,SURGICAL & MEDICAL INSTRUMENTS & APPARATUS,sector_default
+FANG,"Diamondback Energy, Inc.",Energy,能源,energy,能源,油气;能源,CRUDE PETROLEUM & NATURAL GAS,sector_default
+DASH,"DoorDash, Inc. Class A Common Stock",Consumer Discretionary,互联网消费,local_life_platform,本地生活平台,互联网服务;新零售,"SERVICES-BUSINESS SERVICES, NEC",manual_rule
+EA,Electronic Arts Inc,Communication Services,游戏娱乐,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,SERVICES-PREPACKAGED SOFTWARE,sector_default
+EXC,Exelon Corporation,Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC & OTHER SERVICES COMBINED,sector_default
+FAST,Fastenal Co,Industrials,工业分销,industrials,工业,工业设备;机器人;物流,"RETAIL-BUILDING MATERIALS, HARDWARE, GARDEN SUPPLY",sector_default
+FER,Ferrovial N.V. Ordinary Shares,Industrials,基建工业,industrials,工业,工业设备;机器人;物流,,sector_default
+FTNT,"Fortinet, Inc.",Information Technology,网络安全,cybersecurity,网络安全,网络安全,"COMPUTER PERIPHERAL EQUIPMENT, NEC",manual_rule
+GEHC,GE HealthCare Technologies Inc. Common Stock,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,X-RAY APPARATUS & TUBES & RELATED IRRADIATION APPARATUS,sector_default
+GILD,Gilead Sciences Inc,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",sector_default
+HON,"Honeywell International, Inc.",Industrials,工业制造,industrials,工业,工业设备;机器人;物流,AIRCRAFT ENGINES & ENGINE PARTS,sector_default
+IDXX,Idexx Laboratories Inc,Health Care,医药医疗,animal_health,动物医疗,动物保健;医疗器械,IN VITRO & IN VIVO DIAGNOSTIC SUBSTANCES,manual_rule
+INSM,,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,,sector_default
+INTC,Intel Corp,Information Technology,半导体,cpu_foundry,CPU与晶圆代工,CPU;半导体;晶圆代工,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+INTU,Intuit Inc,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
+ISRG,Intuitive Surgical Inc.,Health Care,医药医疗,surgical_robot,手术机器人,医疗器械;机器人,"ORTHOPEDIC, PROSTHETIC & SURGICAL APPLIANCES & SUPPLIES",manual_rule
+KDP,Keurig Dr Pepper Inc.,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BEVERAGES,sector_default
+KLAC,KLA Corporation Common Stock,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备;检测设备,OPTICAL INSTRUMENTS & LENSES,manual_rule
+KHC,The Kraft Heinz Company Common Stock,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,"CANNED, FROZEN & PRESERVD FRUIT, VEG & FOOD SPECIALTIES",sector_default
+LRCX,Lam Research Corp,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备,"SPECIAL INDUSTRY MACHINERY, NEC",manual_rule
+LIN,Linde plc Ordinary Share,Materials,化工材料,industrial_gas,工业气体,工业气体;化工,INDUSTRIAL INORGANIC CHEMICALS,manual_rule
+LITE,Lumentum Holdings Inc. Common Stock,Information Technology,光通信,technology,科技综合,科技;软件开发;半导体,"COMMUNICATIONS EQUIPMENT, NEC",sector_default
+MAR,Marriott International Class A Common Stock,Consumer Discretionary,酒店旅游,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,HOTELS & MOTELS,sector_default
+MRVL,"Marvell Technology, Inc. Common Stock",Information Technology,半导体,data_center_chip,数据中心芯片,半导体;通信设备;数据中心;光通信模块,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+MELI,"Mercado Libre, Inc",Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,"SERVICES-BUSINESS SERVICES, NEC",sector_default
+META,"Meta Platforms, Inc. Class A Common Stock",Communication Services,互联网平台,social_ads_ai,社交广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
+MCHP,Microchip Technology Inc,Information Technology,半导体,mcu_chip,MCU芯片,MCU芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+MU,"Micron Technology, Inc.",Information Technology,半导体,memory,存储,半导体;存储芯片;半导体存储;DRAM,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+MSFT,Microsoft Corp,Information Technology,软件服务,cloud_software,云计算软件,云计算;软件开发;人工智能,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+MSTR,Strategy Inc Common Stock Class A,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,FINANCE SERVICES,sector_default
+MDLZ,"Mondelez International, Inc. Class A",Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,FOOD AND KINDRED PRODUCTS,sector_default
+MPWR,"Monolithic Power Systems, Inc.",Information Technology,半导体,technology,科技综合,科技;软件开发;半导体,SEMICONDUCTORS & RELATED DEVICES,sector_default
+MNST,Monster Beverage Corporation,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BOTTLED & CANNED SOFT DRINKS & CARBONATED WATERS,sector_default
+NFLX,NetFlix Inc,Communication Services,流媒体,streaming_media,流媒体,影视院线;文化传媒,SERVICES-VIDEO TAPE RENTAL,manual_rule
+NVDA,Nvidia Corp,Information Technology,半导体,ai_chip,AI芯片,AI芯片;算力;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+NXPI,NXP Semiconductors N.V.,Information Technology,半导体,technology,科技综合,科技;软件开发;半导体,SEMICONDUCTORS & RELATED DEVICES,sector_default
+ORLY,"O'Reilly Automotive, Inc.",Consumer Discretionary,零售消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-AUTO & HOME SUPPLY STORES,sector_default
+ODFL,Old Dominion Freight Line,Industrials,运输物流,industrials,工业,工业设备;机器人;物流,TRUCKING (NO LOCAL),sector_default
+PCAR,Paccar Inc,Industrials,工业制造,industrials,工业,工业设备;机器人;物流,MOTOR VEHICLES & PASSENGER CAR BODIES,sector_default
+PLTR,Palantir Technologies Inc. Class A Common Stock,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
+PANW,"Palo Alto Networks, Inc. Common Stock",Information Technology,网络安全,cybersecurity,网络安全,网络安全,"COMPUTER PERIPHERAL EQUIPMENT, NEC",manual_rule
+PAYX,Paychex Inc,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,"SERVICES-ENGINEERING, ACCOUNTING, RESEARCH, MANAGEMENT",sector_default
+PYPL,"PayPal Holdings, Inc. Common Stock",Financials,金融科技,financials,金融,银行;证券;金融科技,"SERVICES-BUSINESS SERVICES, NEC",sector_default
+PDD,PDD Holdings Inc. American Depositary Shares,Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,,sector_default
+PEP,"PepsiCo, Inc.",Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BEVERAGES,sector_default
+QCOM,Qualcomm Inc,Information Technology,半导体,mobile_chip,移动通信芯片,5G;射频芯片;半导体,RADIO & TV BROADCASTING & COMMUNICATIONS EQUIPMENT,manual_rule
+REGN,Regeneron Pharmaceuticals Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,PHARMACEUTICAL PREPARATIONS,manual_rule
+ROP,"Roper Technologies, Inc. Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,"INDUSTRIAL INSTRUMENTS FOR MEASUREMENT, DISPLAY, AND CONTROL",sector_default
+ROST,Ross Stores Inc,Consumer Discretionary,零售消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-FAMILY CLOTHING STORES,sector_default
+SNDK,Sandisk Corporation Common Stock,Information Technology,半导体,flash_storage,闪存存储,半导体;存储芯片;闪存;固态硬盘,COMPUTER STORAGE DEVICES,manual_rule
+STX,Seagate Technology Holdings PLC Ordinary Shares (Ireland),Information Technology,存储硬件,technology,科技综合,科技;软件开发;半导体,COMPUTER STORAGE DEVICES,sector_default
+SHOP,Shopify Inc. Class A subordinate voting shares,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
+SBUX,Starbucks Corp,Consumer Discretionary,餐饮消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-EATING & DRINKING PLACES,sector_default
+SNPS,Synopsys Inc,Information Technology,软件服务,eda_software,EDA软件,EDA;半导体,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+TMUS,"T-Mobile US, Inc.",Communication Services,通信服务,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,RADIOTELEPHONE COMMUNICATIONS,sector_default
+TTWO,Take-Two Interactive Software Inc,Communication Services,游戏娱乐,game_content,游戏内容,游戏;文化传媒,SERVICES-PREPACKAGED SOFTWARE,manual_rule
+TSLA,"Tesla, Inc. Common Stock",Consumer Discretionary,汽车,electric_vehicle,电动车,新能源汽车;汽车整车,MOTOR VEHICLES & PASSENGER CAR BODIES,manual_rule
+TXN,Texas Instruments Incorporated,Information Technology,半导体,analog_chip,模拟芯片,模拟芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+TRI,Thomson Reuters Corporation Common Shares,Industrials,信息服务,industrials,工业,工业设备;机器人;物流,,sector_default
+VRSK,,Industrials,信息服务,industrials,工业,工业设备;机器人;物流,,sector_default
+VRTX,Vertex Pharmaceuticals Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,PHARMACEUTICAL PREPARATIONS,manual_rule
+WMT,Walmart Inc. Common Stock,Consumer Staples,零售消费,consumer_staples,必选消费,食品饮料;零售,RETAIL-VARIETY STORES,sector_default
+WBD,"Warner Bros. Discovery, Inc. Series A Common Stock",Communication Services,媒体通信,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,CABLE & OTHER PAY TELEVISION SERVICES,sector_default
+WDC,Western Digital Corp.,Information Technology,存储硬件,storage_hardware,存储设备,半导体;存储芯片;数据存储;固态硬盘,COMPUTER STORAGE DEVICES,manual_rule
+WDAY,"Workday, Inc. Class A Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,sector_default
+XEL,"Xcel Energy, Inc.",Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC & OTHER SERVICES COMBINED,sector_default
+ZS,,Information Technology,网络安全,technology,科技综合,科技;软件开发;半导体,,sector_default
+BRK.B,BERKSHIRE HATHAWAY Class B,Financials,综合金融,financials,金融,银行;证券;金融科技,"FIRE, MARINE & CASUALTY INSURANCE",sector_default
+LLY,Eli Lilly & Co.,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,PHARMACEUTICAL PREPARATIONS,sector_default
+JPM,JPMorgan Chase & Co.,Financials,金融,financials,金融,银行;证券;金融科技,NATIONAL COMMERCIAL BANKS,sector_default
+V,VISA Inc.,Financials,支付网络,financials,金融,银行;证券;金融科技,"SERVICES-BUSINESS SERVICES, NEC",sector_default
+JNJ,Johnson & Johnson,Health Care,医药医疗,healthcare_conglomerate,综合医疗,医疗器械;创新药;化学制药,PHARMACEUTICAL PREPARATIONS,manual_rule
+XOM,Exxon Mobil Corporation,Energy,能源,energy,能源,油气;能源,PETROLEUM REFINING,sector_default
+DELL,Dell Technologies Inc.,Information Technology,硬件设备,technology,科技综合,科技;软件开发;半导体,ELECTRONIC COMPUTERS,sector_default
+GLW,Corning Incorporated,Information Technology,光通信材料,optical_materials,光通信材料,通信设备;光通信;光模块;光纤光缆,DRAWING & INSULATING OF NONFERROUS WIRE,manual_rule
+MRK,"Merck & Co., Inc.",Health Care,医药医疗,pharma,创新药,创新药;化学制药,PHARMACEUTICAL PREPARATIONS,manual_rule
+CBRS,Cerebras Systems Inc. Class A Common Stock,Information Technology,AI芯片,ai_chip,AI芯片,AI芯片;算力;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule

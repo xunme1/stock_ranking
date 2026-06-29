@@ -84,6 +84,30 @@ export type CompanyProfile = {
   updated_at: string;
 };
 
+export type AShareLeader = {
+  sub_type: string;
+  sub_type_cn: string;
+  a_share_keywords: string;
+  rank: number;
+  code: string;
+  name: string;
+  market_cap_cny: string;
+  market_cap_100m_cny: string;
+  latest_price: string;
+  change_pct: string;
+  industry_boards: string;
+  concept_boards: string;
+};
+
+export type StockPeers = {
+  ticker: string;
+  sub_type: string;
+  sub_type_cn: string;
+  a_share_keywords: string;
+  source: string;
+  a_share_leaders: AShareLeader[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 async function requestJson<T>(path: string): Promise<T> {
@@ -137,4 +161,8 @@ export function fetchDailyBars(ticker: string, limit = 260, asOfDate = "") {
 
 export function fetchStockProfile(ticker: string) {
   return requestJson<CompanyProfile>(`/api/stocks/${encodeURIComponent(ticker)}/profile`);
+}
+
+export function fetchStockPeers(ticker: string) {
+  return requestJson<StockPeers>(`/api/stocks/${encodeURIComponent(ticker)}/peers`);
 }

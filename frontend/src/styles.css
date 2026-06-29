@@ -1129,7 +1129,8 @@ tbody td {
   margin-bottom: 0;
 }
 
-.companyProfileCard {
+.companyProfileCard,
+.stockPeersCard {
   border: 1px solid #d8e0eb;
   border-radius: 8px;
   background: #ffffff;
@@ -1182,6 +1183,122 @@ tbody td {
 
 .mutedText {
   color: #607086;
+}
+
+.peerSummary {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.36fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.peerSummary div {
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.peerSummary span,
+.peerLeaderMetrics span {
+  display: block;
+  color: #607086;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.peerSummary strong {
+  color: #18212f;
+  font-size: 18px;
+}
+
+.peerSummary p {
+  margin: 0;
+  color: #263448;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.peerLeaderGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.peerLeaderCard {
+  min-width: 0;
+  border: 1px solid #e2e7ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.peerLeaderTop {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.peerLeaderTop span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 26px;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #1f5fbf;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.peerLeaderTop strong {
+  overflow: hidden;
+  color: #18212f;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peerLeaderTop em {
+  color: #607086;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.peerLeaderMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.peerLeaderMetrics div {
+  min-width: 0;
+  border-radius: 6px;
+  background: #f8fbff;
+  padding: 9px;
+}
+
+.peerLeaderMetrics strong {
+  display: block;
+  overflow: hidden;
+  color: #18212f;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peerFootnote {
+  margin: 12px 0 0;
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
 }
 
 .metricItem {
@@ -1340,7 +1457,9 @@ tbody td {
   .metricGrid,
   .detailInsightGrid,
   .analysisGrid,
-  .lowerCharts {
+  .lowerCharts,
+  .peerSummary,
+  .peerLeaderGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1414,7 +1533,8 @@ tbody td {
 
   .rankTrendSummary,
   .compactMetricGrid,
-  .rankAnchorCards {
+  .rankAnchorCards,
+  .peerLeaderMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
