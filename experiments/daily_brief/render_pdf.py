@@ -9,6 +9,7 @@ from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -41,19 +42,28 @@ AMBER = colors.HexColor("#a16207")
 
 
 def register_font() -> None:
+    global FONT, FONT_BOLD
     candidates = [
         Path("C:/Windows/Fonts/msyh.ttc"),
         Path("C:/Windows/Fonts/simhei.ttf"),
         Path("C:/Windows/Fonts/simsun.ttc"),
+        Path("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"),
+        Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+        Path("/usr/share/fonts/truetype/arphic/ukai.ttc"),
+        Path("/usr/share/fonts/truetype/arphic/uming.ttc"),
         Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
         Path("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"),
-        Path("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"),
     ]
     for path in candidates:
         if path.exists():
-            pdfmetrics.registerFont(TTFont(FONT, str(path)))
-            return
-    raise FileNotFoundError("No CJK font found. Install Microsoft YaHei or Noto Sans CJK.")
+            try:
+                pdfmetrics.registerFont(TTFont(FONT, str(path)))
+                return
+            except Exception as exc:
+                print(f"Skip unsupported CJK font {path}: {exc}")
+    FONT = "STSong-Light"
+    FONT_BOLD = "STSong-Light"
+    pdfmetrics.registerFont(UnicodeCIDFont(FONT))
 
 
 def text(c: canvas.Canvas, value: Any, x: float, y: float, size: float = 9, color=INK, bold: bool = False) -> None:
