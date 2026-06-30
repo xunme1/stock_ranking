@@ -10,3 +10,5 @@ data/processed/*.csv
 logs/*.csv
 __pycache__/
 *.pyc
+experiments/**/output/
+experiments/**/__pycache__/
