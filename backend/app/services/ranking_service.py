@@ -239,6 +239,7 @@ def build_ranking_alerts(
     upward = sorted(
         [item for item in movers if (item["rank_change"] or 0) > 0],
         key=lambda item: (
+            -abs(int(item["rank_change"] or 0)),
             -(float(item["daily_change_pct"]) if item["daily_change_pct"] is not None else float("-inf")),
             int(item["rank"]),
         ),
@@ -246,6 +247,7 @@ def build_ranking_alerts(
     downward = sorted(
         [item for item in movers if (item["rank_change"] or 0) < 0],
         key=lambda item: (
+            -abs(int(item["rank_change"] or 0)),
             -(float(item["daily_change_pct"]) if item["daily_change_pct"] is not None else float("-inf")),
             int(item["rank"]),
         ),

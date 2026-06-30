@@ -593,6 +593,23 @@ function alertRankText(item: RankingAlertItem) {
   return `#${item.rank} / 昨 #${item.previous_rank} / ${changeText}`;
 }
 
+function sortAlertItems(items: RankingAlertItem[], metric: "stable" | "move") {
+  if (metric === "stable") {
+    return [...items].sort((a, b) => {
+      const avgA = a.avg_rank_5 ?? 999;
+      const avgB = b.avg_rank_5 ?? 999;
+      return avgA - avgB || a.rank - b.rank;
+    });
+  }
+  return [...items].sort((a, b) => {
+    const moveA = Math.abs(a.rank_change ?? 0);
+    const moveB = Math.abs(b.rank_change ?? 0);
+    const pctA = a.daily_change_pct ?? Number.NEGATIVE_INFINITY;
+    const pctB = b.daily_change_pct ?? Number.NEGATIVE_INFINITY;
+    return moveB - moveA || pctB - pctA || a.rank - b.rank;
+  });
+}
+
 function AlertList({
   title,
   items,
@@ -604,15 +621,16 @@ function AlertList({
   tone?: "up" | "down" | "stable";
   metric: "stable" | "move";
 }) {
+  const sortedItems = sortAlertItems(items, metric);
   return (
     <section className="alertSection">
       <div className="alertSectionTitle">
         <h3>{title}</h3>
         <span>{items.length}</span>
       </div>
-      {items.length ? (
+      {sortedItems.length ? (
         <div className="alertRows">
-          {items.map((item) => (
+          {sortedItems.map((item) => (
             <div className="alertRow" key={`${title}-${item.ticker}`}>
               <strong>{item.ticker}</strong>
               <span className={tone === "up" ? "positive" : tone === "down" ? "negative" : ""}>
