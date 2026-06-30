@@ -47,8 +47,8 @@ The model call writes text into `model_interpretation.text`; the PDF renderer di
 - Page 1: QQQ rank, QQQ ATR score, QQQ distance from center, close date, and the long model-analysis block.
 - Page 2: Stock-type distribution for stable top 20, large upward movers, large downward movers, and current top 20.
 - Page 3: Technology focus, including technology top 10, technology type distribution, and notable technology gainers.
-- Page 4: Alert tables for stable top 20, large upward movers, and large downward movers.
-- Page 5: Current top 20 table.
+- Page 4: Current top 20 table.
+- Page 5: Alert tables for stable top 20, large upward movers, and large downward movers.
 
 ## Prompt Design
 

@@ -102,6 +102,10 @@ def available_dates(ticker: str, limit: int = 260) -> list[str]:
     return [row.date.date().isoformat() for row in df.itertuples(index=False)]
 
 
+def atr_window_for_ranking(window: int) -> int:
+    return 20 if window == 10 else window
+
+
 def ranking_cache_path(window: int) -> Path:
     return RANKING_CACHE_DIR / f"ranking_window_{window}.csv"
 
@@ -293,12 +297,14 @@ def calculate_ticker_score(
 ) -> dict[str, object] | None:
     df = load_daily_data(ticker)
     df = trim_to_as_of_date(df, as_of_date)
-    if len(df) < window * 2 - 1:
+    atr_window = atr_window_for_ranking(window)
+    minimum_rows = max(window * 2 - 1, atr_window)
+    if len(df) < minimum_rows:
         return None
 
     df = df.copy()
     df["ma"] = df["close"].rolling(window).mean()
-    df["atr"] = true_range(df).rolling(window).mean()
+    df["atr"] = true_range(df).rolling(atr_window).mean()
 
     center = df["ma"].dropna().tail(window).mean()
     latest = df.iloc[-1]

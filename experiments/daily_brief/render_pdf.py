@@ -333,7 +333,7 @@ def render_page_three(c: canvas.Canvas, brief: dict[str, Any]) -> None:
 
 
 def render_page_four(c: canvas.Canvas, brief: dict[str, Any]) -> None:
-    draw_header(c, brief, "Alerts / 04")
+    draw_header(c, brief, "Alerts / 05")
     text(c, "异常股票明细", MARGIN, PAGE_H - 86, 22, INK, True)
     text(c, "大幅上升和大幅下降按当日涨跌幅降序展示，同时保留排名变动和 ATR 倍数。", MARGIN, PAGE_H - 104, 8.5, MUTED)
     gap = 12
@@ -355,7 +355,7 @@ def render_page_four(c: canvas.Canvas, brief: dict[str, Any]) -> None:
 
 
 def render_page_five(c: canvas.Canvas, brief: dict[str, Any]) -> None:
-    draw_header(c, brief, "Top20 / 05")
+    draw_header(c, brief, "Top20 / 04")
     text(c, "今日 Top20 排名表", MARGIN, PAGE_H - 86, 22, INK, True)
     columns = [
         ("#", "rank", 16),
@@ -399,8 +399,8 @@ def main() -> None:
     render_page_one(c, brief)
     render_page_two(c, brief)
     render_page_three(c, brief)
-    render_page_four(c, brief)
     render_page_five(c, brief)
+    render_page_four(c, brief)
     c.save()
     print(f"PDF written: {output}")
 
