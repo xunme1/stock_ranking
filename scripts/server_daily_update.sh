@@ -46,14 +46,9 @@ cd "$PROJECT_ROOT"
     echo "WARNING: A-share universe update failed. A-share peer cards will use the previous cache if available."
   }
 
-  echo "Refreshing US stock subtype cache..."
-  "$PYTHON_BIN" -B scripts/build_stock_subtypes.py || {
-    echo "WARNING: stock subtype cache rebuild failed. A-share peer leaders will use the previous subtype cache if available."
-  }
-
-  echo "Rebuilding A-share subtype leader cache..."
-  "$PYTHON_BIN" -B scripts/build_a_share_leaders.py || {
-    echo "WARNING: A-share subtype leader cache rebuild failed. Detail pages will use the previous leader cache if available."
+  echo "Rebuilding mapped US/A-share peer cache..."
+  "$PYTHON_BIN" -B scripts/build_a_share_peer_cache.py || {
+    echo "WARNING: mapped US/A-share peer cache rebuild failed. Detail pages will use the previous peer cache if available."
   }
 
   echo "Rebuilding ranking cache..."

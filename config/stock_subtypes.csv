@@ -1,112 +1,112 @@
 ﻿ticker,name,sector,stock_type,sub_type,sub_type_cn,a_share_keywords,sic_description,source
-ADBE,Adobe Inc.,Information Technology,科技股,creative_software,创意软件,软件开发;AIGC,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-AMD,Advanced Micro Devices,Information Technology,半导体,ai_chip,AI芯片,AI芯片;半导体;算力,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-ABNB,"Airbnb, Inc. Class A Common Stock",Consumer Discretionary,互联网消费,travel_platform,在线旅游,旅游;在线旅游,SERVICES-TO DWELLINGS & OTHER BUILDINGS,manual_rule
-ALNY,"Alnylam Pharmaceuticals, Inc.",Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,PHARMACEUTICAL PREPARATIONS,sector_default
-GOOGL,Alphabet Inc. Class A Common Stock,Communication Services,互联网平台,internet_ads_ai,互联网广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
-GOOG,Alphabet Inc. Class C Capital Stock,Communication Services,互联网平台,internet_ads_ai,互联网广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
-AMZN,Amazon.Com Inc,Consumer Discretionary,互联网消费,ecommerce_cloud,电商与云计算,跨境电商;云计算,RETAIL-CATALOG & MAIL-ORDER HOUSES,manual_rule
-AEP,"American Electric Power Company, Inc.",Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC SERVICES,sector_default
-AMGN,Amgen Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",manual_rule
-ADI,"Analog Devices, Inc.",Information Technology,半导体,analog_chip,模拟芯片,模拟芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-AAPL,Apple Inc.,Information Technology,科技股,consumer_electronics,消费电子,消费电子;苹果概念;智能穿戴,ELECTRONIC COMPUTERS,manual_rule
-AMAT,Applied Materials Inc,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-APP,Applovin Corporation Class A Common Stock,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",sector_default
-ARM,Arm Holdings plc American Depositary Shares,Information Technology,半导体,chip_ip,芯片IP,半导体;芯片设计,,manual_rule
-ASML,ASML Holding NV,Information Technology,半导体设备,lithography_equipment,光刻设备,半导体;光刻机;半导体设备,,manual_rule
-ADSK,Autodesk Inc,Information Technology,软件服务,industrial_software,工业软件,工业软件;软件开发,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-ADP,Automatic Data Processing,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,sector_default
-AXON,"Axon Enterprise, Inc. Common Stock",Industrials,工业科技,industrials,工业,工业设备;机器人;物流,"ORDNANCE & ACCESSORIES, (NO VEHICLES/GUIDED MISSILES)",sector_default
-BKR,Baker Hughes Company,Energy,能源,energy,能源,油气;能源,OIL & GAS FIELD MACHINERY & EQUIPMENT,sector_default
-BKNG,Booking Holdings Inc. Common Stock,Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,TRANSPORTATION SERVICES,sector_default
-AVGO,Broadcom Inc. Common Stock,Information Technology,半导体,semiconductor_networking,网络通信芯片,半导体;通信设备;光通信模块;数据中心,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-CDNS,Cadence Design Systems,Information Technology,软件服务,eda_software,EDA软件,EDA;半导体,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-CHTR,,Communication Services,通信服务,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,,sector_default
-CTAS,Cintas Corp,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,"MEN'S & BOYS' FURNISHGS, WORK CLOTHG, & ALLIED GARMENTS",sector_default
-CSCO,"Cisco Systems, Inc. Common Stock (DE)",Information Technology,网络设备,network_equipment,网络设备,通信设备;数据中心;网络安全,COMPUTER COMMUNICATIONS EQUIPMENT,manual_rule
-CCEP,Coca-Cola Europacific Partners plc Ordinary Shares,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,,sector_default
-CTSH,,Information Technology,IT服务,technology,科技综合,科技;软件开发;半导体,,sector_default
-CMCSA,Comcast Corp,Communication Services,媒体通信,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,CABLE & OTHER PAY TELEVISION SERVICES,sector_default
-CEG,Constellation Energy Corporation Common Stock,Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC SERVICES,sector_default
-CPRT,Copart Inc,Industrials,商业服务,industrials,工业,工业设备;机器人;物流,RETAIL-AUTO DEALERS & GASOLINE STATIONS,sector_default
-COST,Costco Wholesale Corp,Consumer Staples,零售消费,consumer_staples,必选消费,食品饮料;零售,RETAIL-VARIETY STORES,sector_default
-CRWD,"CrowdStrike Holdings, Inc. Class A Common Stock",Information Technology,软件服务,cybersecurity,网络安全,网络安全,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-CSX,CSX Corporation,Industrials,运输物流,industrials,工业,工业设备;机器人;物流,"RAILROADS, LINE-HAUL OPERATING",sector_default
-DDOG,"Datadog, Inc. Class A Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
-DXCM,"DexCom, Inc.",Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,SURGICAL & MEDICAL INSTRUMENTS & APPARATUS,sector_default
-FANG,"Diamondback Energy, Inc.",Energy,能源,energy,能源,油气;能源,CRUDE PETROLEUM & NATURAL GAS,sector_default
-DASH,"DoorDash, Inc. Class A Common Stock",Consumer Discretionary,互联网消费,local_life_platform,本地生活平台,互联网服务;新零售,"SERVICES-BUSINESS SERVICES, NEC",manual_rule
-EA,Electronic Arts Inc,Communication Services,游戏娱乐,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,SERVICES-PREPACKAGED SOFTWARE,sector_default
-EXC,Exelon Corporation,Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC & OTHER SERVICES COMBINED,sector_default
-FAST,Fastenal Co,Industrials,工业分销,industrials,工业,工业设备;机器人;物流,"RETAIL-BUILDING MATERIALS, HARDWARE, GARDEN SUPPLY",sector_default
-FER,Ferrovial N.V. Ordinary Shares,Industrials,基建工业,industrials,工业,工业设备;机器人;物流,,sector_default
-FTNT,"Fortinet, Inc.",Information Technology,网络安全,cybersecurity,网络安全,网络安全,"COMPUTER PERIPHERAL EQUIPMENT, NEC",manual_rule
-GEHC,GE HealthCare Technologies Inc. Common Stock,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,X-RAY APPARATUS & TUBES & RELATED IRRADIATION APPARATUS,sector_default
-GILD,Gilead Sciences Inc,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",sector_default
-HON,"Honeywell International, Inc.",Industrials,工业制造,industrials,工业,工业设备;机器人;物流,AIRCRAFT ENGINES & ENGINE PARTS,sector_default
-IDXX,Idexx Laboratories Inc,Health Care,医药医疗,animal_health,动物医疗,动物保健;医疗器械,IN VITRO & IN VIVO DIAGNOSTIC SUBSTANCES,manual_rule
-INSM,,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,,sector_default
-INTC,Intel Corp,Information Technology,半导体,cpu_foundry,CPU与晶圆代工,CPU;半导体;晶圆代工,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-INTU,Intuit Inc,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
-ISRG,Intuitive Surgical Inc.,Health Care,医药医疗,surgical_robot,手术机器人,医疗器械;机器人,"ORTHOPEDIC, PROSTHETIC & SURGICAL APPLIANCES & SUPPLIES",manual_rule
-KDP,Keurig Dr Pepper Inc.,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BEVERAGES,sector_default
-KLAC,KLA Corporation Common Stock,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备;检测设备,OPTICAL INSTRUMENTS & LENSES,manual_rule
-KHC,The Kraft Heinz Company Common Stock,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,"CANNED, FROZEN & PRESERVD FRUIT, VEG & FOOD SPECIALTIES",sector_default
-LRCX,Lam Research Corp,Information Technology,半导体设备,semiconductor_equipment,半导体设备,半导体;半导体设备,"SPECIAL INDUSTRY MACHINERY, NEC",manual_rule
-LIN,Linde plc Ordinary Share,Materials,化工材料,industrial_gas,工业气体,工业气体;化工,INDUSTRIAL INORGANIC CHEMICALS,manual_rule
-LITE,Lumentum Holdings Inc. Common Stock,Information Technology,光通信,technology,科技综合,科技;软件开发;半导体,"COMMUNICATIONS EQUIPMENT, NEC",sector_default
-MAR,Marriott International Class A Common Stock,Consumer Discretionary,酒店旅游,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,HOTELS & MOTELS,sector_default
-MRVL,"Marvell Technology, Inc. Common Stock",Information Technology,半导体,data_center_chip,数据中心芯片,半导体;通信设备;数据中心;光通信模块,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-MELI,"Mercado Libre, Inc",Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,"SERVICES-BUSINESS SERVICES, NEC",sector_default
-META,"Meta Platforms, Inc. Class A Common Stock",Communication Services,互联网平台,social_ads_ai,社交广告与AI,人工智能;互联网服务,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",manual_rule
-MCHP,Microchip Technology Inc,Information Technology,半导体,mcu_chip,MCU芯片,MCU芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-MU,"Micron Technology, Inc.",Information Technology,半导体,memory,存储,半导体;存储芯片;半导体存储;DRAM,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-MSFT,Microsoft Corp,Information Technology,软件服务,cloud_software,云计算软件,云计算;软件开发;人工智能,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-MSTR,Strategy Inc Common Stock Class A,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,FINANCE SERVICES,sector_default
-MDLZ,"Mondelez International, Inc. Class A",Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,FOOD AND KINDRED PRODUCTS,sector_default
-MPWR,"Monolithic Power Systems, Inc.",Information Technology,半导体,technology,科技综合,科技;软件开发;半导体,SEMICONDUCTORS & RELATED DEVICES,sector_default
-MNST,Monster Beverage Corporation,Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BOTTLED & CANNED SOFT DRINKS & CARBONATED WATERS,sector_default
-NFLX,NetFlix Inc,Communication Services,流媒体,streaming_media,流媒体,影视院线;文化传媒,SERVICES-VIDEO TAPE RENTAL,manual_rule
-NVDA,Nvidia Corp,Information Technology,半导体,ai_chip,AI芯片,AI芯片;算力;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-NXPI,NXP Semiconductors N.V.,Information Technology,半导体,technology,科技综合,科技;软件开发;半导体,SEMICONDUCTORS & RELATED DEVICES,sector_default
-ORLY,"O'Reilly Automotive, Inc.",Consumer Discretionary,零售消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-AUTO & HOME SUPPLY STORES,sector_default
-ODFL,Old Dominion Freight Line,Industrials,运输物流,industrials,工业,工业设备;机器人;物流,TRUCKING (NO LOCAL),sector_default
-PCAR,Paccar Inc,Industrials,工业制造,industrials,工业,工业设备;机器人;物流,MOTOR VEHICLES & PASSENGER CAR BODIES,sector_default
-PLTR,Palantir Technologies Inc. Class A Common Stock,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
-PANW,"Palo Alto Networks, Inc. Common Stock",Information Technology,网络安全,cybersecurity,网络安全,网络安全,"COMPUTER PERIPHERAL EQUIPMENT, NEC",manual_rule
-PAYX,Paychex Inc,Industrials,企业服务,industrials,工业,工业设备;机器人;物流,"SERVICES-ENGINEERING, ACCOUNTING, RESEARCH, MANAGEMENT",sector_default
-PYPL,"PayPal Holdings, Inc. Common Stock",Financials,金融科技,financials,金融,银行;证券;金融科技,"SERVICES-BUSINESS SERVICES, NEC",sector_default
-PDD,PDD Holdings Inc. American Depositary Shares,Consumer Discretionary,互联网消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,,sector_default
-PEP,"PepsiCo, Inc.",Consumer Staples,快消股,consumer_staples,必选消费,食品饮料;零售,BEVERAGES,sector_default
-QCOM,Qualcomm Inc,Information Technology,半导体,mobile_chip,移动通信芯片,5G;射频芯片;半导体,RADIO & TV BROADCASTING & COMMUNICATIONS EQUIPMENT,manual_rule
-REGN,Regeneron Pharmaceuticals Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,PHARMACEUTICAL PREPARATIONS,manual_rule
-ROP,"Roper Technologies, Inc. Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,"INDUSTRIAL INSTRUMENTS FOR MEASUREMENT, DISPLAY, AND CONTROL",sector_default
-ROST,Ross Stores Inc,Consumer Discretionary,零售消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-FAMILY CLOTHING STORES,sector_default
-SNDK,Sandisk Corporation Common Stock,Information Technology,半导体,flash_storage,闪存存储,半导体;存储芯片;闪存;固态硬盘,COMPUTER STORAGE DEVICES,manual_rule
-STX,Seagate Technology Holdings PLC Ordinary Shares (Ireland),Information Technology,存储硬件,technology,科技综合,科技;软件开发;半导体,COMPUTER STORAGE DEVICES,sector_default
-SHOP,Shopify Inc. Class A subordinate voting shares,Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-PREPACKAGED SOFTWARE,sector_default
-SBUX,Starbucks Corp,Consumer Discretionary,餐饮消费,consumer_discretionary,可选消费,消费电子;汽车整车;旅游;电商,RETAIL-EATING & DRINKING PLACES,sector_default
-SNPS,Synopsys Inc,Information Technology,软件服务,eda_software,EDA软件,EDA;半导体,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-TMUS,"T-Mobile US, Inc.",Communication Services,通信服务,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,RADIOTELEPHONE COMMUNICATIONS,sector_default
-TTWO,Take-Two Interactive Software Inc,Communication Services,游戏娱乐,game_content,游戏内容,游戏;文化传媒,SERVICES-PREPACKAGED SOFTWARE,manual_rule
-TSLA,"Tesla, Inc. Common Stock",Consumer Discretionary,汽车,electric_vehicle,电动车,新能源汽车;汽车整车,MOTOR VEHICLES & PASSENGER CAR BODIES,manual_rule
-TXN,Texas Instruments Incorporated,Information Technology,半导体,analog_chip,模拟芯片,模拟芯片;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
-TRI,Thomson Reuters Corporation Common Shares,Industrials,信息服务,industrials,工业,工业设备;机器人;物流,,sector_default
-VRSK,,Industrials,信息服务,industrials,工业,工业设备;机器人;物流,,sector_default
-VRTX,Vertex Pharmaceuticals Inc,Health Care,医药医疗,biotech_drug,生物科技药物,创新药;生物制品,PHARMACEUTICAL PREPARATIONS,manual_rule
-WMT,Walmart Inc. Common Stock,Consumer Staples,零售消费,consumer_staples,必选消费,食品饮料;零售,RETAIL-VARIETY STORES,sector_default
-WBD,"Warner Bros. Discovery, Inc. Series A Common Stock",Communication Services,媒体通信,communication_services,通信与互联网,互联网服务;通信设备;文化传媒,CABLE & OTHER PAY TELEVISION SERVICES,sector_default
-WDC,Western Digital Corp.,Information Technology,存储硬件,storage_hardware,存储设备,半导体;存储芯片;数据存储;固态硬盘,COMPUTER STORAGE DEVICES,manual_rule
-WDAY,"Workday, Inc. Class A Common Stock",Information Technology,软件服务,technology,科技综合,科技;软件开发;半导体,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,sector_default
-XEL,"Xcel Energy, Inc.",Utilities,公用事业,utilities,公用事业,电力;公用事业,ELECTRIC & OTHER SERVICES COMBINED,sector_default
-ZS,,Information Technology,网络安全,technology,科技综合,科技;软件开发;半导体,,sector_default
-BRK.B,BERKSHIRE HATHAWAY Class B,Financials,综合金融,financials,金融,银行;证券;金融科技,"FIRE, MARINE & CASUALTY INSURANCE",sector_default
-LLY,Eli Lilly & Co.,Health Care,医药医疗,healthcare,医药医疗,创新药;医疗器械;生物制品,PHARMACEUTICAL PREPARATIONS,sector_default
-JPM,JPMorgan Chase & Co.,Financials,金融,financials,金融,银行;证券;金融科技,NATIONAL COMMERCIAL BANKS,sector_default
-V,VISA Inc.,Financials,支付网络,financials,金融,银行;证券;金融科技,"SERVICES-BUSINESS SERVICES, NEC",sector_default
-JNJ,Johnson & Johnson,Health Care,医药医疗,healthcare_conglomerate,综合医疗,医疗器械;创新药;化学制药,PHARMACEUTICAL PREPARATIONS,manual_rule
-XOM,Exxon Mobil Corporation,Energy,能源,energy,能源,油气;能源,PETROLEUM REFINING,sector_default
-DELL,Dell Technologies Inc.,Information Technology,硬件设备,technology,科技综合,科技;软件开发;半导体,ELECTRONIC COMPUTERS,sector_default
-GLW,Corning Incorporated,Information Technology,光通信材料,optical_materials,光通信材料,通信设备;光通信;光模块;光纤光缆,DRAWING & INSULATING OF NONFERROUS WIRE,manual_rule
-MRK,"Merck & Co., Inc.",Health Care,医药医疗,pharma,创新药,创新药;化学制药,PHARMACEUTICAL PREPARATIONS,manual_rule
-CBRS,Cerebras Systems Inc. Class A Common Stock,Information Technology,AI芯片,ai_chip,AI芯片,AI芯片;算力;半导体,SEMICONDUCTORS & RELATED DEVICES,manual_rule
+AAPL,Apple,Information Technology,科技股,mapped_aapl,消费电子终端/生态链,消费电子终端/生态链;002475;000725;601138;立讯精密;京东方A;工业富联,ELECTRONIC COMPUTERS,csv_mapping
+ABNB,Airbnb,Consumer Discretionary,互联网消费,mapped_abnb,在线旅游/住宿平台,在线旅游/住宿平台;601888;600754;600258;中国中免;锦江酒店;首旅酒店,SERVICES-TO DWELLINGS & OTHER BUILDINGS,csv_mapping
+ADBE,Adobe Inc.,Information Technology,科技股,mapped_adbe,创意设计软件/数字媒体工具,创意设计软件/数字媒体工具;688111;688083;002410;金山办公;中望软件;广联达,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+ADI,Analog Devices,Information Technology,半导体,mapped_adi,模拟芯片/混合信号芯片,模拟芯片/混合信号芯片;300661;688536;688052;圣邦股份;思瑞浦;纳芯微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+ADP,Automatic Data Processing,Industrials,企业服务,mapped_adp,企业服务/人力资源薪酬,企业服务/人力资源薪酬;600588;300662;603039;用友网络;科锐国际;泛微网络,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,csv_mapping
+ADSK,Autodesk,Information Technology,软件服务,mapped_adsk,创意设计软件/数字媒体工具,创意设计软件/数字媒体工具;688111;688083;002410;金山办公;中望软件;广联达,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+AEP,American Electric Power,Utilities,公用事业,mapped_aep,公用事业/电力运营,公用事业/电力运营;600900;601985;600025;长江电力;中国核电;华能水电,ELECTRIC SERVICES,csv_mapping
+ALNY,Alnylam Pharmaceuticals,Health Care,医药医疗,mapped_alny,创新药/生物技术,创新药/生物技术;600276;688235;603259;恒瑞医药;百济神州-U;药明康德,PHARMACEUTICAL PREPARATIONS,csv_mapping
+AMAT,Applied Materials,Information Technology,半导体设备,mapped_amat,半导体设备,半导体设备;002371;688012;688072;北方华创;中微公司;拓荆科技,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+AMD,Advanced Micro Devices,Information Technology,半导体,mapped_amd,CPU/GPU/AI加速芯片,CPU/GPU/AI加速芯片;688256;688041;300474;寒武纪-U;海光信息;景嘉微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+AMGN,Amgen,Health Care,医药医疗,mapped_amgn,大药企/生物制药,大药企/生物制药;600276;600436;600196;恒瑞医药;片仔癀;复星医药,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",csv_mapping
+AMZN,Amazon.com,Consumer Discretionary,互联网消费,mapped_amzn,综合电商/云计算平台,综合电商/云计算平台;002230;000977;603613;科大讯飞;浪潮信息;国联股份,RETAIL-CATALOG & MAIL-ORDER HOUSES,csv_mapping
+APP,AppLovin,Information Technology,软件服务,mapped_app,移动应用广告/应用变现平台,移动应用广告/应用变现平台;002555;300058;300418;三七互娱;蓝色光标;昆仑万维,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",csv_mapping
+ARM,Arm Holdings,Information Technology,半导体,mapped_arm,芯片IP/架构授权,芯片IP/架构授权;688521;688099;688110;芯原股份;晶晨股份;东芯股份,,csv_mapping
+ASML,ASML Holding,Information Technology,半导体设备,mapped_asml,半导体设备,半导体设备;002371;688012;688072;北方华创;中微公司;拓荆科技,,csv_mapping
+AVGO,Broadcom,Information Technology,半导体,mapped_avgo,网络通信/交换路由设备,网络通信/交换路由设备;000938;000063;300308;紫光股份;中兴通讯;中际旭创,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+AXON,Axon Enterprise,Industrials,工业科技,mapped_axon,执法安全设备/视频安防,执法安全设备/视频安防;002415;002236;002414;海康威视;大华股份;高德红外,"ORDNANCE & ACCESSORIES, (NO VEHICLES/GUIDED MISSILES)",csv_mapping
+BKNG,Booking Holdings,Consumer Discretionary,互联网消费,mapped_bkng,在线预订/旅游平台,在线预订/旅游平台;601888;600754;300144;中国中免;锦江酒店;宋城演艺,TRANSPORTATION SERVICES,csv_mapping
+BKR,Baker Hughes,Energy,能源,mapped_bkr,油服/能源设备,油服/能源设备;601808;600871;600583;中海油服;石化油服;海油工程,OIL & GAS FIELD MACHINERY & EQUIPMENT,csv_mapping
+BRK.B,Berkshire Hathaway Class B,Financials,综合金融,mapped_brk_b,保险/多元金融,保险/多元金融;601318;601628;601601;中国平安;中国人寿;中国太保,"FIRE, MARINE & CASUALTY INSURANCE",csv_mapping
+CBRS,Cerebras Systems,Information Technology,AI芯片,mapped_cbrs,AI芯片/GPU,AI芯片/GPU;688256;688041;300474;寒武纪-U;海光信息;景嘉微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+CCEP,Coca-Cola Europacific Partners,Consumer Staples,快消股,mapped_ccep,软饮料/瓶装饮料,软饮料/瓶装饮料;605499;600887;000848;东鹏饮料;伊利股份;承德露露,,csv_mapping
+CDNS,Cadence Design Systems,Information Technology,软件服务,mapped_cdns,EDA/电子设计自动化,EDA/电子设计自动化;301269;688206;301095;华大九天;概伦电子;广立微,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+CEG,Constellation Energy,Utilities,公用事业,mapped_ceg,清洁能源/核电,清洁能源/核电;601985;003816;600900;中国核电;中国广核;长江电力,ELECTRIC SERVICES,csv_mapping
+CHTR,Charter Communications,Communication Services,通信服务,mapped_chtr,有线电视/宽带运营,有线电视/宽带运营;600050;600941;601728;中国联通;中国移动;中国电信,,csv_mapping
+CMCSA,Comcast,Communication Services,媒体通信,mapped_cmcsa,有线电视/宽带运营,有线电视/宽带运营;600050;600941;601728;中国联通;中国移动;中国电信,CABLE & OTHER PAY TELEVISION SERVICES,csv_mapping
+COST,Costco Wholesale,Consumer Staples,零售消费,mapped_cost,会员制零售/仓储零售,会员制零售/仓储零售;601933;600415;600827;永辉超市;小商品城;百联股份,RETAIL-VARIETY STORES,csv_mapping
+CPRT,Copart,Industrials,商业服务,mapped_cprt,事故车拍卖/二手车流通,事故车拍卖/二手车流通;600297;600335;600704;广汇汽车;国机汽车;物产中大,RETAIL-AUTO DEALERS & GASOLINE STATIONS,csv_mapping
+CRWD,CrowdStrike,Information Technology,软件服务,mapped_crwd,网络安全,网络安全;688561;300454;002439;奇安信-U;深信服;启明星辰,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+CSCO,Cisco Systems,Information Technology,网络设备,mapped_csco,网络通信/交换路由设备,网络通信/交换路由设备;000938;000063;300308;紫光股份;中兴通讯;中际旭创,COMPUTER COMMUNICATIONS EQUIPMENT,csv_mapping
+CSX,CSX,Industrials,运输物流,mapped_csx,铁路/货运物流,铁路/货运物流;601006;601816;002352;大秦铁路;京沪高铁;顺丰控股,"RAILROADS, LINE-HAUL OPERATING",csv_mapping
+CTAS,Cintas,Industrials,企业服务,mapped_ctas,制服/企业服务,制服/企业服务;600177;600398;002154;雅戈尔;海澜之家;报喜鸟,"MEN'S & BOYS' FURNISHGS, WORK CLOTHG, & ALLIED GARMENTS",csv_mapping
+CTSH,Cognizant,Information Technology,IT服务,mapped_ctsh,IT服务/外包,IT服务/外包;600570;002230;600845;恒生电子;科大讯飞;宝信软件,,csv_mapping
+DASH,DoorDash,Consumer Discretionary,互联网消费,mapped_dash,本地生活/外卖平台,本地生活/外卖平台;603777;002251;603613;来伊份;步步高;国联股份,"SERVICES-BUSINESS SERVICES, NEC",csv_mapping
+DDOG,Datadog,Information Technology,软件服务,mapped_ddog,可观测性/云运维软件,可观测性/云运维软件;688111;600845;300454;金山办公;宝信软件;深信服,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+DELL,Dell Technologies,Information Technology,硬件设备,mapped_dell,个人电脑/服务器硬件,个人电脑/服务器硬件;601138;000977;000938;工业富联;浪潮信息;紫光股份,ELECTRONIC COMPUTERS,csv_mapping
+DXCM,DexCom,Health Care,医药医疗,mapped_dxcm,医疗器械/糖尿病监测,医疗器械/糖尿病监测;300760;688271;002223;迈瑞医疗;联影医疗;鱼跃医疗,SURGICAL & MEDICAL INSTRUMENTS & APPARATUS,csv_mapping
+EA,Electronic Arts,Communication Services,游戏娱乐,mapped_ea,游戏软件,游戏软件;002555;002602;002558;三七互娱;世纪华通;巨人网络,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+EXC,Exelon,Utilities,公用事业,mapped_exc,公用事业/电力运营,公用事业/电力运营;600900;601985;600025;长江电力;中国核电;华能水电,ELECTRIC & OTHER SERVICES COMBINED,csv_mapping
+FANG,Diamondback Energy,Energy,能源,mapped_fang,页岩油气/上游能源,页岩油气/上游能源;601857;600938;600028;中国石油;中国海油;中国石化,CRUDE PETROLEUM & NATURAL GAS,csv_mapping
+FAST,Fastenal,Industrials,工业分销,mapped_fast,紧固件/工业分销,紧固件/工业分销;600153;600704;002027;建发股份;物产中大;分众传媒,"RETAIL-BUILDING MATERIALS, HARDWARE, GARDEN SUPPLY",csv_mapping
+FER,Ferrovial,Industrials,基建工业,mapped_fer,基础设施/交通工程,基础设施/交通工程;601186;601668;601390;中国铁建;中国建筑;中国中铁,,csv_mapping
+FTNT,Fortinet,Information Technology,网络安全,mapped_ftnt,网络安全,网络安全;688561;300454;002439;奇安信-U;深信服;启明星辰,"COMPUTER PERIPHERAL EQUIPMENT, NEC",csv_mapping
+GEHC,GE HealthCare,Health Care,医药医疗,mapped_gehc,医学影像/医疗设备,医学影像/医疗设备;300760;688271;600587;迈瑞医疗;联影医疗;新华医疗,X-RAY APPARATUS & TUBES & RELATED IRRADIATION APPARATUS,csv_mapping
+GILD,Gilead Sciences,Health Care,医药医疗,mapped_gild,大药企/生物制药,大药企/生物制药;600276;600436;600196;恒瑞医药;片仔癀;复星医药,"BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",csv_mapping
+GLW,Corning,Information Technology,光通信材料,mapped_glw,显示玻璃/光学材料,显示玻璃/光学材料;000725;000100;600707;京东方A;TCL科技;彩虹股份,DRAWING & INSULATING OF NONFERROUS WIRE,csv_mapping
+GOOG,Alphabet Class C,Communication Services,互联网平台,mapped_goog,互联网搜索/广告/云计算平台,互联网搜索/广告/云计算平台;300418;601360;002230;昆仑万维;三六零;科大讯飞,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",csv_mapping
+GOOGL,Alphabet Class A,Communication Services,互联网平台,mapped_googl,互联网搜索/广告/云计算平台,互联网搜索/广告/云计算平台;300418;601360;002230;昆仑万维;三六零;科大讯飞,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",csv_mapping
+HON,Honeywell International,Industrials,工业制造,mapped_hon,工业自动化/综合制造,工业自动化/综合制造;300124;000333;002747;汇川技术;美的集团;埃斯顿,AIRCRAFT ENGINES & ENGINE PARTS,csv_mapping
+IDXX,IDEXX Laboratories,Health Care,医药医疗,mapped_idxx,动物诊断/宠物医疗,动物诊断/宠物医疗;600201;600195;603566;生物股份;中牧股份;普莱柯,IN VITRO & IN VIVO DIAGNOSTIC SUBSTANCES,csv_mapping
+INSM,Insmed,Health Care,医药医疗,mapped_insm,罕见病/创新药,罕见病/创新药;688235;600276;688331;百济神州-U;恒瑞医药;荣昌生物,,csv_mapping
+INTC,Intel,Information Technology,半导体,mapped_intc,CPU/GPU/AI加速芯片,CPU/GPU/AI加速芯片;688256;688041;300474;寒武纪-U;海光信息;景嘉微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+INTU,Intuit,Information Technology,软件服务,mapped_intu,财税/中小企业软件,财税/中小企业软件;600588;002063;603039;用友网络;远光软件;泛微网络,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+ISRG,Intuitive Surgical,Health Care,医药医疗,mapped_isrg,机器人手术/高端医疗设备,机器人手术/高端医疗设备;300760;688271;688016;迈瑞医疗;联影医疗;心脉医疗,"ORTHOPEDIC, PROSTHETIC & SURGICAL APPLIANCES & SUPPLIES",csv_mapping
+JNJ,Johnson & Johnson,Health Care,医药医疗,mapped_jnj,消费医疗/医药大健康,消费医疗/医药大健康;600276;000538;300760;恒瑞医药;云南白药;迈瑞医疗,PHARMACEUTICAL PREPARATIONS,csv_mapping
+JPM,JPMorgan Chase,Financials,金融,mapped_jpm,银行,银行;601398;601939;601288;工商银行;建设银行;农业银行,NATIONAL COMMERCIAL BANKS,csv_mapping
+KDP,Keurig Dr Pepper,Consumer Staples,快消股,mapped_kdp,软饮料/瓶装饮料,软饮料/瓶装饮料;605499;600887;000848;东鹏饮料;伊利股份;承德露露,BEVERAGES,csv_mapping
+KHC,Kraft Heinz,Consumer Staples,快消股,mapped_khc,零食/食品饮料,零食/食品饮料;603288;600887;000895;海天味业;伊利股份;双汇发展,"CANNED, FROZEN & PRESERVD FRUIT, VEG & FOOD SPECIALTIES",csv_mapping
+KLAC,KLA,Information Technology,半导体设备,mapped_klac,半导体测试设备,半导体测试设备;688072;688012;300604;拓荆科技;中微公司;长川科技,OPTICAL INSTRUMENTS & LENSES,csv_mapping
+LIN,Linde,Materials,化工材料,mapped_lin,工业气体/特种气体,工业气体/特种气体;002430;688106;688268;杭氧股份;金宏气体;华特气体,INDUSTRIAL INORGANIC CHEMICALS,csv_mapping
+LITE,Lumentum,Information Technology,光通信,mapped_lite,光通信/光模块,光通信/光模块;300308;300502;300394;中际旭创;新易盛;天孚通信,"COMMUNICATIONS EQUIPMENT, NEC",csv_mapping
+LLY,Eli Lilly,Health Care,医药医疗,mapped_lly,创新药/生物技术,创新药/生物技术;600276;688235;603259;恒瑞医药;百济神州-U;药明康德,PHARMACEUTICAL PREPARATIONS,csv_mapping
+LRCX,Lam Research,Information Technology,半导体设备,mapped_lrcx,半导体设备,半导体设备;002371;688012;688072;北方华创;中微公司;拓荆科技,"SPECIAL INDUSTRY MACHINERY, NEC",csv_mapping
+MAR,Marriott International,Consumer Discretionary,酒店旅游,mapped_mar,酒店管理/住宿,酒店管理/住宿;600754;600258;000428;锦江酒店;首旅酒店;华天酒店,HOTELS & MOTELS,csv_mapping
+MCHP,Microchip Technology,Information Technology,半导体,mapped_mchp,模拟芯片/混合信号芯片,模拟芯片/混合信号芯片;300661;688536;688052;圣邦股份;思瑞浦;纳芯微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+MDLZ,Mondelez International,Consumer Staples,快消股,mapped_mdlz,零食/食品饮料,零食/食品饮料;603288;600887;000895;海天味业;伊利股份;双汇发展,FOOD AND KINDRED PRODUCTS,csv_mapping
+MELI,MercadoLibre,Consumer Discretionary,互联网消费,mapped_meli,综合电商/云计算平台,综合电商/云计算平台;002230;000977;603613;科大讯飞;浪潮信息;国联股份,"SERVICES-BUSINESS SERVICES, NEC",csv_mapping
+META,Meta Platforms,Communication Services,互联网平台,mapped_meta,社交媒体/广告/元宇宙,社交媒体/广告/元宇宙;002555;300058;300418;三七互娱;蓝色光标;昆仑万维,"SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",csv_mapping
+MNST,Monster Beverage,Consumer Staples,快消股,mapped_mnst,软饮料/瓶装饮料,软饮料/瓶装饮料;605499;600887;000848;东鹏饮料;伊利股份;承德露露,BOTTLED & CANNED SOFT DRINKS & CARBONATED WATERS,csv_mapping
+MPWR,Monolithic Power Systems,Information Technology,半导体,mapped_mpwr,模拟芯片/混合信号芯片,模拟芯片/混合信号芯片;300661;688536;688052;圣邦股份;思瑞浦;纳芯微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+MRK,Merck & Co.,Health Care,医药医疗,mapped_mrk,大药企/生物制药,大药企/生物制药;600276;600436;600196;恒瑞医药;片仔癀;复星医药,PHARMACEUTICAL PREPARATIONS,csv_mapping
+MRVL,Marvell Technology,Information Technology,半导体,mapped_mrvl,网络通信/交换路由设备,网络通信/交换路由设备;000938;000063;300308;紫光股份;中兴通讯;中际旭创,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+MSFT,Microsoft,Information Technology,软件服务,mapped_msft,企业软件/云办公,企业软件/云办公;688111;600588;600845;金山办公;用友网络;宝信软件,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+MSTR,MicroStrategy,Information Technology,软件服务,mapped_mstr,比特币金库/数字资产,比特币金库/数字资产;300033;300059;002152;同花顺;东方财富;广电运通,FINANCE SERVICES,csv_mapping
+MU,Micron Technology,Information Technology,半导体,mapped_mu,存储芯片/存储设备,存储芯片/存储设备;603986;301308;300223;兆易创新;江波龙;北京君正,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+NFLX,Netflix,Communication Services,流媒体,mapped_nflx,流媒体/长视频内容,流媒体/长视频内容;300413;300251;002739;芒果超媒;光线传媒;万达电影,SERVICES-VIDEO TAPE RENTAL,csv_mapping
+NVDA,NVIDIA,Information Technology,半导体,mapped_nvda,AI芯片/GPU,AI芯片/GPU;688256;688041;300474;寒武纪-U;海光信息;景嘉微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+NXPI,NXP Semiconductors,Information Technology,半导体,mapped_nxpi,智能手机SoC/无线芯片,智能手机SoC/无线芯片;688099;688608;603986;晶晨股份;恒玄科技;兆易创新,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+ODFL,Old Dominion Freight Line,Industrials,运输物流,mapped_odfl,零担/公路货运,零担/公路货运;002352;601598;603056;顺丰控股;中国外运;德邦股份,TRUCKING (NO LOCAL),csv_mapping
+ORLY,O'Reilly Automotive,Consumer Discretionary,零售消费,mapped_orly,汽车零配件/售后,汽车零配件/售后;600660;600741;601799;福耀玻璃;华域汽车;星宇股份,RETAIL-AUTO & HOME SUPPLY STORES,csv_mapping
+PANW,Palo Alto Networks,Information Technology,网络安全,mapped_panw,网络安全,网络安全;688561;300454;002439;奇安信-U;深信服;启明星辰,"COMPUTER PERIPHERAL EQUIPMENT, NEC",csv_mapping
+PAYX,Paychex,Industrials,企业服务,mapped_payx,企业服务/人力资源薪酬,企业服务/人力资源薪酬;600588;300662;603039;用友网络;科锐国际;泛微网络,"SERVICES-ENGINEERING, ACCOUNTING, RESEARCH, MANAGEMENT",csv_mapping
+PCAR,PACCAR,Industrials,工业制造,mapped_pcar,重卡/商用车,重卡/商用车;000338;000800;000951;潍柴动力;一汽解放;中国重汽,MOTOR VEHICLES & PASSENGER CAR BODIES,csv_mapping
+PDD,PDD Holdings,Consumer Discretionary,互联网消费,mapped_pdd,跨境/平台电商,跨境/平台电商;603613;002315;300785;国联股份;焦点科技;值得买,,csv_mapping
+PEP,PepsiCo,Consumer Staples,快消股,mapped_pep,零食/食品饮料,零食/食品饮料;603288;600887;000895;海天味业;伊利股份;双汇发展,BEVERAGES,csv_mapping
+PLTR,Palantir,Information Technology,软件服务,mapped_pltr,数据分析/AI平台软件,数据分析/AI平台软件;002230;688111;300033;科大讯飞;金山办公;同花顺,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+PYPL,PayPal,Financials,金融科技,mapped_pypl,支付/数字金融,支付/数字金融;300059;300033;300773;东方财富;同花顺;拉卡拉,"SERVICES-BUSINESS SERVICES, NEC",csv_mapping
+QCOM,Qualcomm,Information Technology,半导体,mapped_qcom,智能手机SoC/无线芯片,智能手机SoC/无线芯片;688099;688608;603986;晶晨股份;恒玄科技;兆易创新,RADIO & TV BROADCASTING & COMMUNICATIONS EQUIPMENT,csv_mapping
+REGN,Regeneron Pharmaceuticals,Health Care,医药医疗,mapped_regn,创新药/生物技术,创新药/生物技术;600276;688235;603259;恒瑞医药;百济神州-U;药明康德,PHARMACEUTICAL PREPARATIONS,csv_mapping
+ROP,Roper Technologies,Information Technology,软件服务,mapped_rop,垂直软件/工业软件,垂直软件/工业软件;600845;688111;002410;宝信软件;金山办公;广联达,"INDUSTRIAL INSTRUMENTS FOR MEASUREMENT, DISPLAY, AND CONTROL",csv_mapping
+ROST,Ross Stores,Consumer Discretionary,零售消费,mapped_rost,折扣零售/服装零售,折扣零售/服装零售;600398;002563;002832;海澜之家;森马服饰;比音勒芬,RETAIL-FAMILY CLOTHING STORES,csv_mapping
+SBUX,Starbucks,Consumer Discretionary,餐饮消费,mapped_sbux,咖啡/连锁餐饮,咖啡/连锁餐饮;603288;600887;603711;海天味业;伊利股份;香飘飘,RETAIL-EATING & DRINKING PLACES,csv_mapping
+SHOP,Shopify,Information Technology,软件服务,mapped_shop,电商SaaS/商家服务,电商SaaS/商家服务;603613;002315;300785;国联股份;焦点科技;值得买,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+SNDK,SanDisk,Information Technology,半导体,mapped_sndk,存储芯片/存储设备,存储芯片/存储设备;603986;301308;300223;兆易创新;江波龙;北京君正,COMPUTER STORAGE DEVICES,csv_mapping
+SNPS,Synopsys,Information Technology,软件服务,mapped_snps,EDA/电子设计自动化,EDA/电子设计自动化;301269;688206;301095;华大九天;概伦电子;广立微,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+STX,Seagate Technology,Information Technology,存储硬件,mapped_stx,存储芯片/存储设备,存储芯片/存储设备;603986;301308;300223;兆易创新;江波龙;北京君正,COMPUTER STORAGE DEVICES,csv_mapping
+TMUS,T-Mobile US,Communication Services,通信服务,mapped_tmus,通信运营商,通信运营商;600941;601728;600050;中国移动;中国电信;中国联通,RADIOTELEPHONE COMMUNICATIONS,csv_mapping
+TRI,Thomson Reuters,Industrials,信息服务,mapped_tri,信息服务/金融数据,信息服务/金融数据;300059;300033;600570;东方财富;同花顺;恒生电子,,csv_mapping
+TSLA,Tesla,Consumer Discretionary,汽车,mapped_tsla,电动车整车/智能汽车,电动车整车/智能汽车;002594;601127;601633;比亚迪;赛力斯;长城汽车,MOTOR VEHICLES & PASSENGER CAR BODIES,csv_mapping
+TTWO,Take-Two Interactive,Communication Services,游戏娱乐,mapped_ttwo,游戏软件,游戏软件;002555;002602;002558;三七互娱;世纪华通;巨人网络,SERVICES-PREPACKAGED SOFTWARE,csv_mapping
+TXN,Texas Instruments,Information Technology,半导体,mapped_txn,模拟芯片/混合信号芯片,模拟芯片/混合信号芯片;300661;688536;688052;圣邦股份;思瑞浦;纳芯微,SEMICONDUCTORS & RELATED DEVICES,csv_mapping
+V,Visa,Financials,支付网络,mapped_v,银行卡组织/支付网络,银行卡组织/支付网络;300773;000997;002152;拉卡拉;新大陆;广电运通,"SERVICES-BUSINESS SERVICES, NEC",csv_mapping
+VRSK,Verisk Analytics,Industrials,信息服务,mapped_vrsk,数据分析/AI平台软件,数据分析/AI平台软件;002230;688111;300033;科大讯飞;金山办公;同花顺,,csv_mapping
+VRTX,Vertex Pharmaceuticals,Health Care,医药医疗,mapped_vrtx,创新药/生物技术,创新药/生物技术;600276;688235;603259;恒瑞医药;百济神州-U;药明康德,PHARMACEUTICAL PREPARATIONS,csv_mapping
+WBD,Warner Bros. Discovery,Communication Services,媒体通信,mapped_wbd,流媒体/长视频内容,流媒体/长视频内容;300413;300251;002739;芒果超媒;光线传媒;万达电影,CABLE & OTHER PAY TELEVISION SERVICES,csv_mapping
+WDAY,Workday,Information Technology,软件服务,mapped_wday,企业服务/人力资源薪酬,企业服务/人力资源薪酬;600588;300662;603039;用友网络;科锐国际;泛微网络,SERVICES-COMPUTER PROCESSING & DATA PREPARATION,csv_mapping
+WDC,Western Digital,Information Technology,存储硬件,mapped_wdc,存储芯片/存储设备,存储芯片/存储设备;603986;301308;300223;兆易创新;江波龙;北京君正,COMPUTER STORAGE DEVICES,csv_mapping
+WMT,Walmart,Consumer Staples,零售消费,mapped_wmt,会员制零售/仓储零售,会员制零售/仓储零售;601933;600415;600827;永辉超市;小商品城;百联股份,RETAIL-VARIETY STORES,csv_mapping
+XEL,Xcel Energy,Utilities,公用事业,mapped_xel,公用事业/电力运营,公用事业/电力运营;600900;601985;600025;长江电力;中国核电;华能水电,ELECTRIC & OTHER SERVICES COMBINED,csv_mapping
+XOM,Exxon Mobil,Energy,能源,mapped_xom,综合油气,综合油气;601857;600938;600028;中国石油;中国海油;中国石化,PETROLEUM REFINING,csv_mapping
+ZS,Zscaler,Information Technology,网络安全,mapped_zs,网络安全,网络安全;688561;300454;002439;奇安信-U;深信服;启明星辰,,csv_mapping

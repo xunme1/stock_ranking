@@ -1312,6 +1312,12 @@ function StockPeersCard({ peers }: { peers: StockPeers | null }) {
     .split(";")
     .map((item) => item.trim())
     .filter(Boolean);
+  const sourceText =
+    peers?.source === "csv_mapping"
+      ? "CSV映射"
+      : peers?.source === "manual_rule"
+        ? "人工规则"
+        : "行业兜底";
 
   return (
     <section className="stockPeersCard">
@@ -1320,7 +1326,7 @@ function StockPeersCard({ peers }: { peers: StockPeers | null }) {
           <p className="eyebrow">Sector Peers</p>
           <h2>细分赛道与 A股对标</h2>
         </div>
-        <span className="statusText">{peers?.source === "manual_rule" ? "人工规则" : "行业兜底"}</span>
+        <span className="statusText">{sourceText}</span>
       </div>
       <div className="peerSummary">
         <div>
