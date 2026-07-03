@@ -1,0 +1,7 @@
+interface:
+  display_name: "Stock Ranking Project"
+  short_description: "Use and maintain the Nasdaq-100 stock ranking app."
+  default_prompt: "Use $stock-ranking-project to inspect, run, or modify the stock ranking web app safely."
+
+policy:
+  allow_implicit_invocation: true
