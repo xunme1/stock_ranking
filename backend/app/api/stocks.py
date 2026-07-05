@@ -9,6 +9,7 @@ from app.services.data_loader import (
     load_company_profiles,
     load_daily_data,
     load_stock_subtypes,
+    normalize_ticker_for_market,
     normalize_ticker,
 )
 from app.services.ranking_service import trim_to_as_of_date
@@ -22,10 +23,11 @@ def get_stock_daily(
     ticker: str,
     limit: int = Query(260, ge=20, le=2000),
     as_of_date: date | None = Query(None),
+    market: str = Query("us", pattern="^(us|cn|hk)$"),
 ) -> dict[str, object]:
-    normalized = normalize_ticker(ticker)
+    normalized = normalize_ticker_for_market(ticker, market)
     try:
-        df = trim_to_as_of_date(load_daily_data(normalized), as_of_date).tail(limit)
+        df = trim_to_as_of_date(load_daily_data(normalized, market), as_of_date).tail(limit)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

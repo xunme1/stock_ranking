@@ -7,12 +7,16 @@ import pandas as pd
 
 from app.core.config import (
     A_SHARE_SUBTYPE_LEADERS_FILE,
+    CN_STOCK_POOL_FILE,
     COMPANY_PROFILES_FILE,
     EARNINGS_CALENDAR_FILE,
+    HK_STOCK_POOL_FILE,
     NASDAQ100_FILE,
     NASDAQ100_OPTIONABLE_FILE,
     OPTIONABLE_TICKERS_FILE,
+    RAW_CN_DAILY_DIR,
     RAW_DAILY_DIR,
+    RAW_HK_DAILY_DIR,
     STOCK_PROFILES_FILE,
     STOCK_SUBTYPES_FILE,
 )
@@ -22,15 +26,54 @@ def normalize_ticker(ticker: str) -> str:
     return ticker.strip().upper()
 
 
-def ticker_csv_path(ticker: str) -> Path:
-    return RAW_DAILY_DIR / f"{normalize_ticker(ticker)}.csv"
+def normalize_market(market: str | None) -> str:
+    value = str(market or "us").strip().lower()
+    if value in {"cn", "a", "ashare", "a-share"}:
+        return "cn"
+    if value in {"hk", "hkg", "hongkong", "hong-kong"}:
+        return "hk"
+    return "us"
+
+
+def normalize_cn_ticker(ticker: str) -> str:
+    text = str(ticker or "").strip().upper()
+    if "." in text:
+        text = text.split(".", 1)[0]
+    if text.startswith(("SH", "SZ", "BJ")):
+        text = text[2:]
+    return text.zfill(6) if text.isdigit() else text
+
+
+def normalize_hk_ticker(ticker: str) -> str:
+    text = str(ticker or "").strip().upper()
+    if "." in text:
+        text = text.split(".", 1)[0]
+    if text.startswith("HK"):
+        text = text[2:]
+    return text.zfill(5) if text.isdigit() else text
+
+
+def normalize_ticker_for_market(ticker: str, market: str | None = "us") -> str:
+    normalized_market = normalize_market(market)
+    if normalized_market == "cn":
+        return normalize_cn_ticker(ticker)
+    if normalized_market == "hk":
+        return normalize_hk_ticker(ticker)
+    return normalize_ticker(ticker)
+
+
+def ticker_csv_path(ticker: str, market: str | None = "us") -> Path:
+    normalized_market = normalize_market(market)
+    normalized_ticker = normalize_ticker_for_market(ticker, normalized_market)
+    directory = RAW_CN_DAILY_DIR if normalized_market == "cn" else RAW_HK_DAILY_DIR if normalized_market == "hk" else RAW_DAILY_DIR
+    return directory / f"{normalized_ticker}.csv"
 
 
 @lru_cache(maxsize=512)
-def load_daily_csv_cached(ticker: str, mtime_ns: int) -> pd.DataFrame:
-    path = ticker_csv_path(ticker)
+def load_daily_csv_cached(ticker: str, market: str, mtime_ns: int) -> pd.DataFrame:
+    path = ticker_csv_path(ticker, market)
     df = pd.read_csv(path)
-    df["ticker"] = normalize_ticker(ticker)
+    df["ticker"] = normalize_ticker_for_market(ticker, market)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     for column in ["open", "high", "low", "close", "volume", "vwap", "transactions"]:
         if column in df.columns:
@@ -39,11 +82,13 @@ def load_daily_csv_cached(ticker: str, mtime_ns: int) -> pd.DataFrame:
     return df.sort_values("date").reset_index(drop=True)
 
 
-def load_daily_data(ticker: str) -> pd.DataFrame:
-    path = ticker_csv_path(ticker)
+def load_daily_data(ticker: str, market: str | None = "us") -> pd.DataFrame:
+    normalized_market = normalize_market(market)
+    normalized_ticker = normalize_ticker_for_market(ticker, normalized_market)
+    path = ticker_csv_path(normalized_ticker, normalized_market)
     if not path.exists() or path.stat().st_size == 0:
-        raise FileNotFoundError(f"Daily CSV not found for {normalize_ticker(ticker)}")
-    return load_daily_csv_cached(normalize_ticker(ticker), path.stat().st_mtime_ns).copy()
+        raise FileNotFoundError(f"Daily CSV not found for {normalized_ticker}")
+    return load_daily_csv_cached(normalized_ticker, normalized_market, path.stat().st_mtime_ns).copy()
 
 
 def load_ticker_file(path: Path = NASDAQ100_FILE) -> list[str]:
@@ -104,6 +149,61 @@ def load_stock_profiles(path: Path = STOCK_PROFILES_FILE) -> dict[str, dict[str,
             "stock_type": str(getattr(row, "stock_type", "")).strip() or "其他",
         }
     return profiles
+
+
+@lru_cache(maxsize=16)
+def load_cn_stock_profiles(path: Path = CN_STOCK_POOL_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, dtype={"ticker": str}).fillna("")
+    profiles: dict[str, dict[str, str]] = {}
+    for row in df.itertuples(index=False):
+        ticker = normalize_cn_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        profiles[ticker] = {
+            "sector": str(getattr(row, "sector", "")).strip() or "未分类",
+            "stock_type": str(getattr(row, "stock_type", "")).strip() or str(getattr(row, "sector", "")).strip() or "未分类",
+            "name": str(getattr(row, "name", "")).strip(),
+        }
+    return profiles
+
+
+@lru_cache(maxsize=16)
+def load_hk_stock_profiles(path: Path = HK_STOCK_POOL_FILE) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, dtype={"ticker": str}).fillna("")
+    profiles: dict[str, dict[str, str]] = {}
+    for row in df.itertuples(index=False):
+        ticker = normalize_hk_ticker(str(getattr(row, "ticker", "")))
+        if not ticker:
+            continue
+        sector = str(getattr(row, "sector", "")).strip()
+        profiles[ticker] = {
+            "sector": sector or "未分类",
+            "stock_type": str(getattr(row, "stock_type", "")).strip() or sector or "未分类",
+            "name": str(getattr(row, "name", "")).strip(),
+        }
+    return profiles
+
+
+def load_stock_profiles_for_market(market: str | None = "us") -> dict[str, dict[str, str]]:
+    normalized_market = normalize_market(market)
+    if normalized_market == "cn":
+        return load_cn_stock_profiles()
+    if normalized_market == "hk":
+        return load_hk_stock_profiles()
+    return load_stock_profiles()
+
+
+def load_ticker_file_for_market(market: str | None = "us") -> list[str]:
+    normalized_market = normalize_market(market)
+    if normalized_market == "cn":
+        return list(load_cn_stock_profiles().keys())
+    if normalized_market == "hk":
+        return list(load_hk_stock_profiles().keys())
+    return load_ticker_file()
 
 
 @lru_cache(maxsize=16)

@@ -1,6 +1,7 @@
 export type RankingRow = {
   rank: number;
   ticker: string;
+  name: string;
   type: string;
   has_options: "Y" | "N" | "U";
   sector: string;
@@ -23,6 +24,7 @@ export type RankingRow = {
 
 export type RankingResponse = {
   window: number;
+  market: Market;
   as_of_date: string;
   benchmark: string;
   benchmark_rank: number;
@@ -34,6 +36,7 @@ export type RankingResponse = {
 
 export type RankingAlertItem = {
   ticker: string;
+  name: string;
   rank: number;
   previous_rank: number | null;
   rank_change: number | null;
@@ -110,6 +113,13 @@ export type StockPeers = {
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+export type Market = "us" | "cn" | "hk";
+
+function benchmarkForMarket(market: Market) {
+  if (market === "cn") return "000905";
+  if (market === "hk") return "HSTECH";
+  return "QQQ";
+}
 
 async function requestJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
@@ -120,10 +130,11 @@ async function requestJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchRanking(window: number, asOfDate: string, applyAnnouncedRebalance: boolean) {
+export function fetchRanking(window: number, asOfDate: string, applyAnnouncedRebalance: boolean, market: Market = "us") {
   const params = new URLSearchParams({
     window: String(window),
-    benchmark: "QQQ",
+    benchmark: benchmarkForMarket(market),
+    market,
     apply_announced_rebalance: String(applyAnnouncedRebalance)
   });
   if (asOfDate) {
@@ -132,14 +143,20 @@ export function fetchRanking(window: number, asOfDate: string, applyAnnouncedReb
   return requestJson<RankingResponse>(`/api/rankings/latest?${params}`);
 }
 
-export function fetchRankingDates(limit = 260) {
-  return requestJson<{ benchmark: string; count: number; dates: string[] }>(`/api/rankings/dates?limit=${limit}`);
+export function fetchRankingDates(limit = 260, market: Market = "us") {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    benchmark: benchmarkForMarket(market),
+    market
+  });
+  return requestJson<{ benchmark: string; market: Market; count: number; dates: string[] }>(`/api/rankings/dates?${params}`);
 }
 
-export function fetchRankingAlerts(window: number, asOfDate = "") {
+export function fetchRankingAlerts(window: number, asOfDate = "", market: Market = "us") {
   const params = new URLSearchParams({
     window: String(window),
-    benchmark: "QQQ",
+    benchmark: benchmarkForMarket(market),
+    market,
     days: "5",
     top_n: "20",
     move_threshold: "10"
@@ -150,8 +167,8 @@ export function fetchRankingAlerts(window: number, asOfDate = "") {
   return requestJson<RankingAlerts>(`/api/rankings/alerts?${params}`);
 }
 
-export function fetchDailyBars(ticker: string, limit = 260, asOfDate = "") {
-  const params = new URLSearchParams({ limit: String(limit) });
+export function fetchDailyBars(ticker: string, limit = 260, asOfDate = "", market: Market = "us") {
+  const params = new URLSearchParams({ limit: String(limit), market });
   if (asOfDate) {
     params.set("as_of_date", asOfDate);
   }

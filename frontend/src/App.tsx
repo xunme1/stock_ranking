@@ -28,6 +28,7 @@ import {
   type AShareLeader,
   type CompanyProfile,
   type DailyBar,
+  type Market,
   type RankingAlertItem,
   type RankingAlerts,
   type RankingResponse,
@@ -38,6 +39,11 @@ import {
 const DEFAULT_WINDOW = 10;
 const WINDOW_OPTIONS = [10, 20];
 const APPLY_ANNOUNCED_REBALANCE = true;
+const MARKET_OPTIONS: Array<{ value: Market; label: string; benchmark: string; title: string; eyebrow: string }> = [
+  { value: "us", label: "美股", benchmark: "QQQ", title: "纳指成分股 ATR 排名", eyebrow: "Nasdaq-100 Relative Strength" },
+  { value: "cn", label: "A股", benchmark: "000905", title: "A股股票池 ATR 排名", eyebrow: "CSI 500 Relative Strength" },
+  { value: "hk", label: "港股", benchmark: "HSTECH", title: "港股股票池 ATR 排名", eyebrow: "Hang Seng TECH Relative Strength" }
+];
 const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
@@ -78,6 +84,7 @@ type RouteState = {
   page: "dashboard" | "stock";
   ticker?: string;
   date?: string;
+  market?: Market;
 };
 
 function numberText(value: number | null | undefined, digits = 2) {
@@ -104,6 +111,10 @@ function percentText(value: number | null | undefined) {
 function sectorLabel(sector: string | null | undefined) {
   if (!sector) return "其他";
   return SECTOR_LABELS[sector] ?? sector;
+}
+
+function marketBenchmark(market: Market) {
+  return MARKET_OPTIONS.find((item) => item.value === market)?.benchmark ?? "QQQ";
 }
 
 function sectorSortValue(label: string) {
@@ -333,10 +344,12 @@ function timeKey(time: unknown) {
 function parseRoute(): RouteState {
   const match = window.location.pathname.match(/^\/stocks\/([A-Za-z0-9.-]+)$/);
   if (!match) return { page: "dashboard" };
+  const marketParam = new URLSearchParams(window.location.search).get("market");
   return {
     page: "stock",
     ticker: match[1].toUpperCase(),
-    date: new URLSearchParams(window.location.search).get("date") ?? ""
+    date: new URLSearchParams(window.location.search).get("date") ?? "",
+    market: (marketParam === "cn" || marketParam === "hk" ? marketParam : "us") as Market
   };
 }
 
@@ -517,20 +530,20 @@ function TradingCalendar({
   );
 }
 
-function MiniChartPanel({ ticker, asOfDate }: { ticker: string; asOfDate: string }) {
+function MiniChartPanel({ ticker, asOfDate, market }: { ticker: string; asOfDate: string; market: Market }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [bars, setBars] = useState<DailyBar[]>([]);
 
   useEffect(() => {
     let alive = true;
-    fetchDailyBars(ticker, 120, asOfDate).then((result) => {
+    fetchDailyBars(ticker, 120, asOfDate, market).then((result) => {
       if (alive) setBars(result.data);
     });
     return () => {
       alive = false;
     };
-  }, [ticker, asOfDate]);
+  }, [ticker, asOfDate, market]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -632,7 +645,7 @@ function AlertList({
         <div className="alertRows">
           {sortedItems.map((item) => (
             <div className="alertRow" key={`${title}-${item.ticker}`}>
-              <strong>{item.ticker}</strong>
+              <strong title={item.ticker}>{item.name || item.ticker}</strong>
               <span className={tone === "up" ? "positive" : tone === "down" ? "negative" : ""}>
                 {metric === "stable"
                   ? `#${item.rank} / 均 ${numberText(item.avg_rank_5, 1)}`
@@ -735,16 +748,19 @@ function candleStyle() {
 function RankingTable({
   rows,
   benchmark,
+  market,
   selectedTicker,
   onPreview,
   onOpen
 }: {
   rows: RankingRow[];
   benchmark: string;
+  market: Market;
   selectedTicker: string;
   onPreview: (ticker: string) => void;
   onOpen: (ticker: string) => void;
 }) {
+  const showName = market !== "us";
   const tableWrapRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
 
@@ -799,6 +815,7 @@ function RankingTable({
           <tr>
             <th className="rankCell">排名</th>
             <th>代码</th>
+            {showName ? <th>{"\u540d\u79f0"}</th> : null}
             <th>期权</th>
             <th>股票类型</th>
             <th>预计财报日</th>
@@ -846,6 +863,7 @@ function RankingTable({
                     {row.ticker}
                   </button>
                 </td>
+                {showName ? <td>{row.name || "--"}</td> : null}
                 <td className={row.has_options === "Y" ? "optionYes" : row.has_options === "N" ? "optionNo" : "optionUnknown"}>
                   {row.has_options}
                 </td>
@@ -874,6 +892,7 @@ function RankingTable({
 }
 
 function DashboardPage() {
+  const [market, setMarket] = useState<Market>("us");
   const [windowSize, setWindowSize] = useState(DEFAULT_WINDOW);
   const [asOfDate, setAsOfDate] = useState("");
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -887,10 +906,11 @@ function DashboardPage() {
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [alertWindow, setAlertWindow] = useState(DEFAULT_WINDOW);
   const [alertLoading, setAlertLoading] = useState(false);
+  const marketMeta = MARKET_OPTIONS.find((item) => item.value === market) ?? MARKET_OPTIONS[0];
 
   const loadAlerts = (requestedWindow = alertWindow, requestedDate = ranking?.as_of_date ?? asOfDate) => {
     setAlertLoading(true);
-    fetchRankingAlerts(requestedWindow, requestedDate)
+    fetchRankingAlerts(requestedWindow, requestedDate, market)
       .then((alertResult) => {
         setAlerts(alertResult);
         setAlertWindow(alertResult.window);
@@ -902,7 +922,7 @@ function DashboardPage() {
   const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
     setError("");
-    fetchRanking(requestedWindow, requestedDate, APPLY_ANNOUNCED_REBALANCE)
+    fetchRanking(requestedWindow, requestedDate, market === "us" && APPLY_ANNOUNCED_REBALANCE, market)
       .then((result) => {
         setRanking(result);
         setAsOfDate(result.as_of_date);
@@ -924,17 +944,17 @@ function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchRankingDates(520)
+    fetchRankingDates(520, market)
       .then((result) => setAvailableDates(result.dates))
       .catch(() => setAvailableDates([]));
     loadRanking("");
-  }, []);
+  }, [market]);
 
   const filteredRows = useMemo(() => {
     const rows = ranking?.data ?? [];
     const term = query.trim().toUpperCase();
     return rows.filter((row) => {
-      const matchesQuery = !term || row.ticker.includes(term);
+      const matchesQuery = !term || row.ticker.includes(term) || (row.name ?? "").toUpperCase().includes(term);
       const matchesType = typeFilter === ALL_SECTORS || sectorLabel(row.sector) === typeFilter;
       return matchesQuery && matchesType;
     });
@@ -950,21 +970,46 @@ function DashboardPage() {
   }, [ranking]);
 
   const selectedRow = ranking?.data.find((row) => row.ticker === selectedTicker);
-  const openStock = (ticker: string) => navigateTo(`/stocks/${ticker}?date=${ranking?.as_of_date ?? asOfDate}`);
+  const openStock = (ticker: string) => navigateTo(`/stocks/${ticker}?date=${ranking?.as_of_date ?? asOfDate}&market=${market}`);
 
   return (
     <main className="app">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Nasdaq-100 Relative Strength</p>
-          <h1>纳指成分股 ATR 排名</h1>
+          <p className="eyebrow">{marketMeta.eyebrow}</p>
+          <h1>{marketMeta.title}</h1>
         </div>
         <div className="summaryStrip">
+          <span className="marketSwitch" aria-label="市场切换">
+            {MARKET_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={market === option.value ? "active" : ""}
+                onClick={() => {
+                  setMarket(option.value);
+                  setAsOfDate("");
+                  setRanking(null);
+                  setAlerts(null);
+                  setSelectedTicker(option.benchmark);
+                  setTypeFilter(ALL_SECTORS);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </span>
           <span>{ranking ? `${ranking.count} 支` : "--"}</span>
-          <span>基准 {ranking?.benchmark ?? "QQQ"}</span>
+          <span>基准 {ranking?.benchmark ?? marketMeta.benchmark}</span>
           <span>基准排名 {ranking?.benchmark_rank ?? "--"}</span>
           <span>计算日期 {(ranking?.as_of_date ?? asOfDate) || "--"}</span>
-          <span>已应用 2026-06-22 调整名单</span>
+          {market === "us" ? (
+            <span>已应用 2026-06-22 调整名单</span>
+          ) : market === "cn" ? (
+            <span>前复权日线 / 中证500基准</span>
+          ) : (
+            <span>前复权日线 / 恒生科技基准</span>
+          )}
           <button className="monitorButton" type="button" onClick={openAlerts}>
             <Activity size={16} aria-hidden="true" />
             排名监测
@@ -1037,13 +1082,14 @@ function DashboardPage() {
           </div>
           <RankingTable
             rows={filteredRows}
-            benchmark={ranking?.benchmark ?? "QQQ"}
+            benchmark={ranking?.benchmark ?? marketMeta.benchmark}
+            market={market}
             selectedTicker={selectedTicker}
             onPreview={setSelectedTicker}
             onOpen={openStock}
           />
         </section>
-        <MiniChartPanel ticker={selectedTicker} asOfDate={ranking?.as_of_date ?? asOfDate} />
+        <MiniChartPanel ticker={selectedTicker} asOfDate={ranking?.as_of_date ?? asOfDate} market={market} />
       </section>
     </main>
   );
@@ -1061,7 +1107,7 @@ function buildRelativeStrength(stockBars: DailyBar[], benchmarkBars: DailyBar[])
   }));
 }
 
-function useStockData(ticker: string, asOfDate: string) {
+function useStockData(ticker: string, asOfDate: string, market: Market) {
   const [stockBars, setStockBars] = useState<DailyBar[]>([]);
   const [benchmarkBars, setBenchmarkBars] = useState<DailyBar[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1071,7 +1117,8 @@ function useStockData(ticker: string, asOfDate: string) {
     let alive = true;
     setLoading(true);
     setError("");
-    Promise.all([fetchDailyBars(ticker, 280, asOfDate), fetchDailyBars("QQQ", 280, asOfDate)])
+    const benchmark = marketBenchmark(market);
+    Promise.all([fetchDailyBars(ticker, 280, asOfDate, market), fetchDailyBars(benchmark, 280, asOfDate, market)])
       .then(([stockResult, benchmarkResult]) => {
         if (!alive) return;
         setStockBars(stockResult.data);
@@ -1086,7 +1133,7 @@ function useStockData(ticker: string, asOfDate: string) {
     return () => {
       alive = false;
     };
-  }, [ticker, asOfDate]);
+  }, [ticker, asOfDate, market]);
 
   return { stockBars, benchmarkBars, loading, error };
 }
@@ -1405,7 +1452,7 @@ function ChartGuide({ onClose }: { onClose: () => void }) {
   );
 }
 
-function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate: string }) {
+function StockDetailPage({ ticker, initialDate, market }: { ticker: string; initialDate: string; market: Market }) {
   const [asOfDate, setAsOfDate] = useState(initialDate);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [ranking, setRanking] = useState<RankingResponse | null>(null);
@@ -1414,10 +1461,11 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [stockPeers, setStockPeers] = useState<StockPeers | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  const { stockBars, benchmarkBars, loading, error } = useStockData(ticker, asOfDate);
+  const { stockBars, benchmarkBars, loading, error } = useStockData(ticker, asOfDate, market);
+  const benchmarkLabel = market === "cn" ? "中证500" : market === "hk" ? "恒生科技" : "QQQ";
 
   useEffect(() => {
-    fetchRankingDates(520)
+    fetchRankingDates(520, market)
       .then((result) => {
         setAvailableDates(result.dates);
         if (!asOfDate && result.dates.length) setAsOfDate(result.dates[result.dates.length - 1]);
@@ -1429,7 +1477,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
     if (!asOfDate) return;
     let alive = true;
     setRankLoading(true);
-    fetchRanking(rankWindow, asOfDate, APPLY_ANNOUNCED_REBALANCE)
+    fetchRanking(rankWindow, asOfDate, market === "us" && APPLY_ANNOUNCED_REBALANCE, market)
       .then((result) => {
         if (alive) setRanking(result);
       })
@@ -1494,7 +1542,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
 
   const updateDate = (date: string) => {
     setAsOfDate(date);
-    window.history.replaceState({}, "", `/stocks/${ticker}?date=${date}`);
+    window.history.replaceState({}, "", `/stocks/${ticker}?date=${date}&market=${market}`);
   };
 
   return (
@@ -1560,7 +1608,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
             <strong>{numberText(volumeRatio, 2)}x</strong>
           </div>
           <div className="metricItem">
-            <span>20D相对QQQ</span>
+            <span>20D相对{benchmarkLabel}</span>
             <strong className={relative20 !== null && relative20 >= 0 ? "positive" : "negative"}>
               {percentText(relative20)}
             </strong>
@@ -1595,8 +1643,8 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
 
         <aside className="analysisSide compactSide">
           <section className="relativeStrengthCard">
-            <p className="eyebrow">Relative QQQ</p>
-            <h2>相对 QQQ 强度</h2>
+            <p className="eyebrow">Relative {benchmarkLabel}</p>
+            <h2>相对 {benchmarkLabel} 强度</h2>
             <p className="cardIntro">
               这里比较的是股票和 QQQ 在同一段时间里的表现差。正数表示跑赢 QQQ，负数表示跑输 QQQ。
             </p>
@@ -1607,7 +1655,7 @@ function StockDetailPage({ ticker, initialDate }: { ticker: string; initialDate:
                   <strong className={item.value !== null && item.value >= 0 ? "positive" : "negative"}>
                     {percentText(item.value)}
                   </strong>
-                  <em>vs QQQ</em>
+                  <em>vs {benchmarkLabel}</em>
                 </div>
               ))}
               <div className="maRow">
@@ -1654,7 +1702,7 @@ export default function App() {
   }, []);
 
   if (route.page === "stock" && route.ticker) {
-    return <StockDetailPage ticker={route.ticker} initialDate={route.date ?? ""} />;
+    return <StockDetailPage ticker={route.ticker} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
   }
   return <DashboardPage />;
 }

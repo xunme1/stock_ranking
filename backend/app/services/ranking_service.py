@@ -7,14 +7,17 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.core.config import DEFAULT_BENCHMARK, RANKING_CACHE_DIR
+from app.core.config import CN_DEFAULT_BENCHMARK, DEFAULT_BENCHMARK, HK_DEFAULT_BENCHMARK, RANKING_CACHE_DIR
 from app.services.data_loader import (
     load_daily_data,
     load_earnings_calendar,
     load_optionable_status,
-    load_stock_profiles,
+    load_stock_profiles_for_market,
     load_ticker_file,
+    load_ticker_file_for_market,
+    normalize_market,
     normalize_ticker,
+    normalize_ticker_for_market,
 )
 
 
@@ -27,6 +30,7 @@ RANKING_CACHE_COLUMNS = [
     "benchmark",
     "rank",
     "ticker",
+    "name",
     "type",
     "has_options",
     "sector",
@@ -46,7 +50,8 @@ RANKING_CACHE_COLUMNS = [
 @dataclass
 class RankingConfig:
     window: int = 10
-    benchmark: str = DEFAULT_BENCHMARK
+    benchmark: str | None = DEFAULT_BENCHMARK
+    market: str = "us"
     apply_announced_rebalance: bool = False
     as_of_date: date | None = None
 
@@ -58,6 +63,14 @@ def apply_rebalance(tickers: list[str]) -> list[str]:
         if ticker not in result:
             result.append(ticker)
     return result
+
+
+def default_benchmark_for_market(market: str) -> str:
+    if market == "cn":
+        return CN_DEFAULT_BENCHMARK
+    if market == "hk":
+        return HK_DEFAULT_BENCHMARK
+    return DEFAULT_BENCHMARK
 
 
 def true_range(df: pd.DataFrame) -> pd.Series:
@@ -90,15 +103,15 @@ def trim_to_as_of_date(df: pd.DataFrame, as_of_date: date | None) -> pd.DataFram
     return df[df["date"].dt.date <= as_of_date]
 
 
-def latest_available_date(ticker: str) -> date:
-    df = load_daily_data(ticker)
+def latest_available_date(ticker: str, market: str = "us") -> date:
+    df = load_daily_data(ticker, market)
     if df.empty:
         raise ValueError(f"No daily data for {ticker}")
     return df.iloc[-1]["date"].date()
 
 
-def available_dates(ticker: str, limit: int = 260) -> list[str]:
-    df = load_daily_data(ticker).tail(limit)
+def available_dates(ticker: str, limit: int = 260, market: str = "us") -> list[str]:
+    df = load_daily_data(ticker, market).tail(limit)
     return [row.date.date().isoformat() for row in df.itertuples(index=False)]
 
 
@@ -106,15 +119,16 @@ def atr_window_for_ranking(window: int) -> int:
     return 20 if window == 10 else window
 
 
-def ranking_cache_path(window: int) -> Path:
-    return RANKING_CACHE_DIR / f"ranking_window_{window}.csv"
+def ranking_cache_path(window: int, market: str = "us") -> Path:
+    suffix = "" if normalize_market(market) == "us" else f"_{normalize_market(market)}"
+    return RANKING_CACHE_DIR / f"ranking_window_{window}{suffix}.csv"
 
 
-def load_ranking_cache(window: int) -> pd.DataFrame:
-    path = ranking_cache_path(window)
+def load_ranking_cache(window: int, market: str = "us") -> pd.DataFrame:
+    path = ranking_cache_path(window, market)
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame(columns=RANKING_CACHE_COLUMNS)
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype={"ticker": str, "benchmark": str})
     for column in RANKING_CACHE_COLUMNS:
         if column not in df.columns:
             df[column] = pd.NA
@@ -135,25 +149,26 @@ def load_ranking_cache(window: int) -> pd.DataFrame:
     return df[RANKING_CACHE_COLUMNS]
 
 
-def save_ranking_cache(window: int, new_rows: pd.DataFrame) -> None:
+def save_ranking_cache(window: int, new_rows: pd.DataFrame, market: str = "us") -> None:
     RANKING_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    path = ranking_cache_path(window)
-    old_rows = load_ranking_cache(window)
+    path = ranking_cache_path(window, market)
+    old_rows = load_ranking_cache(window, market)
     combined = pd.concat([old_rows, new_rows], ignore_index=True)
     combined = combined.dropna(subset=["as_of_date", "ticker"])
-    combined["ticker"] = combined["ticker"].astype(str).map(normalize_ticker)
+    combined["ticker"] = combined["ticker"].astype(str).map(lambda item: normalize_ticker_for_market(item, market))
+    combined["benchmark"] = combined["benchmark"].astype(str).map(lambda item: normalize_ticker_for_market(item, market))
     combined["as_of_date"] = combined["as_of_date"].astype(str)
     combined = combined.drop_duplicates(subset=["as_of_date", "window", "benchmark", "ticker"], keep="last")
     combined = combined.sort_values(["as_of_date", "rank", "ticker"])
     combined[RANKING_CACHE_COLUMNS].to_csv(path, index=False, encoding="utf-8-sig")
 
 
-def cached_ranking_frame(window: int, benchmark: str, as_of_date: date) -> pd.DataFrame | None:
-    df = load_ranking_cache(window)
+def cached_ranking_frame(window: int, benchmark: str, as_of_date: date, market: str = "us") -> pd.DataFrame | None:
+    df = load_ranking_cache(window, market)
     if df.empty:
         return None
     target_date = as_of_date.isoformat()
-    benchmark = normalize_ticker(benchmark)
+    benchmark = normalize_ticker_for_market(benchmark, market)
     matched = df[(df["as_of_date"].astype(str) == target_date) & (df["benchmark"].astype(str) == benchmark)]
     if matched.empty:
         return None
@@ -164,6 +179,7 @@ def cached_ranking_frame(window: int, benchmark: str, as_of_date: date) -> pd.Da
 
 def _alert_item(
     ticker: str,
+    name: str,
     latest_rank: int,
     previous_rank: int | None,
     recent_ranks: list[int],
@@ -172,6 +188,7 @@ def _alert_item(
     rank_change = previous_rank - latest_rank if previous_rank is not None else None
     return {
         "ticker": ticker,
+        "name": name,
         "rank": latest_rank,
         "previous_rank": previous_rank,
         "rank_change": rank_change,
@@ -184,14 +201,16 @@ def _alert_item(
 
 def build_ranking_alerts(
     window: int,
-    benchmark: str = DEFAULT_BENCHMARK,
+    benchmark: str | None = DEFAULT_BENCHMARK,
+    market: str = "us",
     as_of_date: date | None = None,
     days: int = 5,
     top_n: int = 20,
     move_threshold: int = 10,
 ) -> dict[str, object]:
-    benchmark = normalize_ticker(benchmark)
-    cache = load_ranking_cache(window)
+    market = normalize_market(market)
+    benchmark = normalize_ticker_for_market(benchmark or default_benchmark_for_market(market), market)
+    cache = load_ranking_cache(window, market)
     if cache.empty:
         raise ValueError(f"No ranking cache found for window {window}")
 
@@ -222,6 +241,10 @@ def build_ranking_alerts(
     latest_rank = {str(row.ticker): int(row.rank) for row in latest.itertuples(index=False)}
     previous_close = {str(row.ticker): float(row.close) for row in previous.itertuples(index=False)}
     latest_close = {str(row.ticker): float(row.close) for row in latest.itertuples(index=False)}
+    latest_name = {
+        str(row.ticker): str(getattr(row, "name", "") or "")
+        for row in latest.itertuples(index=False)
+    }
     daily_change_pct = {
         ticker: (latest_close[ticker] / previous_close[ticker] - 1) * 100
         for ticker in latest_close
@@ -229,14 +252,14 @@ def build_ranking_alerts(
     }
 
     stable_top20 = [
-        _alert_item(ticker, latest_rank[ticker], previous_rank.get(ticker), ranks, daily_change_pct.get(ticker))
+        _alert_item(ticker, latest_name.get(ticker, ""), latest_rank[ticker], previous_rank.get(ticker), ranks, daily_change_pct.get(ticker))
         for ticker, ranks in rank_lists.items()
         if len(ranks) == len(recent_dates) and max(ranks) <= top_n and ticker in latest_rank
     ]
     stable_top20.sort(key=lambda item: (float(item["avg_rank_5"] or 999), int(item["rank"])))
 
     movers = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
+        _alert_item(ticker, latest_name.get(ticker, ""), rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if ticker in previous_rank and abs(previous_rank[ticker] - rank) > move_threshold
     ]
@@ -258,14 +281,14 @@ def build_ranking_alerts(
     )
 
     entered_top20 = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
+        _alert_item(ticker, latest_name.get(ticker, ""), rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if rank <= top_n and previous_rank.get(ticker, top_n + 1) > top_n
     ]
     entered_top20.sort(key=lambda item: int(item["rank"]))
 
     dropped_top20 = [
-        _alert_item(ticker, rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
+        _alert_item(ticker, latest_name.get(ticker, ""), rank, previous_rank.get(ticker), rank_lists.get(ticker, []), daily_change_pct.get(ticker))
         for ticker, rank in latest_rank.items()
         if rank > top_n and previous_rank.get(ticker, top_n + 1) <= top_n
     ]
@@ -291,11 +314,13 @@ def calculate_ticker_score(
     ticker: str,
     window: int,
     benchmark: str,
+    market: str,
     as_of_date: date | None,
     optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
 ) -> dict[str, object] | None:
-    df = load_daily_data(ticker)
+    market = normalize_market(market)
+    df = load_daily_data(ticker, market)
     df = trim_to_as_of_date(df, as_of_date)
     atr_window = atr_window_for_ranking(window)
     minimum_rows = max(window * 2 - 1, atr_window)
@@ -318,17 +343,29 @@ def calculate_ticker_score(
     price_vs_center_pct = (close / float(center) - 1) * 100
     close_3d_ago = clean_number(df.iloc[-4]["close"]) if len(df) >= 4 else None
     price_change_3d_pct = (close / close_3d_ago - 1) * 100 if close_3d_ago else None
-    ticker = normalize_ticker(ticker)
+    ticker = normalize_ticker_for_market(ticker, market)
     profile = stock_profiles.get(ticker, {})
     is_benchmark = ticker == benchmark
     has_options = "Y" if is_benchmark else optionable_status.get(ticker, "U")
+    if market == "cn":
+        row_type = "CSI 500 Index" if is_benchmark else "A-share Stock"
+        benchmark_name = "\u4e2d\u8bc1500"
+    elif market == "hk":
+        row_type = "Hang Seng TECH Index" if is_benchmark else "Hong Kong Stock"
+        benchmark_name = "\u6052\u751f\u79d1\u6280"
+    else:
+        row_type = "Nasdaq-100 ETF" if is_benchmark else "Nasdaq-100 Stock"
+        benchmark_name = ""
+    default_sector = "\u6307\u6570" if is_benchmark and market in {"cn", "hk"} else "ETF" if is_benchmark else "Unknown"
+    default_stock_type = default_sector if is_benchmark else "\u5176\u4ed6"
 
     return {
         "ticker": ticker,
-        "type": "Nasdaq-100 ETF" if is_benchmark else "Nasdaq-100 Stock",
+        "name": profile.get("name", benchmark_name if is_benchmark else ""),
+        "type": row_type,
         "has_options": has_options if has_options in {"Y", "N", "U"} else "U",
-        "sector": profile.get("sector", "ETF" if is_benchmark else "Unknown"),
-        "stock_type": profile.get("stock_type", "ETF" if is_benchmark else "其他"),
+        "sector": profile.get("sector", default_sector),
+        "stock_type": profile.get("stock_type", default_stock_type),
         "date": latest["date"].date().isoformat(),
         "close": close,
         "latest_ma": clean_number(latest["ma"]),
@@ -344,6 +381,7 @@ def build_ranking_frame(
     universe: list[str],
     window: int,
     benchmark: str,
+    market: str,
     as_of_date: date,
     optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
@@ -356,6 +394,7 @@ def build_ranking_frame(
                 ticker,
                 window,
                 benchmark,
+                market,
                 as_of_date,
                 optionable_status,
                 stock_profiles,
@@ -386,6 +425,7 @@ def build_and_cache_ranking_frame(
     universe: list[str],
     window: int,
     benchmark: str,
+    market: str,
     as_of_date: date,
     optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
@@ -394,6 +434,7 @@ def build_and_cache_ranking_frame(
         universe,
         window,
         benchmark,
+        market,
         as_of_date,
         optionable_status,
         stock_profiles,
@@ -402,12 +443,12 @@ def build_and_cache_ranking_frame(
     cache_rows.insert(0, "benchmark", benchmark)
     cache_rows.insert(0, "window", window)
     cache_rows.insert(0, "as_of_date", as_of_date.isoformat())
-    save_ranking_cache(window, cache_rows.reindex(columns=RANKING_CACHE_COLUMNS))
+    save_ranking_cache(window, cache_rows.reindex(columns=RANKING_CACHE_COLUMNS), market)
     return df, skipped, benchmark_score
 
 
-def previous_trading_dates(benchmark: str, as_of_date: date, count: int) -> list[date]:
-    df = load_daily_data(benchmark)
+def previous_trading_dates(benchmark: str, as_of_date: date, count: int, market: str = "us") -> list[date]:
+    df = load_daily_data(benchmark, market)
     df = trim_to_as_of_date(df, as_of_date)
     dates = [item.date() for item in df["date"].tail(count + 1)]
     return list(reversed(dates[:-1]))[:count]
@@ -417,41 +458,45 @@ def rank_map_for_date(
     universe: list[str],
     window: int,
     benchmark: str,
+    market: str,
     as_of_date: date,
     optionable_status: dict[str, str],
     stock_profiles: dict[str, dict[str, str]],
     use_cache: bool = True,
 ) -> dict[str, int]:
-    cached = cached_ranking_frame(window, benchmark, as_of_date) if use_cache else None
+    cached = cached_ranking_frame(window, benchmark, as_of_date, market) if use_cache else None
     if cached is not None:
         return {str(row.ticker): int(row.rank) for row in cached.itertuples(index=False)}
     try:
-        df, _, _ = build_ranking_frame(universe, window, benchmark, as_of_date, optionable_status, stock_profiles)
+        df, _, _ = build_ranking_frame(universe, window, benchmark, market, as_of_date, optionable_status, stock_profiles)
     except ValueError:
         return {}
     return {str(row.ticker): int(row.rank) for row in df.itertuples(index=False)}
 
 
 def build_ranking(config: RankingConfig) -> dict[str, object]:
-    benchmark = normalize_ticker(config.benchmark)
-    effective_as_of_date = config.as_of_date or latest_available_date(benchmark)
-    optionable_status = load_optionable_status()
-    stock_profiles = load_stock_profiles()
-    earnings_calendar = load_earnings_calendar()
-    tickers = load_ticker_file()
-    if config.apply_announced_rebalance:
+    market = normalize_market(config.market)
+    benchmark = normalize_ticker_for_market(config.benchmark or default_benchmark_for_market(market), market)
+    effective_as_of_date = config.as_of_date or latest_available_date(benchmark, market)
+    optionable_status = {} if market in {"cn", "hk"} else load_optionable_status()
+    stock_profiles = load_stock_profiles_for_market(market)
+    earnings_calendar = {} if market in {"cn", "hk"} else load_earnings_calendar()
+    tickers = load_ticker_file_for_market(market)
+    if market == "us" and config.apply_announced_rebalance:
         tickers = apply_rebalance(tickers)
 
     universe = list(tickers)
     if benchmark not in universe:
         universe.append(benchmark)
 
-    cached = cached_ranking_frame(config.window, benchmark, effective_as_of_date) if config.apply_announced_rebalance else None
+    use_cache = market in {"cn", "hk"} or config.apply_announced_rebalance
+    cached = cached_ranking_frame(config.window, benchmark, effective_as_of_date, market) if use_cache else None
     if cached is None:
         df, skipped, benchmark_score = build_and_cache_ranking_frame(
             universe,
             config.window,
             benchmark,
+            market,
             effective_as_of_date,
             optionable_status,
             stock_profiles,
@@ -461,16 +506,17 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
         skipped = []
         benchmark_score = float(df.loc[df["ticker"] == benchmark, "atr_score"].iloc[0])
 
-    prior_dates = previous_trading_dates(benchmark, effective_as_of_date, 10)
+    prior_dates = previous_trading_dates(benchmark, effective_as_of_date, 10, market)
     prior_rank_maps = [
         rank_map_for_date(
             universe,
             config.window,
             benchmark,
+            market,
             prior_date,
             optionable_status,
             stock_profiles,
-            config.apply_announced_rebalance,
+            use_cache,
         )
         for prior_date in prior_dates
     ]
@@ -500,6 +546,7 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
 
     return {
         "window": config.window,
+        "market": market,
         "as_of_date": effective_as_of_date.isoformat(),
         "benchmark": benchmark,
         "benchmark_rank": int(df.loc[df["ticker"] == benchmark, "rank"].iloc[0]),

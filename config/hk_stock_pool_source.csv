@@ -1,0 +1,81 @@
+﻿序号;股票代码;公司名称;所属组合;一级行业标签;二级行业标签;恒生科技成分股;半导体纯度;代表性/护城河;参考来源
+1;0020.HK;商汤 - W;恒生科技30;人工智能;视觉AI平台;是;中低;AI视觉平台与算法产品，属于半导体算力需求的重要下游应用。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+2;0085.HK;中电华大科技;半导体/强相关股票池;半导体;IC设计/安全芯片;否;高;安全芯片客户认证和行业准入壁垒较高。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+3;0100.HK;MINIMAX - W;恒生科技30;人工智能;大模型/AI应用;是;中低;大模型和AI应用平台，属于AI算力需求端。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+4;0148.HK;建滔集团;半导体/强相关股票池;AI硬件/电子;PCB/覆铜板材料;否;中;上游化工到覆铜板的一体化能力和规模优势。;https://zh.wikipedia.org/wiki/%E5%BB%BA%E6%BB%94%E9%9B%86%E5%9C%98
+5;0179.HK;德昌电机控股;半导体/强相关股票池;汽车零部件/机器人;汽车执行器;否;中;汽车和工业客户认证周期长，精密制造能力稳定。;https://zh.wikipedia.org/wiki/%E5%BE%B7%E6%98%8C%E9%9B%BB%E6%A9%9F
+6;0241.HK;阿里健康;恒生科技30;医疗健康;互联网医疗;是;中低;互联网医疗平台，偏半导体应用端。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+7;0243.HK;QPL International;半导体/强相关股票池;半导体;先进封装/封装测试;否;中高;封装工艺、可靠性控制和客户资质带来基础门槛。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+8;0285.HK;比亚迪电子;恒生科技30;消费电子;电子制造/汽车电子;是;中低;消费电子和汽车电子制造平台，客户与制造能力形成壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+9;0300.HK;美的集团;恒生科技30;家用电器;白电/智能家居龙头;是;中低;家电、机器人和工业自动化终端平台，半导体应用规模大。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+10;0303.HK;伟易达;半导体/强相关股票池;消费电子;电子产品制造;否;中低;细分电子产品品牌、渠道和制造管理能力。;https://www.tradingview.com/
+11;0501.HK;OmniVision / 豪威集成;半导体/强相关股票池;半导体;IC设计/CIS图像传感器;否;高;CMOS图像传感器产品、客户导入和算法调校经验构成壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+12;0522.HK;ASMPT;半导体/强相关股票池;半导体;后道设备/封装设备;否;高;先进封装、表面贴装设备具备全球客户基础和工艺 know-how。;https://www.tradingview.com/symbols/HKEX-522/
+13;0595.HK;AV Concept;半导体/强相关股票池;电子元件;IC/电子元件分销;否;中;代理线、客户资源和供应链服务能力是主要壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+14;0600.HK;Axera Semiconductor;半导体/强相关股票池;半导体;IC设计/AI芯片;否;高;端侧AI芯片需要算法、工具链、场景适配共同积累。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+15;0669.HK;创科实业;半导体/强相关股票池;消费电子;智能硬件/电动工具;否;中低;全球品牌渠道、产品迭代和电池平台生态。;https://zh.wikipedia.org/wiki/%E5%89%B5%E7%A7%91%E5%AF%A6%E6%A5%AD
+16;0698.HK;通达集团;半导体/强相关股票池;消费电子;精密结构件;否;中;精密结构件制造、客户认证和规模交付能力。;https://www.tradingview.com/
+17;0700.HK;腾讯控股;恒生科技30;互联网/AI应用;互联网平台/云AI;是;中低;云、AI和互联网生态平台，算力需求和生态壁垒强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+18;0732.HK;信利国际;半导体/强相关股票池;消费电子;显示/触控/摄像头模组;否;中;显示和触控模组制造经验、客户资源和规模能力。;https://zh.wikipedia.org/wiki/%E4%BF%A1%E5%88%A9%E5%9B%BD%E9%99%85
+19;0751.HK;创维集团;半导体/强相关股票池;家用电器;电视/显示终端;否;中低;显示终端品牌、渠道和制造体系。;https://www.tradingview.com/
+20;0759.HK;CEC国际控股;半导体/强相关股票池;电子元件;电子元件渠道;否;中;元件渠道、客户网络和库存管理能力。;https://www.tradingview.com/
+21;0763.HK;中兴通讯;半导体/强相关股票池;通信/AI算力;通信设备/算力网络;否;中;通信标准、系统集成、专利和运营商客户形成壁垒。;https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%85%B4%E9%80%9A%E8%AE%AF
+22;0780.HK;同程旅行;恒生科技30;互联网;在线旅游平台;是;中低;在线旅行平台，偏科技平台应用端。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+23;0854.HK;威雅利电子;半导体/强相关股票池;电子元件;IC/电子元件分销;否;中;代理线、客户覆盖和技术支持能力构成渠道壁垒。;https://www.tradingview.com/
+24;0981.HK;中芯国际;半导体股票池；恒生科技30;半导体;晶圆制造/代工;是;高;中国大陆晶圆代工龙头，产能、客户和工艺平台形成进入壁垒。;"https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1"
+25;0992.HK;联想集团;恒生科技30;AI算力/ICT设备;PC/服务器硬件;是;中低;PC、服务器和AI终端硬件平台，供应链与渠道壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+26;1024.HK;快手 - W;恒生科技30;互联网/AI应用;内容平台/AI推荐;是;中低;内容平台和AI推荐技术形成生态壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+27;1070.HK;TCL电子;半导体/强相关股票池;家用电器;电视/显示终端;否;中低;全球品牌、渠道和显示终端规模优势。;https://www.tradingview.com/
+28;1191.HK;Crealights Technology;半导体/强相关股票池;半导体;化合物半导体/光电子;否;中高;光电芯片和器件工艺、可靠性验证带来进入门槛。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+29;1211.HK;比亚迪股份;恒生科技30;汽车;新能源车;是;中低;新能源车和电池平台，车规半导体用量大且供应链协同强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+30;1347.HK;华虹半导体/华虹宏力;半导体股票池；恒生科技30;半导体;晶圆制造/代工;是;高;特色工艺、功率器件及嵌入式非易失存储等平台积累较深。;"https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1"
+31;1385.HK;上海复旦;半导体/强相关股票池;半导体;IC设计/FPGA-安全芯片;否;高;FPGA、安全芯片和非挥发存储多产品线沉淀。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+32;1415.HK;高伟电子;半导体/强相关股票池;消费电子;摄像头模组;否;中;消费电子大客户供应链认证和精密模组能力构成壁垒。;https://www.tradingview.com/
+33;1478.HK;丘钛科技;半导体/强相关股票池;消费电子;摄像头/指纹识别模组;否;中;摄像头模组规模、客户导入和制造良率构成壁垒。;https://zh.wikipedia.org/wiki/%E4%B8%98%E9%88%A6%E7%A7%91%E6%8A%80
+34;1698.HK;腾讯音乐 - SW;恒生科技30;互联网/AI应用;数字内容平台;是;中低;音乐内容平台和用户生态。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+35;1810.HK;小米集团 - W;恒生科技30;消费电子/端侧AI;手机/IoT/AI终端;是;中低;手机、IoT和汽车生态，终端出货带动芯片需求。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+36;1888.HK;建滔积层板;半导体/强相关股票池;AI硬件/电子;PCB/覆铜板材料;否;中高;覆铜板规模、配方、成本和客户资源构成材料壁垒。;https://zh.wikipedia.org/wiki/%E5%BB%BA%E6%BB%94%E7%A9%8D%E5%B1%A4%E6%9D%BF
+37;1979.HK;天宝集团;半导体/强相关股票池;消费电子;电源供应器/充电器;否;中;电源产品认证、客户关系和制造交付能力。;https://www.tradingview.com/
+38;2015.HK;理想汽车 - W;恒生科技30;智能汽车;新能源车/智能驾驶;是;中低;智能电动车平台，车规芯片和功率器件需求强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+39;2018.HK;瑞声科技;半导体/强相关股票池;消费电子;声学/VR/可穿戴;否;中;微型器件研发、制造良率和大客户认证形成壁垒。;https://zh.wikipedia.org/wiki/%E7%91%9E%E5%A3%B0%E7%A7%91%E6%8A%80
+40;2038.HK;富智康集团;半导体/强相关股票池;电子/AI硬件;电子制造;否;中;全球制造网络、工程管理和大客户供应链经验。;https://zh.wikipedia.org/wiki/%E5%AF%8C%E6%99%BA%E5%BA%B7
+41;2149.HK;BaTeLab / 贝克微;半导体/强相关股票池;半导体;IC设计/模拟芯片;否;高;模拟IC产品迭代和客户应用支持形成壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+42;2166.HK;芯智控股;半导体/强相关股票池;电子元件;IC/电子元件分销;否;中高;IC代理资源、客户覆盖和技术支持能力构成渠道壁垒。;https://www.tradingview.com/symbols/HKEX-2166/
+43;2342.HK;京信通信;半导体/强相关股票池;通信/AI算力;通信设备/射频网络;否;中;射频工程经验、运营商客户和通信场景交付能力。;https://www.tradingview.com/
+44;2382.HK;舜宇光学科技;恒生科技30;消费电子;光学镜头/摄像头模组;是;中低;光学镜头和模组制造能力、客户认证和良率壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+45;2513.HK;智谱;恒生科技30;人工智能;大模型/AI应用;是;中低;大模型和AI应用平台，属于算力需求端。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+46;2533.HK;黑芝麻智能;半导体/强相关股票池;半导体;IC设计/车规AI芯片;否;高;车规认证、算法平台和主机厂项目导入周期长。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+47;2577.HK;英诺赛科;半导体/强相关股票池;半导体;功率半导体/GaN;否;高;GaN器件制造、工艺良率和客户认证形成壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+48;2658.HK;广东天域半导体;半导体/强相关股票池;半导体;上游材料/SiC外延;否;高;SiC材料和外延质量、良率、客户验证周期构成壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+49;2676.HK;Novosense / 纳芯微;半导体/强相关股票池;半导体;IC设计/模拟-传感器;否;高;车规和工业客户认证周期长，产品组合带来粘性。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+50;2701.HK;NSING Technologies;半导体/强相关股票池;半导体;IC设计服务/半导体技术;否;中高;技术平台和客户项目经验是主要壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+51;2726.HK;Epiworld International;半导体/强相关股票池;半导体;上游材料/化合物外延;否;高;外延工艺、缺陷控制和下游客户认证周期较长。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+52;2878.HK;晶门半导体;半导体/强相关股票池;半导体;IC设计/显示驱动;否;高;显示驱动IC客户认证和面板应用经验是核心壁垒。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+53;3277.HK;Gpixel / 长光辰芯;半导体/强相关股票池;半导体;IC设计/CIS图像传感器;否;高;高性能图像传感器细分场景具有工艺和客户积累。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+54;3310.HK;Viewtrix Technology;半导体/强相关股票池;半导体;IC设计/显示驱动;否;高;显示驱动IC需面板厂认证和长期调校积累。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+55;3661.HK;SG Micro / 圣邦微;半导体/强相关股票池;半导体;IC设计/模拟芯片;否;高;模拟芯片产品长尾、客户粘性和工程经验壁垒较强。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+56;3690.HK;美团 - W;恒生科技30;互联网/AI应用;本地生活平台;是;中低;本地生活平台和履约网络形成生态壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+57;3986.HK;GigaDevice / 兆易创新;半导体/强相关股票池;半导体;IC设计/存储-NOR-MCU;否;高;NOR Flash、MCU产品线和渠道生态具备规模优势。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+58;6082.HK;Biren / 壁仞科技;半导体/强相关股票池;半导体;IC设计/AI芯片;否;高;大算力芯片研发、软件生态和客户验证门槛高。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+59;6613.HK;蓝思科技;半导体/强相关股票池;消费电子;玻璃盖板/结构件;否;中;精密加工、材料处理和大客户供应链认证形成壁垒。;https://www.tradingview.com/
+60;6618.HK;京东健康;恒生科技30;医疗健康;互联网医疗;是;中低;互联网医疗和医药零售平台。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+61;6675.HK;SENASIC;半导体/强相关股票池;半导体;IC设计/传感器-模拟;否;高;传感器和模拟产品依赖长期工程经验及应用 Know-how。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+62;6690.HK;海尔智家;恒生科技30;家用电器;白电/智能家居龙头;是;中低;智能家电和IoT终端平台，全球品牌渠道强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+63;6809.HK;Montage / 澜起科技;半导体/强相关股票池;半导体;IC设计/内存接口;否;高;内存接口芯片认证周期长，服务器平台生态壁垒高。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+64;6869.HK;长飞光纤光缆;半导体/强相关股票池;AI硬件/通信;光通信/光纤光缆;否;中;光纤预制棒、光缆规模和运营商客户资源。;https://www.tradingview.com/
+65;6908.HK;宏光半导体;半导体/强相关股票池;半导体;化合物半导体/GaN-光电子;否;中高;化合物半导体工艺、封装和客户验证周期较长。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+66;6939.HK;MEGAIN;半导体/强相关股票池;半导体;IC设计/耗材芯片;否;高;细分芯片场景的客户、渠道和固件适配积累。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+67;8066.HK;Phoenitron Holdings;半导体/强相关股票池;电子元件;半导体相关元件;否;中;细分元件客户和产品认证形成一定粘性。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+68;9618.HK;京东集团 - SW;恒生科技30;互联网;电商/供应链平台;是;中低;电商、物流和云服务平台，供应链能力强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+69;9626.HK;哔哩哔哩 - W;恒生科技30;互联网/AI应用;内容社区平台;是;中低;内容社区和年轻用户生态。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+70;9660.HK;地平线机器人 - W;半导体股票池；恒生科技30;半导体;IC设计/车规AI芯片;是;高;智能驾驶AI芯片、算法和车企项目导入形成壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+71;9863.HK;零跑汽车;恒生科技30;智能汽车;新能源车/智能驾驶;是;中低;智能电动车整车平台，自研电子电气架构具备差异化。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+72;9866.HK;蔚来 - SW;恒生科技30;智能汽车;新能源车/智能驾驶;是;中低;高端智能电动车、服务网络和车载智能化平台。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+73;9868.HK;小鹏集团 - W;恒生科技30;智能汽车;新能源车/智能驾驶;是;中低;智能驾驶和电动车平台，软件定义汽车属性较强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+74;9888.HK;百度集团 - SW;恒生科技30;互联网/AI应用;AI云/自动驾驶;是;中低;搜索、AI云和自动驾驶平台，算法和数据生态壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+75;9903.HK;Iluvatar CoreX / 天数智芯;半导体/强相关股票池;半导体;IC设计/GPU;否;高;AI加速芯片需要架构、软件栈和客户适配共同积累。;https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+76;9961.HK;携程集团 - S;恒生科技30;互联网;在线旅游平台;是;中低;在线旅游平台、供应链和品牌壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+77;9988.HK;阿里巴巴 - W;恒生科技30;互联网/AI应用;电商/云AI;是;中低;电商、云计算和AI平台生态，技术和商业网络强。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+78;9999.HK;网易;恒生科技30;传媒/游戏;游戏娱乐;是;中低;游戏研发和内容平台，IP与研发能力构成壁垒。;https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1

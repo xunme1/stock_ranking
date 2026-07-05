@@ -1,0 +1,81 @@
+﻿ticker,name,sector,stock_type,is_hstech,source
+00020,商汤 - W,人工智能,视觉AI平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00085,中电华大科技,半导体,IC设计/安全芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+00100,MINIMAX - W,人工智能,大模型/AI应用,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00148,建滔集团,AI硬件/电子,PCB/覆铜板材料,N,https://zh.wikipedia.org/wiki/%E5%BB%BA%E6%BB%94%E9%9B%86%E5%9C%98
+00179,德昌电机控股,汽车零部件/机器人,汽车执行器,N,https://zh.wikipedia.org/wiki/%E5%BE%B7%E6%98%8C%E9%9B%BB%E6%A9%9F
+00241,阿里健康,医疗健康,互联网医疗,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00243,QPL International,半导体,先进封装/封装测试,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+00285,比亚迪电子,消费电子,电子制造/汽车电子,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00300,美的集团,家用电器,白电/智能家居龙头,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00303,伟易达,消费电子,电子产品制造,N,https://www.tradingview.com/
+00501,OmniVision / 豪威集成,半导体,IC设计/CIS图像传感器,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+00522,ASMPT,半导体,后道设备/封装设备,N,https://www.tradingview.com/symbols/HKEX-522/
+00595,AV Concept,电子元件,IC/电子元件分销,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+00600,Axera Semiconductor,半导体,IC设计/AI芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+00669,创科实业,消费电子,智能硬件/电动工具,N,https://zh.wikipedia.org/wiki/%E5%89%B5%E7%A7%91%E5%AF%A6%E6%A5%AD
+00698,通达集团,消费电子,精密结构件,N,https://www.tradingview.com/
+00700,腾讯控股,互联网/AI应用,互联网平台/云AI,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00732,信利国际,消费电子,显示/触控/摄像头模组,N,https://zh.wikipedia.org/wiki/%E4%BF%A1%E5%88%A9%E5%9B%BD%E9%99%85
+00751,创维集团,家用电器,电视/显示终端,N,https://www.tradingview.com/
+00759,CEC国际控股,电子元件,电子元件渠道,N,https://www.tradingview.com/
+00763,中兴通讯,通信/AI算力,通信设备/算力网络,N,https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%85%B4%E9%80%9A%E8%AE%AF
+00780,同程旅行,互联网,在线旅游平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+00854,威雅利电子,电子元件,IC/电子元件分销,N,https://www.tradingview.com/
+00981,中芯国际,半导体,晶圆制造/代工,Y,"https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1"
+00992,联想集团,AI算力/ICT设备,PC/服务器硬件,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+01024,快手 - W,互联网/AI应用,内容平台/AI推荐,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+01070,TCL电子,家用电器,电视/显示终端,N,https://www.tradingview.com/
+01191,Crealights Technology,半导体,化合物半导体/光电子,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+01211,比亚迪股份,汽车,新能源车,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+01347,华虹半导体/华虹宏力,半导体,晶圆制造/代工,Y,"https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1"
+01385,上海复旦,半导体,IC设计/FPGA-安全芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+01415,高伟电子,消费电子,摄像头模组,N,https://www.tradingview.com/
+01478,丘钛科技,消费电子,摄像头/指纹识别模组,N,https://zh.wikipedia.org/wiki/%E4%B8%98%E9%88%A6%E7%A7%91%E6%8A%80
+01698,腾讯音乐 - SW,互联网/AI应用,数字内容平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+01810,小米集团 - W,消费电子/端侧AI,手机/IoT/AI终端,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+01888,建滔积层板,AI硬件/电子,PCB/覆铜板材料,N,https://zh.wikipedia.org/wiki/%E5%BB%BA%E6%BB%94%E7%A9%8D%E5%B1%A4%E6%9D%BF
+01979,天宝集团,消费电子,电源供应器/充电器,N,https://www.tradingview.com/
+02015,理想汽车 - W,智能汽车,新能源车/智能驾驶,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+02018,瑞声科技,消费电子,声学/VR/可穿戴,N,https://zh.wikipedia.org/wiki/%E7%91%9E%E5%A3%B0%E7%A7%91%E6%8A%80
+02038,富智康集团,电子/AI硬件,电子制造,N,https://zh.wikipedia.org/wiki/%E5%AF%8C%E6%99%BA%E5%BA%B7
+02149,BaTeLab / 贝克微,半导体,IC设计/模拟芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02166,芯智控股,电子元件,IC/电子元件分销,N,https://www.tradingview.com/symbols/HKEX-2166/
+02342,京信通信,通信/AI算力,通信设备/射频网络,N,https://www.tradingview.com/
+02382,舜宇光学科技,消费电子,光学镜头/摄像头模组,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+02513,智谱,人工智能,大模型/AI应用,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+02533,黑芝麻智能,半导体,IC设计/车规AI芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02577,英诺赛科,半导体,功率半导体/GaN,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02658,广东天域半导体,半导体,上游材料/SiC外延,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02676,Novosense / 纳芯微,半导体,IC设计/模拟-传感器,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02701,NSING Technologies,半导体,IC设计服务/半导体技术,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02726,Epiworld International,半导体,上游材料/化合物外延,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+02878,晶门半导体,半导体,IC设计/显示驱动,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+03277,Gpixel / 长光辰芯,半导体,IC设计/CIS图像传感器,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+03310,Viewtrix Technology,半导体,IC设计/显示驱动,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+03661,SG Micro / 圣邦微,半导体,IC设计/模拟芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+03690,美团 - W,互联网/AI应用,本地生活平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+03986,GigaDevice / 兆易创新,半导体,IC设计/存储-NOR-MCU,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+06082,Biren / 壁仞科技,半导体,IC设计/AI芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+06613,蓝思科技,消费电子,玻璃盖板/结构件,N,https://www.tradingview.com/
+06618,京东健康,医疗健康,互联网医疗,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+06675,SENASIC,半导体,IC设计/传感器-模拟,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+06690,海尔智家,家用电器,白电/智能家居龙头,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+06809,Montage / 澜起科技,半导体,IC设计/内存接口,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+06869,长飞光纤光缆,AI硬件/通信,光通信/光纤光缆,N,https://www.tradingview.com/
+06908,宏光半导体,半导体,化合物半导体/GaN-光电子,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+06939,MEGAIN,半导体,IC设计/耗材芯片,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+08066,Phoenitron Holdings,电子元件,半导体相关元件,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+09618,京东集团 - SW,互联网,电商/供应链平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09626,哔哩哔哩 - W,互联网/AI应用,内容社区平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09660,地平线机器人 - W,半导体,IC设计/车规AI芯片,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09863,零跑汽车,智能汽车,新能源车/智能驾驶,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09866,蔚来 - SW,智能汽车,新能源车/智能驾驶,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09868,小鹏集团 - W,智能汽车,新能源车/智能驾驶,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09888,百度集团 - SW,互联网/AI应用,AI云/自动驾驶,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09903,Iluvatar CoreX / 天数智芯,半导体,IC设计/GPU,N,https://www.tradingview.com/markets/stocks-hong-kong/sectorandindustry-industry/semiconductors/
+09961,携程集团 - S,互联网,在线旅游平台,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09988,阿里巴巴 - W,互联网/AI应用,电商/云AI,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
+09999,网易,传媒/游戏,游戏娱乐,Y,https://www.hsi.com.hk/data/schi/rt/index-series/hstech/constituents.do?1
