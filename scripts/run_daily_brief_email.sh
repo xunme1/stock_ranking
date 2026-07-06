@@ -3,7 +3,8 @@ set -euo pipefail
 
 PROJECT_ROOT="${PROJECT_ROOT:-/root/stock_ranking}"
 PYTHON_BIN="${PYTHON_BIN:-$PROJECT_ROOT/.venv/bin/python}"
-WINDOWS="${WINDOWS:-10,20}"
+WINDOW="${WINDOW:-10}"
+MARKETS="${MARKETS:-us,cn,hk}"
 USE_LLM="${USE_LLM:-1}"
 LLM_MODEL="${LLM_MODEL:-qwen3.7-plus}"
 LLM_TIMEOUT="${LLM_TIMEOUT:-180}"
@@ -16,13 +17,14 @@ RUN_LOG="$LOG_DIR/daily_brief_email.log"
 mkdir -p "$LOG_DIR"
 cd "$PROJECT_ROOT"
 
-IFS=',' read -r -a WINDOW_LIST <<< "$WINDOWS"
+IFS=',' read -r -a MARKET_LIST <<< "$MARKETS"
 
 {
   echo "============================================================"
   echo "Daily brief pipeline started at $(date '+%F %T %Z')"
   echo "Project root: $PROJECT_ROOT"
-  echo "Windows: $WINDOWS"
+  echo "Window: $WINDOW"
+  echo "Markets: $MARKETS"
   echo "Use LLM: $USE_LLM"
 
   if [[ ! -x "$PYTHON_BIN" ]]; then
@@ -30,17 +32,23 @@ IFS=',' read -r -a WINDOW_LIST <<< "$WINDOWS"
     exit 1
   fi
 
-  for WINDOW in "${WINDOW_LIST[@]}"; do
-    WINDOW="$(echo "$WINDOW" | xargs)"
-    if [[ "$WINDOW" != "10" && "$WINDOW" != "20" ]]; then
-      echo "ERROR: Unsupported window: $WINDOW"
+  if [[ "$WINDOW" != "10" ]]; then
+    echo "ERROR: Unsupported window: $WINDOW. Daily brief only supports 10."
+    exit 1
+  fi
+
+  for MARKET in "${MARKET_LIST[@]}"; do
+    MARKET="$(echo "$MARKET" | xargs)"
+    if [[ "$MARKET" != "us" && "$MARKET" != "cn" && "$MARKET" != "hk" ]]; then
+      echo "ERROR: Unsupported market: $MARKET"
       exit 1
     fi
 
-    echo "Generating daily brief data for ${WINDOW}-day window..."
+    echo "Generating daily brief data for ${MARKET} ${WINDOW}-day window..."
     GENERATE_ARGS=(
       -B experiments/daily_brief/generate_brief_data.py
       --window "$WINDOW"
+      --market "$MARKET"
     )
     if [[ "$USE_LLM" == "1" ]]; then
       GENERATE_ARGS+=(
@@ -52,7 +60,7 @@ IFS=',' read -r -a WINDOW_LIST <<< "$WINDOWS"
     fi
     "$PYTHON_BIN" "${GENERATE_ARGS[@]}"
 
-    JSON_FILE="$(ls -t experiments/daily_brief/output/daily_brief_*_w${WINDOW}.json | head -1)"
+    JSON_FILE="$(ls -t experiments/daily_brief/output/daily_brief_${MARKET}_*_w${WINDOW}.json | head -1)"
     echo "Rendering PDF: $JSON_FILE"
     "$PYTHON_BIN" -B experiments/daily_brief/render_pdf.py --input "$JSON_FILE"
   done
@@ -60,7 +68,8 @@ IFS=',' read -r -a WINDOW_LIST <<< "$WINDOWS"
   echo "Sending daily brief email..."
   SEND_ARGS=(
     -B scripts/send_daily_brief_email.py
-    --windows "$WINDOWS"
+    --window "$WINDOW"
+    --markets "$MARKETS"
   )
   if [[ -n "$MAIL_TO_OVERRIDE" ]]; then
     SEND_ARGS+=(--to "$MAIL_TO_OVERRIDE")

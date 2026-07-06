@@ -160,7 +160,7 @@ def delta_label(item: dict[str, Any]) -> tuple[str, Any]:
 
 
 def draw_header(c: canvas.Canvas, brief: dict[str, Any], page_label: str) -> None:
-    text(c, "Nasdaq Ranking Monitor", MARGIN, PAGE_H - 28, 8, MUTED, True)
+    text(c, f"{brief.get('market_label', '美股')} Ranking Monitor", MARGIN, PAGE_H - 28, 8, MUTED, True)
     right_text(c, page_label, PAGE_W - MARGIN, PAGE_H - 28, 8, MUTED)
     c.setStrokeColor(GRID)
     c.line(MARGIN, PAGE_H - 40, PAGE_W - MARGIN, PAGE_H - 40)
@@ -235,7 +235,7 @@ def draw_item_table(
             color = INK
             bold = False
             if key == "ticker":
-                value, color, bold = row.get("ticker", "--"), BLUE, True
+                value, color, bold = str(row.get("display") or row.get("ticker") or "--")[:10], BLUE, True
             elif key == "rank_change":
                 value, color = delta_label(row)
                 bold = True
@@ -271,11 +271,12 @@ def render_page_one(c: canvas.Canvas, brief: dict[str, Any]) -> None:
     text(c, f"生成时间 {brief['generated_at']}", MARGIN, PAGE_H - 105, 8.5, MUTED)
 
     benchmark = brief.get("benchmark", {})
+    benchmark_label = brief.get("benchmark_label", "QQQ")
     card_y = PAGE_H - 174
     card_w = 148
-    metric_card(c, MARGIN, card_y, card_w, 54, "QQQ 排名", f"#{benchmark.get('rank', '--')}", BLUE)
-    metric_card(c, MARGIN + 164, card_y, card_w, 54, "QQQ ATR倍数", fmt(benchmark.get("atr_score"), 3), GREEN if (benchmark.get("atr_score") or 0) >= 0 else RED)
-    metric_card(c, MARGIN + 328, card_y, card_w, 54, "QQQ 较重心", fmt(benchmark.get("price_vs_center_pct"), 2, "%"), pct_color(benchmark.get("price_vs_center_pct")))
+    metric_card(c, MARGIN, card_y, card_w, 54, f"{benchmark_label} 排名", f"#{benchmark.get('rank', '--')}", BLUE)
+    metric_card(c, MARGIN + 164, card_y, card_w, 54, f"{benchmark_label} ATR倍数", fmt(benchmark.get("atr_score"), 3), GREEN if (benchmark.get("atr_score") or 0) >= 0 else RED)
+    metric_card(c, MARGIN + 328, card_y, card_w, 54, f"{benchmark_label} 较重心", fmt(benchmark.get("price_vs_center_pct"), 2, "%"), pct_color(benchmark.get("price_vs_center_pct")))
     metric_card(c, MARGIN + 492, card_y, card_w, 54, "收盘日", brief.get("as_of_date", "--"), INK)
 
     draw_model_block(c, brief, MARGIN, 48, PAGE_W - MARGIN * 2, PAGE_H - 250)
@@ -373,7 +374,8 @@ def render_page_five(c: canvas.Canvas, brief: dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render daily ranking brief PDF.")
-    parser.add_argument("--window", type=int, default=10, choices=[10, 20], help="Ranking window.")
+    parser.add_argument("--window", type=int, default=10, choices=[10], help="Ranking window. Daily brief uses 10-day window only.")
+    parser.add_argument("--market", choices=["us", "cn", "hk"], default="us", help="Market to render when --input is not provided.")
     parser.add_argument("--as-of-date", default=None, help="Use cached date on or before YYYY-MM-DD.")
     parser.add_argument("--input", default=None, help="Existing brief JSON path.")
     parser.add_argument("--output", default=None, help="Output PDF path.")
@@ -389,16 +391,17 @@ def main() -> None:
         input_path = Path(args.input)
         brief = json.loads(input_path.read_text(encoding="utf-8"))
     else:
-        brief = build_brief(args.window, args.as_of_date, top_n=20, move_threshold=10)
-        json_path = OUTPUT_DIR / f"daily_brief_{brief['as_of_date']}_w{brief['window']}.json"
+        brief = build_brief(args.window, args.as_of_date, top_n=20, move_threshold=10, market=args.market)
+        json_path = OUTPUT_DIR / f"daily_brief_{brief['market']}_{brief['as_of_date']}_w{brief['window']}.json"
         json_path.write_text(json.dumps(brief, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    output = Path(args.output) if args.output else OUTPUT_DIR / f"daily_brief_{brief['as_of_date']}_w{brief['window']}.pdf"
+    output = Path(args.output) if args.output else OUTPUT_DIR / f"daily_brief_{brief.get('market', 'us')}_{brief['as_of_date']}_w{brief['window']}.pdf"
     c = canvas.Canvas(str(output), pagesize=PAGE_SIZE)
     c.setTitle(f"Daily Ranking Brief {brief['as_of_date']} W{brief['window']}")
     render_page_one(c, brief)
     render_page_two(c, brief)
-    render_page_three(c, brief)
+    if brief.get("market", "us") == "us":
+        render_page_three(c, brief)
     render_page_five(c, brief)
     render_page_four(c, brief)
     c.save()

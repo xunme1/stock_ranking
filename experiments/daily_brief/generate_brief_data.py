@@ -19,8 +19,9 @@ if str(BACKEND_DIR) not in sys.path:
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
 
-from app.core.config import COMPANY_PROFILES_FILE, RANKING_CACHE_DIR  # noqa: E402
-from app.services.data_loader import normalize_ticker  # noqa: E402
+from app.core.config import COMPANY_PROFILES_FILE  # noqa: E402
+from app.services.data_loader import normalize_market, normalize_ticker_for_market  # noqa: E402
+from app.services.ranking_service import default_benchmark_for_market, ranking_cache_path  # noqa: E402
 from llm_analysis import generate_model_interpretation  # noqa: E402
 
 
@@ -78,13 +79,13 @@ def field(row: Any, name: str, default: Any = None) -> Any:
     return getattr(row, name, default)
 
 
-def load_ranking(window: int) -> pd.DataFrame:
-    path = RANKING_CACHE_DIR / f"ranking_window_{window}.csv"
+def load_ranking(window: int, market: str) -> pd.DataFrame:
+    path = ranking_cache_path(window, market)
     if not path.exists():
         raise FileNotFoundError(f"Ranking cache not found: {path}")
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype={"ticker": str, "benchmark": str, "name": str})
     df["as_of_date"] = df["as_of_date"].astype(str)
-    df["ticker"] = df["ticker"].astype(str).map(normalize_ticker)
+    df["ticker"] = df["ticker"].astype(str).map(lambda ticker: normalize_ticker_for_market(ticker, market))
     numeric_columns = [
         "rank",
         "close",
@@ -107,19 +108,25 @@ def load_company_names() -> dict[str, str]:
     df = pd.read_csv(COMPANY_PROFILES_FILE)
     names: dict[str, str] = {}
     for row in df.fillna("").itertuples(index=False):
-        ticker = normalize_ticker(str(getattr(row, "ticker", "")))
+        ticker = normalize_ticker_for_market(str(getattr(row, "ticker", "")), "us")
         name = str(getattr(row, "name", "")).strip()
-        if ticker and name:
+        if ticker and name and name.lower() != "nan":
             names[ticker] = name
     return names
 
 
-def row_to_item(row: Any, names: dict[str, str]) -> dict[str, Any]:
-    ticker = normalize_ticker(str(field(row, "ticker", "")))
+def row_to_item(row: Any, names: dict[str, str], market: str) -> dict[str, Any]:
+    ticker = normalize_ticker_for_market(str(field(row, "ticker", "")), market)
+    cached_name = str(field(row, "name", "") or "").strip()
+    name = names.get(ticker, "") if market == "us" else cached_name
+    if name.lower() == "nan":
+        name = ""
+    display = ticker if market == "us" else name or ticker
     return {
         "rank": clean_int(field(row, "rank")),
         "ticker": ticker,
-        "name": names.get(ticker, ""),
+        "name": name,
+        "display": display,
         "sector": str(field(row, "sector", "") or "Unknown"),
         "stock_type": str(field(row, "stock_type", "") or "Unknown"),
         "has_options": str(field(row, "has_options", "") or "U"),
@@ -134,10 +141,11 @@ def row_to_item(row: Any, names: dict[str, str]) -> dict[str, Any]:
 def item_with_change(
     row: Any,
     names: dict[str, str],
+    market: str,
     previous_rank_map: dict[str, int],
     previous_close_map: dict[str, float],
 ) -> dict[str, Any]:
-    item = row_to_item(row, names)
+    item = row_to_item(row, names, market)
     previous_rank = previous_rank_map.get(item["ticker"])
     item["previous_rank"] = previous_rank
     item["rank_change"] = previous_rank - item["rank"] if previous_rank and item["rank"] else None
@@ -217,10 +225,13 @@ def build_rank_history(recent: pd.DataFrame, tickers: set[str]) -> dict[str, lis
 
 
 def _names(items: list[dict[str, Any]], limit: int = 4) -> str:
-    return "、".join(item["ticker"] for item in items[:limit]) if items else "暂无"
+    labels = [str(item.get("name") or item.get("ticker") or "") for item in items[:limit]]
+    labels = [label for label in labels if label]
+    return "、".join(labels) if labels else "暂无"
 
 
 def build_summary(
+    market_label: str,
     latest_date: str,
     benchmark_item: dict[str, Any],
     stable_top20: list[dict[str, Any]],
@@ -231,13 +242,15 @@ def build_summary(
     type_stats: dict[str, list[dict[str, Any]]],
     technology_focus: dict[str, Any],
 ) -> list[str]:
+    benchmark_label = "QQQ" if market_label == "美股" else "中证500" if market_label == "A股" else "恒生科技"
     lines = [
-        f"{latest_date} 排名缓存已更新，QQQ 当前排名 #{benchmark_item.get('rank')}，ATR 倍数 {benchmark_item.get('atr_score')}。",
+        f"{latest_date} {market_label}排名缓存已更新，{benchmark_label} 当前排名 #{benchmark_item.get('rank')}，ATR 倍数 {benchmark_item.get('atr_score')}。",
         f"最近 5 个交易日稳定在前20的股票有 {len(stable_top20)} 只，可用于观察强势队列的延续性。",
         f"大幅上升股票包括 {_names(upward_moves)}；大幅下降股票包括 {_names(downward_moves)}。",
         f"今日进入前20 {len(entered_top20)} 只，跌出前20 {len(dropped_top20)} 只。",
-        f"科技池共 {technology_focus.get('count', 0)} 只，其中 {technology_focus.get('top20_count', 0)} 只位于前20。",
     ]
+    if market_label == "美股":
+        lines.append(f"科技池共 {technology_focus.get('count', 0)} 只，其中 {technology_focus.get('top20_count', 0)} 只位于前20。")
     if type_stats.get("upward_moves"):
         top_type = type_stats["upward_moves"][0]
         lines.append(f"大幅上升股票中占比最高的类型是 {top_type['stock_type']}，数量 {top_type['count']}，占比 {top_type['pct']}%。")
@@ -245,6 +258,9 @@ def build_summary(
 
 
 def build_rule_based_analysis(brief: dict[str, Any]) -> str:
+    market = brief.get("market", "us")
+    market_label = brief.get("market_label", "美股")
+    benchmark_label = brief.get("benchmark_label", "QQQ")
     benchmark = brief.get("benchmark", {})
     tech = brief.get("technology_focus", {})
     top_type = (brief.get("type_stats", {}).get("top20") or [{}])[0].get("stock_type", "暂无")
@@ -253,22 +269,30 @@ def build_rule_based_analysis(brief: dict[str, Any]) -> str:
     tech_top = _names(tech.get("top10", []), 5)
     tech_up = _names(tech.get("strong_up", []), 5)
     return (
-        f"市场情绪：截至 {brief.get('as_of_date')}，QQQ 在本轮 {brief.get('window')} 日重心窗口中的排名为 "
+        f"市场情绪：截至 {brief.get('as_of_date')}，{benchmark_label} 在本轮 {brief.get('window')} 日重心窗口中的排名为 "
         f"#{benchmark.get('rank', '--')}，ATR 倍数为 {benchmark.get('atr_score', '--')}，可作为观察纳指整体风险偏好的基准。"
         f"稳定前20股票数量为 {len(brief.get('stable_top20', []))} 只，说明当前强势队列仍有一定延续性，但需要结合个股当日涨跌和排名跳动确认是否出现拥挤或退潮。"
         f"\n强势结构：今日 Top20 中占比靠前的类型是 {top_type}，大幅上升股票中占比靠前的类型是 {up_type}。"
         f"如果这些类型同时出现在稳定前20和大幅上升列表中，通常代表资金偏好更集中；如果只出现在大幅上升中，则更像短线补涨或轮动。"
         f"\n异常变化：大幅上升股票包括 {_names(brief.get('upward_moves', []), 6)}，大幅下降股票包括 {_names(brief.get('downward_moves', []), 6)}。"
         f"下降端占比靠前的类型是 {down_type}，需要观察其是否从前20持续滑落，还是仅为单日波动造成的排名扰动。"
-        f"\n科技专项：科技池共 {tech.get('count', 0)} 只，其中 {tech.get('top20_count', 0)} 只进入前20；科技股排名前列包括 {tech_top}，"
-        f"科技类显著上涨股票包括 {tech_up}。这部分适合单独跟踪，因为它能更直接反映半导体、软件、互联网、云计算、硬件等方向的内部轮动。"
-        f"\n观察清单：明日重点看 QQQ 是否继续保持当前相对位置，稳定前20股票是否继续留在强势区，以及科技股前十中是否出现行业集中扩散。"
+        + (
+            f"\n科技专项：科技池共 {tech.get('count', 0)} 只，其中 {tech.get('top20_count', 0)} 只进入前20；科技股排名前列包括 {tech_top}，"
+            f"科技类显著上涨股票包括 {tech_up}。这部分适合单独跟踪，因为它能更直接反映半导体、软件、互联网、云计算、硬件等方向的内部轮动。"
+            if market == "us"
+            else ""
+        )
+        + f"\n观察清单：明日重点看 {benchmark_label} 是否继续保持当前相对位置，稳定前20股票是否继续留在强势区，以及强势类型是否出现集中扩散。"
         f"以上为量化排名解读，不构成投资建议。"
     )
 
 
-def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold: int) -> dict[str, Any]:
-    df = load_ranking(window)
+def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold: int, market: str = "us") -> dict[str, Any]:
+    market = normalize_market(market)
+    benchmark = default_benchmark_for_market(market)
+    market_label = {"us": "美股", "cn": "A股", "hk": "港股"}.get(market, market)
+    benchmark_label = {"us": "QQQ", "cn": "中证500", "hk": "恒生科技"}.get(market, benchmark)
+    df = load_ranking(window, market)
     dates = sorted(df["as_of_date"].dropna().unique().tolist())
     if not dates:
         raise ValueError("Ranking cache has no dates")
@@ -296,28 +320,28 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
     }
     latest_rank_map = {str(row.ticker): int(row.rank) for row in latest.itertuples(index=False)}
     latest_items = [
-        item_with_change(row, names, previous_rank_map, previous_close_map)
+        item_with_change(row, names, market, previous_rank_map, previous_close_map)
         for row in latest.itertuples(index=False)
     ]
 
-    top20 = [item for item in latest_items if item["ticker"] != "QQQ"][:top_n]
+    top20 = [item for item in latest_items if item["ticker"] != benchmark][:top_n]
 
     rank_lists = {
         ticker: [int(rank) for rank in group.sort_values("as_of_date")["rank"].tolist()]
-        for ticker, group in stability[stability["ticker"] != "QQQ"].groupby("ticker")
+        for ticker, group in stability[stability["ticker"] != benchmark].groupby("ticker")
     }
     stable_top20 = []
     for ticker, ranks in rank_lists.items():
         if len(ranks) == len(stability_dates) and max(ranks) <= top_n and ticker in latest_rank_map:
             row = latest[latest["ticker"] == ticker].iloc[0]
-            item = item_with_change(row, names, previous_rank_map, previous_close_map)
+            item = item_with_change(row, names, market, previous_rank_map, previous_close_map)
             item["avg_rank_5"] = round(sum(ranks) / len(ranks), 1)
             item["best_rank_5"] = min(ranks)
             item["worst_rank_5"] = max(ranks)
             stable_top20.append(item)
     stable_top20.sort(key=lambda item: (item["avg_rank_5"], item["rank"]))
 
-    movers = [item for item in latest_items if item["ticker"] != "QQQ" and item["rank_change"] is not None]
+    movers = [item for item in latest_items if item["ticker"] != benchmark and item["rank_change"] is not None]
     upward_moves = sorted(
         [item for item in movers if item["rank_change"] > move_threshold],
         key=lambda item: (-(item.get("daily_change_pct") if item.get("daily_change_pct") is not None else -999), item["rank"]),
@@ -343,7 +367,13 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
         key=lambda item: item["rank"],
     )
 
-    technology_focus = build_technology_focus(latest_items, top_n)
+    technology_focus = build_technology_focus(latest_items, top_n) if market == "us" else {
+        "count": 0,
+        "top20_count": 0,
+        "industry_distribution": [],
+        "top10": [],
+        "strong_up": [],
+    }
     type_stats = {
         "stable_top20": type_distribution(stable_top20),
         "upward_moves": type_distribution(upward_moves),
@@ -354,14 +384,17 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
     focus_tickers = {item["ticker"] for item in top20[:8]}
     focus_tickers.update(item["ticker"] for item in upward_moves[:5])
     focus_tickers.update(item["ticker"] for item in downward_moves[:5])
-    focus_tickers.update(item["ticker"] for item in technology_focus["top10"][:5])
-    focus_tickers.add("QQQ")
+    focus_tickers.update(item["ticker"] for item in technology_focus.get("top10", [])[:5])
+    focus_tickers.add(benchmark)
 
-    benchmark_row = latest[latest["ticker"] == "QQQ"]
-    benchmark_item = row_to_item(benchmark_row.iloc[0], names) if not benchmark_row.empty else {}
+    benchmark_row = latest[latest["ticker"] == benchmark]
+    benchmark_item = row_to_item(benchmark_row.iloc[0], names, market) if not benchmark_row.empty else {}
 
     brief = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "market": market,
+        "market_label": market_label,
+        "benchmark_label": benchmark_label,
         "window": window,
         "as_of_date": latest_date,
         "previous_date": previous_date,
@@ -378,6 +411,7 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
         "rank_history": build_rank_history(recent, focus_tickers),
     }
     brief["summary_points"] = build_summary(
+        market_label,
         latest_date,
         benchmark_item,
         stable_top20,
@@ -397,7 +431,8 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate structured daily ranking brief data.")
-    parser.add_argument("--window", type=int, default=10, choices=[10, 20], help="Ranking window.")
+    parser.add_argument("--window", type=int, default=10, choices=[10], help="Ranking window. Daily brief uses 10-day window only.")
+    parser.add_argument("--market", choices=["us", "cn", "hk"], default="us", help="Market to generate: us, cn, or hk.")
     parser.add_argument("--as-of-date", default=None, help="Use cached date on or before YYYY-MM-DD.")
     parser.add_argument("--top-n", type=int, default=20, help="Top N threshold.")
     parser.add_argument("--move-threshold", type=int, default=10, help="Rank move threshold.")
@@ -411,7 +446,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    brief = build_brief(args.window, args.as_of_date, args.top_n, args.move_threshold)
+    brief = build_brief(args.window, args.as_of_date, args.top_n, args.move_threshold, args.market)
     if args.use_llm:
         try:
             brief["model_interpretation"] = generate_model_interpretation(
@@ -429,7 +464,7 @@ def main() -> None:
             }
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output = Path(args.output) if args.output else OUTPUT_DIR / f"daily_brief_{brief['as_of_date']}_w{args.window}.json"
+    output = Path(args.output) if args.output else OUTPUT_DIR / f"daily_brief_{brief['market']}_{brief['as_of_date']}_w{args.window}.json"
     output.write_text(json.dumps(brief, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Brief data written: {output}")
 

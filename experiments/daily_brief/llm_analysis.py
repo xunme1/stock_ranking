@@ -36,6 +36,9 @@ def _compact_items(items: list[dict[str, Any]], limit: int = 12) -> list[dict[st
 def build_analysis_payload(brief: dict[str, Any]) -> dict[str, Any]:
     tech = brief.get("technology_focus", {})
     return {
+        "market": brief.get("market", "us"),
+        "market_label": brief.get("market_label", "美股"),
+        "benchmark_label": brief.get("benchmark_label", "QQQ"),
         "as_of_date": brief.get("as_of_date"),
         "window": brief.get("window"),
         "benchmark": brief.get("benchmark"),
@@ -59,19 +62,33 @@ def build_analysis_payload(brief: dict[str, Any]) -> dict[str, Any]:
 
 def build_llm_messages(brief: dict[str, Any]) -> list[dict[str, str]]:
     payload = build_analysis_payload(brief)
+    market = str(brief.get("market", "us"))
+    market_label = str(brief.get("market_label", "美股"))
+    benchmark_label = str(brief.get("benchmark_label", "QQQ"))
+
+    if market == "us":
+        section_requirement = (
+            "段落标题固定为：市场情绪、强势结构、异常变化、科技专项、观察清单。"
+            "必须提到科技类股票前十和科技类显著上涨股票。"
+        )
+    else:
+        section_requirement = (
+            "段落标题固定为：市场情绪、强势结构、异常变化、类型占比、观察清单。"
+            "不要写科技专项，不要强行分析科技股前十。"
+        )
+
     system_prompt = (
-        "你是一名美股强弱排名日报分析师。你只能根据用户给出的结构化排名数据做解读，"
+        f"你是一名{market_label}强弱排名日报分析师。你只能根据用户给出的结构化排名数据做解读，"
         "不能编造新闻、财报、基本面、盘前盘后信息或未提供的外部事实。"
-        "你的目标是帮助用户快速理解当日强势股、异常波动、类型占比和科技股内部结构。"
+        "你的目标是帮助用户快速理解当日强势股、异常波动和类型占比。"
         "语气专业、克制、容易读，明确说明这不是投资建议。"
     )
     user_prompt = f"""
 请根据下面的排名异常监测数据，生成适合放在 PDF 日报第一页的大段中文行情分析。
-
 写作要求：
-1. 输出 5 个短小段落，段落标题固定为：市场情绪、强势结构、异常变化、科技专项、观察清单。
+1. {section_requirement}
 2. 总长度控制在 700-1000 个中文字符，让内容比普通摘要更充分。
-3. 必须提到 QQQ 的相对位置、稳定前20数量、大幅上升/下降股票、股票类型占比，以及科技类股票前十和科技类显著上涨股票。
+3. 必须提到 {benchmark_label} 的相对位置、稳定前20数量、大幅上升/下降股票、股票类型占比。
 4. 分析上涨/下跌时结合 daily_change_pct、rank_change、atr_score，不要只看排名变化。
 5. 不要输出 Markdown 表格，不要输出代码块，不要编造新闻原因。
 6. 结尾加一句“以上为量化排名解读，不构成投资建议。”

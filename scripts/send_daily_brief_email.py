@@ -38,14 +38,14 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def latest_brief_json(window: int) -> Path:
+def latest_brief_json(window: int, market: str) -> Path:
     candidates = sorted(
-        BRIEF_OUTPUT_DIR.glob(f"daily_brief_*_w{window}.json"),
+        BRIEF_OUTPUT_DIR.glob(f"daily_brief_{market}_*_w{window}.json"),
         key=lambda path: path.stat().st_mtime,
         reverse=True,
     )
     if not candidates:
-        raise FileNotFoundError(f"No daily brief JSON found for window {window}: {BRIEF_OUTPUT_DIR}")
+        raise FileNotFoundError(f"No daily brief JSON found for market {market} window {window}: {BRIEF_OUTPUT_DIR}")
     return candidates[0]
 
 
@@ -56,12 +56,12 @@ def pdf_for_json(json_path: Path) -> Path:
     return pdf_path
 
 
-def discover_latest_reports(windows: list[int]) -> tuple[str, list[Path], list[dict[str, Any]]]:
+def discover_latest_reports(markets: list[str], window: int) -> tuple[str, list[Path], list[dict[str, Any]]]:
     attachments: list[Path] = []
     briefs: list[dict[str, Any]] = []
     dates: list[str] = []
-    for window in windows:
-        json_path = latest_brief_json(window)
+    for market in markets:
+        json_path = latest_brief_json(window, market)
         brief = read_json(json_path)
         dates.append(str(brief.get("as_of_date", "")))
         briefs.append(brief)
@@ -72,17 +72,19 @@ def discover_latest_reports(windows: list[int]) -> tuple[str, list[Path], list[d
 
 def build_body(as_of_date: str, briefs: list[dict[str, Any]]) -> str:
     lines = [
-        f"你好，附件是 {as_of_date} 的纳指排名异常监测日报。",
+        f"你好，附件是 {as_of_date} 的排名异常监测日报。",
         "",
-        "本次包含：",
+        "本次包含美股、A股、港股三份 10 日窗口日报：",
     ]
     for brief in briefs:
         benchmark = brief.get("benchmark") or {}
+        market_label = brief.get("market_label") or brief.get("market") or ""
+        benchmark_label = brief.get("benchmark_label") or "基准"
         lines.append(
-            f"- {brief.get('window')}日窗口：稳定前20 {len(brief.get('stable_top20', []))} 只，"
+            f"- {market_label}：稳定前20 {len(brief.get('stable_top20', []))} 只，"
             f"大幅上升 {len(brief.get('upward_moves', []))} 只，"
             f"大幅下降 {len(brief.get('downward_moves', []))} 只，"
-            f"QQQ 排名 #{benchmark.get('rank', '--')}。"
+            f"{benchmark_label} 排名 #{benchmark.get('rank', '--')}。"
         )
     lines.extend(
         [
@@ -150,17 +152,18 @@ def send_email(
     print(f"Email sent to {', '.join(recipients)} with {len(attachments)} attachment(s).")
 
 
-def parse_windows(value: str) -> list[int]:
-    windows = [int(item.strip()) for item in value.split(",") if item.strip()]
-    invalid = [window for window in windows if window not in {10, 20}]
+def parse_markets(value: str) -> list[str]:
+    markets = [item.strip().lower() for item in value.split(",") if item.strip()]
+    invalid = [market for market in markets if market not in {"us", "cn", "hk"}]
     if invalid:
-        raise ValueError(f"Unsupported windows: {invalid}. Only 10 and 20 are supported.")
-    return windows
+        raise ValueError(f"Unsupported markets: {invalid}. Only us, cn and hk are supported.")
+    return markets or ["us", "cn", "hk"]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Send daily ranking brief PDF email.")
-    parser.add_argument("--windows", default="10,20", help="Comma-separated ranking windows to attach.")
+    parser.add_argument("--window", type=int, default=10, choices=[10], help="Ranking window to attach. Daily brief uses 10 only.")
+    parser.add_argument("--markets", default="us,cn,hk", help="Comma-separated markets to attach: us,cn,hk.")
     parser.add_argument("--to", default=None, help="Override recipients. Comma or semicolon separated.")
     parser.add_argument("--subject", default=None, help="Override email subject.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and attachments without sending.")
@@ -169,10 +172,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    windows = parse_windows(args.windows)
+    markets = parse_markets(args.markets)
     config = load_config(args.to)
-    as_of_date, attachments, briefs = discover_latest_reports(windows)
-    subject = args.subject or f"纳指排名异常监测日报 {as_of_date}"
+    as_of_date, attachments, briefs = discover_latest_reports(markets, args.window)
+    subject = args.subject or f"排名异常监测日报 {as_of_date}"
     body = build_body(as_of_date, briefs)
     send_email(config, subject, body, attachments, dry_run=args.dry_run)
 
