@@ -627,14 +627,21 @@ function AlertList({
   title,
   items,
   tone,
-  metric
+  metric,
+  market
 }: {
   title: string;
   items: RankingAlertItem[];
   tone?: "up" | "down" | "stable";
   metric: "stable" | "move";
+  market: Market;
 }) {
   const sortedItems = sortAlertItems(items, metric);
+  const displayName = (item: RankingAlertItem) => {
+    const name = String(item.name ?? "").trim();
+    if (market === "us" || !name || name.toLowerCase() === "nan") return item.ticker;
+    return name;
+  };
   return (
     <section className="alertSection">
       <div className="alertSectionTitle">
@@ -645,7 +652,7 @@ function AlertList({
         <div className="alertRows">
           {sortedItems.map((item) => (
             <div className="alertRow" key={`${title}-${item.ticker}`}>
-              <strong title={item.ticker}>{item.name || item.ticker}</strong>
+              <strong title={item.ticker}>{displayName(item)}</strong>
               <span className={tone === "up" ? "positive" : tone === "down" ? "negative" : ""}>
                 {metric === "stable"
                   ? `#${item.rank} / 均 ${numberText(item.avg_rank_5, 1)}`
@@ -666,12 +673,14 @@ function AlertList({
 
 function RankingAlertCard({
   alerts,
+  market,
   activeWindow,
   loading,
   onWindowChange,
   onClose
 }: {
   alerts: RankingAlerts;
+  market: Market;
   activeWindow: number;
   loading: boolean;
   onWindowChange: (window: number) => void;
@@ -706,11 +715,11 @@ function RankingAlertCard({
         窗口 {alerts.window}日 / 截止 {alerts.as_of_date}。监测最近5个交易日稳定前20，以及今日相对昨日排名变化超过10名的股票。
       </p>
       <div className="alertGrid">
-        <AlertList title="近5日稳定前20" items={alerts.stable_top20} tone="stable" metric="stable" />
-        <AlertList title="大幅上升" items={alerts.upward_moves} tone="up" metric="move" />
-        <AlertList title="大幅下降" items={alerts.downward_moves} tone="down" metric="move" />
-        <AlertList title="当日进入前20" items={alerts.entered_top20} tone="up" metric="move" />
-        <AlertList title="当日跌出前20" items={alerts.dropped_top20} tone="down" metric="move" />
+        <AlertList title="近5日稳定前20" items={alerts.stable_top20} tone="stable" metric="stable" market={market} />
+        <AlertList title="大幅上升" items={alerts.upward_moves} tone="up" metric="move" market={market} />
+        <AlertList title="大幅下降" items={alerts.downward_moves} tone="down" metric="move" market={market} />
+        <AlertList title="当日进入前20" items={alerts.entered_top20} tone="up" metric="move" market={market} />
+        <AlertList title="当日跌出前20" items={alerts.dropped_top20} tone="down" metric="move" market={market} />
       </div>
     </aside>
   );
@@ -1020,6 +1029,7 @@ function DashboardPage() {
       {alerts && !alertDismissed ? (
         <RankingAlertCard
           alerts={alerts}
+          market={market}
           activeWindow={alertWindow}
           loading={alertLoading}
           onWindowChange={changeAlertWindow}

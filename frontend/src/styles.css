@@ -86,6 +86,31 @@ h2 {
   white-space: nowrap;
 }
 
+.summaryStrip .marketSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.summaryStrip .marketSwitch button {
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 9px;
+  background: transparent;
+  color: #52627a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.summaryStrip .marketSwitch button.active {
+  background: #1f6feb;
+  color: #ffffff;
+}
+
 .monitorButton {
   display: inline-flex;
   align-items: center;
