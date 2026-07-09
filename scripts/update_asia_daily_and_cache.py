@@ -6,8 +6,15 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import pandas as pd
+
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+RANKING_CACHE_DIR = ROOT_DIR / "data" / "processed" / "rankings"
+MARKET_LABELS = {
+    "cn": "A-share",
+    "hk": "Hong Kong",
+}
 
 
 def run_step(label: str, command: list[str]) -> None:
@@ -53,12 +60,52 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=15.0, help="A-share AkShare stock request timeout seconds.")
     parser.add_argument("--skip-data", action="store_true", help="Only rebuild ranking caches.")
     parser.add_argument("--skip-cache", action="store_true", help="Only update daily data.")
+    parser.add_argument(
+        "--require-end-date",
+        action="store_true",
+        help="Fail if the rebuilt ranking cache does not include --end-date. Useful for weekday 17:00 scheduled updates.",
+    )
     return parser.parse_args()
+
+
+def ranking_cache_path(window: int, market: str) -> Path:
+    suffix = "_cn" if market == "cn" else "_hk"
+    return RANKING_CACHE_DIR / f"ranking_window_{window}{suffix}.csv"
+
+
+def latest_cache_date(window: int, market: str) -> str | None:
+    path = ranking_cache_path(window, market)
+    if not path.exists() or path.stat().st_size == 0:
+        return None
+    df = pd.read_csv(path, usecols=["as_of_date"], dtype={"as_of_date": str})
+    dates = sorted({str(item) for item in df["as_of_date"].dropna().tolist() if str(item).strip()})
+    return dates[-1] if dates else None
+
+
+def parse_windows(value: str) -> list[int]:
+    return [int(item.strip()) for item in value.split(",") if item.strip()]
+
+
+def verify_cache_dates(markets: list[str], windows: list[int], end_date: str, require_end_date: bool) -> None:
+    print("=" * 72, flush=True)
+    print("Checking ranking cache dates", flush=True)
+    stale: list[str] = []
+    for market in markets:
+        for window in windows:
+            cache_date = latest_cache_date(window, market)
+            label = MARKET_LABELS.get(market, market)
+            print(f"{label} window {window}: latest cache date = {cache_date or 'missing'}", flush=True)
+            if require_end_date and cache_date != end_date:
+                stale.append(f"{label} window {window}: {cache_date or 'missing'} != {end_date}")
+    if stale:
+        details = "\n".join(f"- {item}" for item in stale)
+        raise RuntimeError(f"Ranking cache did not reach required end date:\n{details}")
 
 
 def main() -> None:
     args = parse_args()
     markets = parse_markets(args.markets)
+    windows = parse_windows(args.windows)
     python = sys.executable
 
     print(f"Project root: {ROOT_DIR}", flush=True)
@@ -121,6 +168,7 @@ def main() -> None:
                     args.end_date,
                 ],
             )
+        verify_cache_dates(markets, windows, args.end_date, args.require_end_date)
 
     print("=" * 72, flush=True)
     print("A-share/Hong Kong update finished.", flush=True)

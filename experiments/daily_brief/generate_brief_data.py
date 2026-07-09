@@ -160,10 +160,39 @@ def item_with_change(
     return item
 
 
-def type_distribution(items: list[dict[str, Any]], limit: int = 8) -> list[dict[str, Any]]:
+def brief_category(item: dict[str, Any], market: str) -> str:
+    stock_type = str(item.get("stock_type") or "")
+    sector = str(item.get("sector") or "")
+    text = f"{sector}/{stock_type}"
+    if market == "us":
+        return stock_type or "Unknown"
+    if "半导体" in text or "芯片" in text or "IC" in text or "封装" in text:
+        return "半导体"
+    if any(keyword in text for keyword in ["AI算力", "通信", "光通信", "ICT", "数据中心", "算力网络"]):
+        return "AI算力与通信"
+    if any(keyword in text for keyword in ["人工智能", "AI应用", "大模型", "软件", "网络安全", "互联网", "游戏", "传媒", "数字金融"]):
+        return "互联网软件与AI应用"
+    if any(keyword in text for keyword in ["消费电子", "电子元件", "AI硬件", "电子/AI硬件", "PCB", "显示", "电池模组", "智能硬件"]):
+        return "电子硬件"
+    if any(keyword in text for keyword in ["汽车", "新能源车", "智能驾驶", "机器人", "热管理", "执行器"]):
+        return "汽车与机器人"
+    if any(keyword in text for keyword in ["医疗", "医药", "健康", "创新药"]):
+        return "医疗健康"
+    if any(keyword in text for keyword in ["家用电器", "美容护理", "纺织服饰", "农林牧渔", "消费", "社会服务"]):
+        return "消费"
+    if any(keyword in text for keyword in ["电力", "新能源", "储能", "输变电", "光伏", "风电"]):
+        return "电力新能源"
+    if any(keyword in text for keyword in ["商业航天", "国防军工", "军工", "航天"]):
+        return "军工航天"
+    if any(keyword in text for keyword in ["房地产", "建筑材料", "钢铁", "环保", "交通运输"]):
+        return "传统行业"
+    return sector or stock_type or "其他"
+
+
+def type_distribution(items: list[dict[str, Any]], limit: int = 8, market: str = "us") -> list[dict[str, Any]]:
     counts: dict[str, int] = {}
     for item in items:
-        stock_type = str(item.get("stock_type") or "Unknown")
+        stock_type = brief_category(item, market)
         counts[stock_type] = counts.get(stock_type, 0) + 1
     total = sum(counts.values())
     if total <= 0:
@@ -375,10 +404,10 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
         "strong_up": [],
     }
     type_stats = {
-        "stable_top20": type_distribution(stable_top20),
-        "upward_moves": type_distribution(upward_moves),
-        "downward_moves": type_distribution(downward_moves),
-        "top20": type_distribution(top20),
+        "stable_top20": type_distribution(stable_top20, market=market),
+        "upward_moves": type_distribution(upward_moves, market=market),
+        "downward_moves": type_distribution(downward_moves, market=market),
+        "top20": type_distribution(top20, market=market),
     }
 
     focus_tickers = {item["ticker"] for item in top20[:8]}
