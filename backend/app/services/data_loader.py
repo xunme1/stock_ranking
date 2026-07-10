@@ -138,7 +138,7 @@ def load_optionable_status(path: Path = OPTIONABLE_TICKERS_FILE) -> dict[str, st
 def load_stock_profiles(path: Path = STOCK_PROFILES_FILE) -> dict[str, dict[str, str]]:
     if not path.exists():
         return {}
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, encoding="utf-8-sig")
     profiles: dict[str, dict[str, str]] = {}
     for row in df.fillna("").itertuples(index=False):
         ticker = normalize_ticker(str(getattr(row, "ticker", "")))
@@ -210,7 +210,7 @@ def load_ticker_file_for_market(market: str | None = "us") -> list[str]:
 def load_stock_subtypes(path: Path = STOCK_SUBTYPES_FILE) -> dict[str, dict[str, str]]:
     if not path.exists():
         return {}
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, encoding="utf-8-sig")
     subtypes: dict[str, dict[str, str]] = {}
     for row in df.fillna("").itertuples(index=False):
         ticker = normalize_ticker(str(getattr(row, "ticker", "")))
@@ -234,7 +234,7 @@ def load_stock_subtypes(path: Path = STOCK_SUBTYPES_FILE) -> dict[str, dict[str,
 def load_a_share_subtype_leaders(path: Path = A_SHARE_SUBTYPE_LEADERS_FILE) -> dict[str, list[dict[str, str]]]:
     if not path.exists():
         return {}
-    df = pd.read_csv(path, dtype={"code": str}).fillna("")
+    df = pd.read_csv(path, dtype={"code": str}, encoding="utf-8-sig").fillna("")
     leaders: dict[str, list[dict[str, str]]] = {}
     for row in df.itertuples(index=False):
         sub_type = str(getattr(row, "sub_type", "")).strip()
@@ -283,7 +283,7 @@ def load_earnings_calendar(path: Path = EARNINGS_CALENDAR_FILE) -> dict[str, dic
 def load_company_profiles(path: Path = COMPANY_PROFILES_FILE) -> dict[str, dict[str, str]]:
     if not path.exists():
         return {}
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, encoding="utf-8-sig")
     profiles: dict[str, dict[str, str]] = {}
     for row in df.fillna("").itertuples(index=False):
         ticker = normalize_ticker(str(getattr(row, "ticker", "")))

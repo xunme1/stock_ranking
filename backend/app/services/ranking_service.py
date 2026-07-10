@@ -128,7 +128,7 @@ def load_ranking_cache(window: int, market: str = "us") -> pd.DataFrame:
     path = ranking_cache_path(window, market)
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame(columns=RANKING_CACHE_COLUMNS)
-    df = pd.read_csv(path, dtype={"ticker": str, "benchmark": str})
+    df = pd.read_csv(path, dtype={"ticker": str, "benchmark": str}, encoding="utf-8-sig")
     for column in RANKING_CACHE_COLUMNS:
         if column not in df.columns:
             df[column] = pd.NA
