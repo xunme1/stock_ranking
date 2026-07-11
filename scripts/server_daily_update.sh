@@ -24,13 +24,14 @@ cd "$PROJECT_ROOT"
   fi
 
   if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-    echo "WARNING: .env not found at $PROJECT_ROOT/.env. Polygon/Alpha/Tushare keys must be configured on the server."
+    echo "WARNING: .env not found at $PROJECT_ROOT/.env. iFinD/Polygon/Alpha/Tushare keys must be configured on the server."
   fi
 
   TICKERS="$(grep -v '^[[:space:]]*#' config/nasdaq100_tickers.txt | sed '/^[[:space:]]*$/d' | tr '\n' ','),QQQ"
 
   echo "Updating daily bars..."
   "$PYTHON_BIN" -B scripts/update_latest_daily.py \
+    --source ths \
     --tickers "$TICKERS" \
     --end-date "$END_DATE" \
     --download-missing \
@@ -53,6 +54,17 @@ cd "$PROJECT_ROOT"
 
   echo "Rebuilding ranking cache..."
   "$PYTHON_BIN" -B scripts/build_ranking_cache.py --windows 10,20 --days 20
+
+  echo "Updating CN/HK daily bars and ranking caches..."
+  "$PYTHON_BIN" -B scripts/update_asia_daily_and_cache.py \
+    --source ths \
+    --markets cn,hk \
+    --end-date "$END_DATE" \
+    --windows 10,20 \
+    --cache-days 20 \
+    --sleep-seconds 0 || {
+      echo "WARNING: CN/HK daily update failed. CN/HK pages will use the previous cache if available."
+    }
 
   echo "Restarting API service: $SERVICE_NAME"
   if command -v systemctl >/dev/null 2>&1; then

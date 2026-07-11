@@ -1,162 +1,174 @@
-# US Stock Daily Data Project
+# Stock Ranking Project
 
-This project downloads and caches daily US stock OHLCV data from Polygon.io. The current stage focuses on the historical daily data download loop only. Data merge, indicator calculation, and stock screening scripts are intentionally left for a later stage.
+This project is a multi-market relative-strength ranking web app. It maintains local daily OHLCV CSV caches, computes ATR-normalized rankings, serves them through a FastAPI backend, and renders a Vite/React frontend.
 
-## Project Tree
+The current primary daily-bar source is Tonghuashun iFinD. Polygon remains in the repo for US ticker-pool, option-availability, and company-profile helper scripts where those APIs are still used.
+
+## Project Structure
 
 ```text
-us_stock_data_project/
-├── config/
-│   └── tickers.txt
-├── data/
-│   ├── raw/
-│   │   └── daily/
-│   └── processed/
-├── logs/
-├── scripts/
-│   ├── download_polygon_daily.py
-│   └── retry_failed_tickers.py
-├── .env
-├── .gitignore
-├── README.md
-└── requirements.txt
+backend/app/
+  main.py                         FastAPI app, CORS, routers, /api/health
+  api/rankings.py                 /api/rankings/latest, /dates, /alerts
+  api/stocks.py                   /api/stocks/{ticker}/daily, /profile, /peers
+  services/data_loader.py         CSV loaders and cached data access
+  services/ranking_service.py     ATR ranking math, alert logic, cache handling
+
+frontend/
+  src/App.tsx                     Main React UI, rankings, alerts, detail charts
+  src/api.ts                      Typed API client
+  vite.config.ts                  Dev proxy to http://127.0.0.1:8001
+
+scripts/
+  ths_ifind_daily.py              iFinD login, ticker mapping, daily-bar adapter
+  download_ths_daily.py           Initial iFinD daily-bar download
+  update_latest_daily.py          US daily update, default source: iFinD
+  update_cn_daily.py              A-share daily update, default source: iFinD
+  update_hk_daily.py              Hong Kong daily update, default source: iFinD
+  update_asia_daily_and_cache.py  CN/HK daily update plus ranking cache rebuild
+  build_ranking_cache.py          Cache recent 10/20-day ranking histories
+  server_daily_update.sh          Server daily pipeline and API restart
+
+data/
+  raw/daily/{TICKER}.csv          US daily OHLCV
+  raw/cn_daily/{TICKER}.csv       A-share daily OHLCV
+  raw/hk_daily/{TICKER}.csv       Hong Kong daily OHLCV
+  processed/rankings/*.csv        Cached ranking histories
+  fundamental/*.csv               Options, earnings, profiles, A-share peers
 ```
 
-## Setup
+## Environment
+
+Create the Python environment and install normal Python dependencies:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-API keys are read from `.env`:
+Install the official Tonghuashun iFinD SDK separately; it is not available from PyPI. Run the SDK's `installiFinDPy.py` with this project's virtual environment.
 
-```text
-POLYGON_API_KEY_1=your_api_key_1
-POLYGON_API_KEY_2=your_api_key_2
+Project root `.env` should include:
+
+```env
+THS_IFIND_USERNAME=your_ifind_api_username
+THS_IFIND_PASSWORD=your_ifind_api_password
+
+POLYGON_API_KEY_1=optional_polygon_key
+ALPHA_VANTAGE_API_KEY=optional_alpha_vantage_key
+TUSHARE_TOKEN=optional_tushare_token
 ```
 
-## Tickers
+Never commit `.env`.
 
-Edit `config/tickers.txt` to control the stock pool. One ticker per line. Blank lines and lines starting with `#` are ignored.
+## Daily Data
 
-Build a larger ticker pool from Polygon reference data while keeping existing tickers first:
-
-```powershell
-.\.venv\Scripts\python -B scripts\build_ticker_pool.py --target-count 2000
-```
-
-Build the full active US stock ticker pool returned by Polygon:
-
-```powershell
-.\.venv\Scripts\python -B scripts\build_ticker_pool.py --all
-```
-
-## Download Daily Data
-
-Download all tickers in `config/tickers.txt`:
-
-```powershell
-.\.venv\Scripts\python scripts\download_polygon_daily.py
-```
-
-Download the first 100 tickers:
-
-```powershell
-.\.venv\Scripts\python scripts\download_polygon_daily.py --limit 100
-```
-
-By default the script waits 13 seconds per API key after each requested ticker. With multiple keys configured, it rotates through the key pool while keeping a separate cooldown for each key. Existing non-empty CSV files are skipped, so the script can be run repeatedly and resumed after interruption.
-
-## Retry Failed Tickers
-
-```powershell
-.\.venv\Scripts\python scripts\retry_failed_tickers.py
-```
-
-## Merge Daily Data
-
-Merge all downloaded CSV files:
-
-```powershell
-.\.venv\Scripts\python scripts\merge_daily_data.py
-```
-
-Merge a small ticker subset for testing:
-
-```powershell
-.\.venv\Scripts\python scripts\merge_daily_data.py --tickers MRVL,COHR --output data\processed\test_mrvl_cohr_daily.parquet
-```
-
-## Build Stock Screen
-
-```powershell
-.\.venv\Scripts\python scripts\build_stock_screen.py
-```
-
-Run the screen on a small test parquet:
-
-```powershell
-.\.venv\Scripts\python scripts\build_stock_screen.py --input data\processed\test_mrvl_cohr_daily.parquet --output-all data\processed\test_mrvl_cohr_screen_all.csv --output-selected data\processed\test_mrvl_cohr_screen_selected.csv
-```
-
-Build a short-term MA5/MA10 screen:
-
-```powershell
-.\.venv\Scripts\python -B scripts\build_ma5_ma10_screen.py
-```
-
-Build a Nasdaq-100 + optionable ticker universe, then run the original MA10 daily/weekly screen on it:
-
-```powershell
-.\.venv\Scripts\python -B scripts\build_screen_universe.py
-.\.venv\Scripts\python -B scripts\build_stock_screen.py --tickers-file config\nasdaq100_optionable_tickers.txt --output-all data\processed\stock_screen_nasdaq100_optionable_all.csv --output-selected data\processed\stock_screen_nasdaq100_optionable_selected.csv
-```
-
-Build a relative strength report for selected stocks versus QQQ:
-
-```powershell
-.\.venv\Scripts\python -B scripts\build_relative_strength_report.py
-```
-
-## Update Latest Daily Data
-
-Append only new dates to existing per-ticker CSV files:
-
-```powershell
-.\.venv\Scripts\python -B scripts\update_latest_daily.py
-```
-
-If a ticker is missing locally and should be downloaded from scratch:
-
-```powershell
-.\.venv\Scripts\python -B scripts\update_latest_daily.py --download-missing
-```
-
-## Outputs
-
-Raw daily CSV files are written to:
-
-```text
-data/raw/daily/{TICKER}.csv
-```
-
-Each CSV includes:
+The local CSV schema consumed by the backend is:
 
 ```text
 ticker,date,open,high,low,close,volume,vwap,transactions
 ```
 
-Logs are written to:
+CN/HK files may also include `turnover`; backend loaders ignore extra columns.
 
-```text
-logs/download_log.csv
-logs/failed_tickers.csv
+Download an initial daily history with iFinD:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\download_ths_daily.py --market us --include-benchmark
+.\.venv\Scripts\python.exe -B scripts\download_ths_daily.py --market cn --include-benchmark
+.\.venv\Scripts\python.exe -B scripts\download_ths_daily.py --market hk --include-benchmark
 ```
 
-## Notes
+Run incremental updates:
 
-- The script downloads recent two-year daily adjusted aggregate bars.
-- HTTP 429 responses wait 60 seconds before retrying.
-- Each ticker is retried up to 3 times.
-- A single ticker failure is logged and does not stop the whole run.
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_latest_daily.py --source ths --download-missing
+.\.venv\Scripts\python.exe -B scripts\update_cn_daily.py --source ths
+.\.venv\Scripts\python.exe -B scripts\update_hk_daily.py --source ths
+```
+
+Update CN/HK daily bars and rebuild CN/HK ranking caches:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_asia_daily_and_cache.py --source ths
+```
+
+Fallback sources remain available:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_latest_daily.py --source polygon
+.\.venv\Scripts\python.exe -B scripts\update_cn_daily.py --source akshare
+.\.venv\Scripts\python.exe -B scripts\update_hk_daily.py --source akshare
+```
+
+## Ranking Logic
+
+- Supported markets: `us`, `cn`, `hk`.
+- Default benchmarks: `QQQ`, `000905`, `HSTECH`.
+- UI ranking windows: `10` and `20`.
+- For `window=10`, ATR uses 20 days by design.
+- Ranking score is latest close versus the moving-average center, divided by ATR.
+- Cached ranking files live in `data/processed/rankings/`.
+
+Build ranking caches:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\build_ranking_cache.py --market us --windows 10,20 --days 20
+.\.venv\Scripts\python.exe -B scripts\build_ranking_cache.py --market cn --windows 10,20 --days 20
+.\.venv\Scripts\python.exe -B scripts\build_ranking_cache.py --market hk --windows 10,20 --days 20
+```
+
+## Local Web App
+
+Backend:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload --app-dir backend
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173/
+```
+
+Build check:
+
+```powershell
+cd frontend
+npm run build
+```
+
+## Server Daily Pipeline
+
+Known server root:
+
+```text
+/root/stock_ranking
+```
+
+Run the all-in-one server update:
+
+```bash
+cd /root/stock_ranking
+bash scripts/server_daily_update.sh
+```
+
+The script updates US daily bars through iFinD, refreshes option/A-share peer helper caches where possible, rebuilds ranking caches, updates CN/HK daily bars and caches through iFinD, restarts `stock-ranking-api`, and checks `/api/health`.
+
+## Verification
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8001/api/health"
+Invoke-RestMethod "http://127.0.0.1:8001/api/rankings/latest?window=10&benchmark=QQQ&market=us&apply_announced_rebalance=true"
+Invoke-RestMethod "http://127.0.0.1:8001/api/rankings/latest?window=10&benchmark=000905&market=cn"
+Invoke-RestMethod "http://127.0.0.1:8001/api/rankings/latest?window=10&benchmark=HSTECH&market=hk"
+Invoke-RestMethod "http://127.0.0.1:8001/api/stocks/MU/peers"
+```
