@@ -8,6 +8,8 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+from ths_ifind_daily import EXTENDED_COLUMNS, fetch_ifind_history, ifind_session, merge_daily_csv
+
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 POOL_FILE = ROOT_DIR / "config" / "hk_stock_pool.csv"
@@ -159,8 +161,22 @@ def update_one_ticker(
     return "failed", 0
 
 
+def update_one_ticker_ths(ticker: str, start: date, end: date) -> tuple[str, int]:
+    ticker = normalize_hk_code(ticker)
+    if start > end:
+        return "skipped", 0
+    try:
+        result = fetch_ifind_history(ticker, "hk", start, end)
+        new_rows = merge_daily_csv(ticker_csv_path(ticker), ticker, result.frame, EXTENDED_COLUMNS)
+        return "success", new_rows
+    except Exception as exc:  # noqa: BLE001 - vendor SDK errors include plain dicts/strings.
+        print(f"[failed] {ticker}: iFinD update error: {exc}")
+        return "failed", 0
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Update Hong Kong qfq daily bars with AkShare.")
+    parser = argparse.ArgumentParser(description="Update Hong Kong qfq daily bars with iFinD or AkShare.")
+    parser.add_argument("--source", choices=["ths", "akshare"], default="ths", help="Daily data source. Defaults to ths.")
     parser.add_argument("--pool-file", default=str(POOL_FILE), help="Normalized Hong Kong stock pool CSV.")
     parser.add_argument("--tickers", default=None, help="Comma-separated ticker override.")
     parser.add_argument("--limit", type=int, default=None, help="Only update first N pool tickers.")
@@ -182,22 +198,34 @@ def main() -> None:
     if not args.skip_benchmark and BENCHMARK_CODE not in tickers:
         tickers.append(BENCHMARK_CODE)
 
-    ak = load_akshare()
+    ak = None if args.source == "ths" else load_akshare()
     stats = {"success": 0, "skipped": 0, "empty": 0, "failed": 0}
     total_new_rows = 0
     print(f"Hong Kong tickers: {len(tickers)}")
     print(f"End date: {end.isoformat()}")
+    print(f"Source: {args.source}")
     print(f"Sleep seconds: {args.sleep_seconds}")
 
     progress = tqdm(tickers, desc="Hong Kong daily", unit="ticker")
-    for index, ticker in enumerate(progress, start=1):
-        start = start_date_for_ticker(ticker, args.days, end)
-        progress.set_postfix_str(ticker)
-        status, new_rows = update_one_ticker(ak, ticker, start, end, args.sleep_seconds, args.retries)
-        stats[status] = stats.get(status, 0) + 1
-        total_new_rows += new_rows
-        tqdm.write(f"[{index}/{len(tickers)}] {ticker} {status} new_rows={new_rows}")
-        time.sleep(args.sleep_seconds)
+    if args.source == "ths":
+        with ifind_session():
+            for index, ticker in enumerate(progress, start=1):
+                start = start_date_for_ticker(ticker, args.days, end)
+                progress.set_postfix_str(ticker)
+                status, new_rows = update_one_ticker_ths(ticker, start, end)
+                stats[status] = stats.get(status, 0) + 1
+                total_new_rows += new_rows
+                tqdm.write(f"[{index}/{len(tickers)}] {ticker} {status} new_rows={new_rows}")
+                time.sleep(args.sleep_seconds)
+    else:
+        for index, ticker in enumerate(progress, start=1):
+            start = start_date_for_ticker(ticker, args.days, end)
+            progress.set_postfix_str(ticker)
+            status, new_rows = update_one_ticker(ak, ticker, start, end, args.sleep_seconds, args.retries)
+            stats[status] = stats.get(status, 0) + 1
+            total_new_rows += new_rows
+            tqdm.write(f"[{index}/{len(tickers)}] {ticker} {status} new_rows={new_rows}")
+            time.sleep(args.sleep_seconds)
 
     print(
         "Hong Kong update finished "

@@ -1,9 +1,13 @@
 .env
 .venv/
 .tmp/
+vendor/
+theme_ifind_tmp.js
 node_modules/
 frontend/dist/
 data/raw/daily/*.csv
+data/raw/cn_daily/*.csv
+data/raw/hk_daily/*.csv
 data/processed/
 data/processed/*.parquet
 data/processed/*.csv

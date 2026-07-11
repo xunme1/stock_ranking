@@ -50,6 +50,7 @@ def parse_markets(value: str) -> list[str]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Update A-share/Hong Kong daily bars and rebuild ranking caches.")
     parser.add_argument("--markets", default="cn,hk", help="Markets to update: cn,hk,all. Defaults to cn,hk.")
+    parser.add_argument("--source", choices=["ths", "akshare"], default="ths", help="Daily data source for CN/HK updates. Defaults to ths.")
     parser.add_argument("--end-date", default=date.today().isoformat(), help="End date in YYYY-MM-DD.")
     parser.add_argument("--windows", default="10,20", help="Ranking windows to rebuild, for example 10,20.")
     parser.add_argument("--cache-days", type=int, default=10, help="Recent benchmark trading days to keep in cache.")
@@ -111,6 +112,7 @@ def main() -> None:
     print(f"Project root: {ROOT_DIR}", flush=True)
     print(f"Markets: {', '.join(markets)}", flush=True)
     print(f"End date: {args.end_date}", flush=True)
+    print(f"Source: {args.source}", flush=True)
 
     if not args.skip_data:
         if "cn" in markets:
@@ -120,6 +122,8 @@ def main() -> None:
                     python,
                     "-B",
                     "scripts/update_cn_daily.py",
+                    "--source",
+                    args.source,
                     "--days",
                     str(args.cn_days),
                     "--end-date",
@@ -139,6 +143,8 @@ def main() -> None:
                     python,
                     "-B",
                     "scripts/update_hk_daily.py",
+                    "--source",
+                    args.source,
                     "--days",
                     str(args.hk_days),
                     "--end-date",
