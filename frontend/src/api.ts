@@ -112,6 +112,57 @@ export type StockPeers = {
   a_share_leaders: AShareLeader[];
 };
 
+export type IndustryFlowRow = {
+  rank: number;
+  market: Market;
+  trade_date: string;
+  industry_name: string;
+  flow_amount: number;
+  stock_count: number;
+  positive_count: number;
+  negative_count: number;
+};
+
+export type IndustryFlowRanking = {
+  market: Market;
+  trade_date: string;
+  count: number;
+  data: IndustryFlowRow[];
+};
+
+export type IndustryFlowTrendPoint = {
+  date: string;
+  flow_amount: number;
+};
+
+export type IndustryFlowTrendSeries = {
+  industry_name: string;
+  points: IndustryFlowTrendPoint[];
+};
+
+export type IndustryFlowTrend = {
+  market: Market;
+  industries: string[];
+  series: IndustryFlowTrendSeries[];
+};
+
+export type IndustryStockFlowRow = {
+  rank: number;
+  ticker: string;
+  ths_code: string;
+  name: string;
+  industry_name: string;
+  flow_amount: number;
+};
+
+export type IndustryStockFlowRanking = {
+  market: Market;
+  trade_date: string;
+  industry_name: string;
+  count: number;
+  data: IndustryStockFlowRow[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 export type Market = "us" | "cn" | "hk";
 
@@ -183,4 +234,35 @@ export function fetchStockProfile(ticker: string) {
 
 export function fetchStockPeers(ticker: string) {
   return requestJson<StockPeers>(`/api/stocks/${encodeURIComponent(ticker)}/peers`);
+}
+
+export function fetchIndustryFlowDates(limit = 260, market: Market = "us") {
+  const params = new URLSearchParams({ limit: String(limit), market });
+  return requestJson<{ market: Market; count: number; dates: string[] }>(`/api/industry-flows/dates?${params}`);
+}
+
+export function fetchIndustryFlowRanking(market: Market = "us", tradeDate = "", limit = 120) {
+  const params = new URLSearchParams({ market, limit: String(limit) });
+  if (tradeDate) {
+    params.set("trade_date", tradeDate);
+  }
+  return requestJson<IndustryFlowRanking>(`/api/industry-flows/rankings?${params}`);
+}
+
+export function fetchIndustryFlowTrend(market: Market = "us", industries: string[] = [], topN = 8) {
+  const params = new URLSearchParams({ market, top_n: String(topN) });
+  if (industries.length) {
+    params.set("industries", industries.join(","));
+  }
+  return requestJson<IndustryFlowTrend>(`/api/industry-flows/trend?${params}`);
+}
+
+export function fetchIndustryStockFlows(market: Market, industryName: string, tradeDate = "", limit = 300) {
+  const params = new URLSearchParams({ market, limit: String(limit) });
+  if (tradeDate) {
+    params.set("trade_date", tradeDate);
+  }
+  return requestJson<IndustryStockFlowRanking>(
+    `/api/industry-flows/${encodeURIComponent(industryName)}/stocks?${params}`
+  );
 }

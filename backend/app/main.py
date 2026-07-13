@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.industry_flows import router as industry_flows_router
 from app.api.rankings import router as rankings_router
 from app.api.stocks import router as stocks_router
 
@@ -19,6 +20,7 @@ app.add_middleware(
 
 app.include_router(rankings_router)
 app.include_router(stocks_router)
+app.include_router(industry_flows_router)
 
 
 @app.get("/api/health")

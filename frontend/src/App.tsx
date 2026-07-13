@@ -14,12 +14,19 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
+  LineStyle,
   createChart,
   type IChartApi,
+  type ISeriesApi,
+  type LineData,
   type UTCTimestamp
 } from "lightweight-charts";
 import {
   fetchDailyBars,
+  fetchIndustryFlowDates,
+  fetchIndustryFlowRanking,
+  fetchIndustryFlowTrend,
+  fetchIndustryStockFlows,
   fetchRanking,
   fetchRankingAlerts,
   fetchRankingDates,
@@ -28,6 +35,10 @@ import {
   type AShareLeader,
   type CompanyProfile,
   type DailyBar,
+  type IndustryFlowRanking,
+  type IndustryFlowTrend,
+  type IndustryFlowTrendSeries,
+  type IndustryStockFlowRanking,
   type Market,
   type RankingAlertItem,
   type RankingAlerts,
@@ -81,8 +92,9 @@ const SECTOR_LABELS: Record<string, string> = {
 };
 
 type RouteState = {
-  page: "dashboard" | "stock";
+  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail";
   ticker?: string;
+  industryName?: string;
   date?: string;
   market?: Market;
 };
@@ -106,6 +118,16 @@ function volumeText(value: number | null | undefined) {
 function percentText(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   return `${value >= 0 ? "+" : ""}${numberText(value, 2)}%`;
+}
+
+function flowText(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  const absValue = Math.abs(value);
+  if (absValue >= 1_000_000_000) return `${sign}${numberText(absValue / 1_000_000_000, 2)}B`;
+  if (absValue >= 1_000_000) return `${sign}${numberText(absValue / 1_000_000, 2)}M`;
+  if (absValue >= 1_000) return `${sign}${numberText(absValue / 1_000, 2)}K`;
+  return `${sign}${numberText(absValue, 0)}`;
 }
 
 function sectorLabel(sector: string | null | undefined) {
@@ -342,14 +364,31 @@ function timeKey(time: unknown) {
 }
 
 function parseRoute(): RouteState {
+  const industryMatch = window.location.pathname.match(/^\/industry-flows\/(.+)$/);
+  const marketParam = new URLSearchParams(window.location.search).get("market");
+  const market = (marketParam === "cn" || marketParam === "hk" ? marketParam : "us") as Market;
+  if (industryMatch) {
+    return {
+      page: "industryFlowDetail",
+      industryName: decodeURIComponent(industryMatch[1]),
+      date: new URLSearchParams(window.location.search).get("date") ?? "",
+      market
+    };
+  }
+  if (window.location.pathname === "/industry-flows") {
+    return {
+      page: "industryFlows",
+      date: new URLSearchParams(window.location.search).get("date") ?? "",
+      market
+    };
+  }
   const match = window.location.pathname.match(/^\/stocks\/([A-Za-z0-9.-]+)$/);
   if (!match) return { page: "dashboard" };
-  const marketParam = new URLSearchParams(window.location.search).get("market");
   return {
     page: "stock",
     ticker: match[1].toUpperCase(),
     date: new URLSearchParams(window.location.search).get("date") ?? "",
-    market: (marketParam === "cn" || marketParam === "hk" ? marketParam : "us") as Market
+    market
   };
 }
 
@@ -900,6 +939,596 @@ function RankingTable({
   );
 }
 
+const FLOW_COLORS = ["#1f6feb", "#0f9f6e", "#d27a00", "#8250df", "#d1242f", "#0969da", "#57606a", "#bf8700", "#1a7f64", "#cf222e"];
+const DEFAULT_FLOW_SERIES_COUNT = 5;
+const DEFAULT_FLOW_VISIBLE_DAYS = 10;
+
+function IndustryFlowChart({ trend }: { trend: IndustryFlowTrend | null }) {
+  const series = trend?.series.filter((item) => item.points.length) ?? [];
+  const width = 980;
+  const height = 320;
+  const padLeft = 76;
+  const padRight = 28;
+  const padTop = 26;
+  const padBottom = 46;
+  const allPoints = series.flatMap((item) => item.points.map((point) => point.flow_amount));
+  const minValue = allPoints.length ? Math.min(...allPoints, 0) : -1;
+  const maxValue = allPoints.length ? Math.max(...allPoints, 0) : 1;
+  const spread = Math.max(maxValue - minValue, 1);
+  const dates = Array.from(new Set(series.flatMap((item) => item.points.map((point) => point.date)))).sort();
+  const xForDate = (dateValue: string) => {
+    const index = Math.max(dates.indexOf(dateValue), 0);
+    return dates.length <= 1 ? width / 2 : padLeft + (index / (dates.length - 1)) * (width - padLeft - padRight);
+  };
+  const yForValue = (value: number) => padTop + ((maxValue - value) / spread) * (height - padTop - padBottom);
+  const zeroY = yForValue(0);
+
+  return (
+    <section className="flowChartPanel">
+      <div className="panelHeader">
+        <div>
+          <p className="eyebrow">Industry Fund Flow</p>
+          <h2>行业资金流向折线图</h2>
+        </div>
+        <span className="statusText">{dates.length ? `${dates[0]} - ${dates[dates.length - 1]}` : "--"}</span>
+      </div>
+      <div className="flowChartWrap">
+        <svg className="flowChart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Industry fund flow trend">
+          <line className="flowAxis" x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} />
+          <line className="flowAxis" x1={padLeft} y1={height - padBottom} x2={width - padRight} y2={height - padBottom} />
+          <line className="flowZero" x1={padLeft} y1={zeroY} x2={width - padRight} y2={zeroY} />
+          <text x={12} y={padTop + 5}>{flowText(maxValue)}</text>
+          <text x={12} y={zeroY + 4}>0</text>
+          <text x={12} y={height - padBottom}>{flowText(minValue)}</text>
+          {series.map((item, index) => {
+            const points = item.points.map((point) => `${xForDate(point.date)},${yForValue(point.flow_amount)}`).join(" ");
+            return <polyline key={item.industry_name} points={points} stroke={FLOW_COLORS[index % FLOW_COLORS.length]} />;
+          })}
+        </svg>
+        <div className="flowLegend">
+          {series.map((item, index) => (
+            <span key={item.industry_name}>
+              <i style={{ background: FLOW_COLORS[index % FLOW_COLORS.length] }} />
+              {item.industry_name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function lineValueFromPoint(point: unknown) {
+  if (!point || typeof point !== "object" || !("value" in point)) return null;
+  const value = Number((point as { value: unknown }).value);
+  return Number.isFinite(value) ? value : null;
+}
+
+function IndustryFlowInteractiveChart({ trend }: { trend: IndustryFlowTrend | null }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const series = useMemo(() => trend?.series.filter((item) => item.points.length) ?? [], [trend]);
+  const [hoverTooltip, setHoverTooltip] = useState<{
+    left: number;
+    top: number;
+    markerLeft: number;
+    date: string;
+    rows: Array<{ industry: string; color: string; value: number }>;
+  } | null>(null);
+  const dateRange = useMemo(() => {
+    const dates = Array.from(new Set(series.flatMap((item) => item.points.map((point) => point.date)))).sort();
+    return dates.length ? `${dates[0]} - ${dates[dates.length - 1]}` : "--";
+  }, [series]);
+  const hoverDates = useMemo(() => Array.from(new Set(series.flatMap((item) => item.points.map((point) => point.date)))).sort(), [series]);
+  const hoverValuesByDate = useMemo(() => {
+    const result = new Map<string, Array<{ industry: string; color: string; value: number }>>();
+    series.forEach((item, index) => {
+      const color = FLOW_COLORS[index % FLOW_COLORS.length];
+      item.points.forEach((point) => {
+        if (!result.has(point.date)) result.set(point.date, []);
+        result.get(point.date)?.push({ industry: item.industry_name, color, value: point.flow_amount });
+      });
+    });
+    for (const rows of result.values()) {
+      rows.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+    }
+    return result;
+  }, [series]);
+
+  const updateHoverTooltip = (event: MouseEvent<HTMLDivElement>) => {
+    if (!hoverDates.length) {
+      setHoverTooltip(null);
+      return;
+    }
+    const box = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(Math.max((event.clientX - box.left) / Math.max(box.width, 1), 0), 1);
+    const index = Math.min(Math.max(Math.round(ratio * (hoverDates.length - 1)), 0), hoverDates.length - 1);
+    const date = hoverDates[index];
+    const rows = hoverValuesByDate.get(date) ?? [];
+    setHoverTooltip({
+      left: Math.max(12, Math.min(event.clientX - box.left + 18, box.width - 270)),
+      top: Math.max(event.clientY - box.top + 18, 12),
+      markerLeft: event.clientX - box.left,
+      date,
+      rows
+    });
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = "";
+    chartRef.current?.remove();
+    chartRef.current = null;
+    if (!series.length) return;
+
+    const chart = createChart(container, {
+      ...baseChartOptions(400),
+      rightPriceScale: { borderColor: "#d9e0ea", minimumWidth: 88 },
+      crosshair: {
+        mode: 1,
+        vertLine: { color: "rgba(65, 81, 104, 0.42)", width: 1, style: LineStyle.Solid, labelVisible: false },
+        horzLine: { color: "rgba(96, 112, 134, 0.16)", width: 1, style: LineStyle.Dotted, labelVisible: false }
+      },
+      localization: { priceFormatter: (value: number) => flowText(value) }
+    });
+    chartRef.current = chart;
+    const lineApis: Array<{ industry: string; color: string; api: ISeriesApi<"Line"> }> = [];
+    const valuesByDate = new Map<string, Map<string, number>>();
+    series.forEach((item, index) => {
+      const color = FLOW_COLORS[index % FLOW_COLORS.length];
+      const line = chart.addSeries(LineSeries, {
+        color,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        title: item.industry_name
+      });
+      const data: LineData[] = item.points.map((point) => ({ time: toTimestamp(point.date), value: point.flow_amount }));
+      line.setData(data);
+      if (index === 0) {
+        line.createPriceLine({
+          price: 0,
+          color: "rgba(65, 81, 104, 0.42)",
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: false,
+          title: "0"
+        });
+      }
+      item.points.forEach((point) => {
+        if (!valuesByDate.has(point.date)) valuesByDate.set(point.date, new Map());
+        valuesByDate.get(point.date)?.set(item.industry_name, point.flow_amount);
+      });
+      lineApis.push({ industry: item.industry_name, color, api: line });
+    });
+    const sortedDates = Array.from(valuesByDate.keys()).sort();
+
+    if (sortedDates.length > DEFAULT_FLOW_VISIBLE_DAYS) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: sortedDates.length - DEFAULT_FLOW_VISIBLE_DAYS,
+        to: sortedDates.length - 1
+      });
+    } else {
+      chart.timeScale().fitContent();
+    }
+    const resize = () => chart.applyOptions({ width: container.clientWidth || 900 });
+    resize();
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    type CrosshairParam = Parameters<Parameters<IChartApi["subscribeCrosshairMove"]>[0]>[0];
+    const handleCrosshairMove = (param: CrosshairParam) => {
+      const tooltip = tooltipRef.current;
+      if (!tooltip || !param.point || param.point.x < 0 || param.point.y < 0) {
+        if (tooltip) tooltip.style.display = "none";
+        return;
+      }
+      let dateText = typeof param.time === "number" ? new Date(param.time * 1000).toISOString().slice(0, 10) : "";
+      if (!valuesByDate.has(dateText)) {
+        const timeAtX = chart.timeScale().coordinateToTime(param.point.x);
+        if (typeof timeAtX === "number") {
+          const nearest = new Date(timeAtX * 1000).toISOString().slice(0, 10);
+          if (valuesByDate.has(nearest)) dateText = nearest;
+        }
+      }
+      if (!valuesByDate.has(dateText) && sortedDates.length) {
+        const index = Math.min(Math.max(Math.round((param.point.x / Math.max(container.clientWidth, 1)) * (sortedDates.length - 1)), 0), sortedDates.length - 1);
+        dateText = sortedDates[index];
+      }
+      const fallbackValues = valuesByDate.get(dateText);
+      const rows = lineApis
+        .map((entry) => ({ ...entry, value: lineValueFromPoint(param.seriesData.get(entry.api)) }))
+        .map((entry) => ({ ...entry, value: entry.value ?? fallbackValues?.get(entry.industry) ?? null }))
+        .filter((entry) => entry.value !== null)
+        .sort((a, b) => Math.abs(b.value ?? 0) - Math.abs(a.value ?? 0));
+      if (!rows.length) {
+        tooltip.style.display = "none";
+        return;
+      }
+      tooltip.style.display = "block";
+      tooltip.style.left = `${Math.min(param.point.x + 18, container.clientWidth - 270)}px`;
+      tooltip.style.top = `${Math.max(param.point.y + 18, 12)}px`;
+      tooltip.innerHTML = `<strong>${dateText}</strong>${rows
+        .map(
+          (row) =>
+            `<span><i style="background:${row.color}"></i><em>${row.industry}</em><b class="${(row.value ?? 0) >= 0 ? "positive" : "negative"}">${flowText(row.value)}</b></span>`
+        )
+        .join("")}`;
+    };
+    chart.subscribeCrosshairMove(handleCrosshairMove);
+
+    return () => {
+      chart.unsubscribeCrosshairMove(handleCrosshairMove);
+      resizeObserver.disconnect();
+      chart.remove();
+      chartRef.current = null;
+    };
+  }, [series]);
+
+  return (
+    <section className="flowChartPanel">
+      <div className="panelHeader">
+        <div>
+          <p className="eyebrow">Industry Fund Flow</p>
+          <h2>Industry fund-flow trend</h2>
+        </div>
+        <span className="statusText">{dateRange}</span>
+      </div>
+      <div className="flowChartWrap" onMouseMove={updateHoverTooltip} onMouseLeave={() => setHoverTooltip(null)}>
+        <div className="flowChartCanvas" ref={containerRef} />
+        {hoverTooltip ? (
+          <div className="flowHoverMarker" style={{ left: hoverTooltip.markerLeft }} />
+        ) : null}
+        {hoverTooltip ? (
+          <div className="flowTooltip" style={{ display: "block", left: hoverTooltip.left, top: hoverTooltip.top }}>
+            <strong>{hoverTooltip.date}</strong>
+            {hoverTooltip.rows.map((row) => (
+              <span key={row.industry}>
+                <i style={{ background: row.color }} />
+                <em>{row.industry}</em>
+                <b className={row.value >= 0 ? "positive" : "negative"}>{flowText(row.value)}</b>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="flowTooltip" ref={tooltipRef} />
+        <div className="flowLegend">
+          {series.map((item, index) => (
+            <span key={item.industry_name}>
+              <i style={{ background: FLOW_COLORS[index % FLOW_COLORS.length] }} />
+              {item.industry_name}
+            </span>
+          ))}
+          {!series.length ? <span>No selected industry.</span> : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IndustryFlowSelector({
+  rows,
+  selectedIndustries,
+  onToggle,
+  onResetTop,
+  onClear
+}: {
+  rows: IndustryFlowRanking["data"];
+  selectedIndustries: string[];
+  onToggle: (industryName: string) => void;
+  onResetTop: () => void;
+  onClear: () => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const [collapsed, setCollapsed] = useState(true);
+  const visibleRows = useMemo(() => {
+    const term = filter.trim().toLowerCase();
+    return rows.filter((row) => !term || row.industry_name.toLowerCase().includes(term)).slice(0, 160);
+  }, [filter, rows]);
+  const selectedSet = useMemo(() => new Set(selectedIndustries), [selectedIndustries]);
+
+  return (
+    <section className="flowSelector">
+      <div className="flowSelectorTop">
+        <label className="searchBox">
+          <Search size={16} aria-hidden="true" />
+          <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="搜索行业" />
+        </label>
+        <button className="ghostButton" type="button" onClick={onResetTop}>
+          默认前{DEFAULT_FLOW_SERIES_COUNT}
+        </button>
+        <button className="ghostButton" type="button" onClick={onClear}>
+          清空
+        </button>
+        <button className="ghostButton" type="button" onClick={() => setCollapsed((value) => !value)}>
+          {collapsed ? "展开" : "收起"}
+        </button>
+        <span>已选 {selectedIndustries.length}</span>
+      </div>
+      {collapsed ? null : (
+        <div className="flowSelectorGrid">
+          {visibleRows.map((row) => (
+            <label key={row.industry_name} className={selectedSet.has(row.industry_name) ? "selected" : ""}>
+              <input type="checkbox" checked={selectedSet.has(row.industry_name)} onChange={() => onToggle(row.industry_name)} />
+              <strong>{row.industry_name}</strong>
+              <em>{flowText(row.flow_amount)}</em>
+            </label>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function IndustryFlowTable({
+  ranking,
+  market,
+  onOpen
+}: {
+  ranking: IndustryFlowRanking | null;
+  market: Market;
+  onOpen: (industryName: string) => void;
+}) {
+  const rows = ranking?.data ?? [];
+  return (
+    <div className="tableWrap flowTableWrap">
+      <table className="flowTable">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>行业</th>
+            <th>净流入</th>
+            <th>股票数</th>
+            <th>流入数</th>
+            <th>流出数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.trade_date}-${row.industry_name}`} onClick={() => onOpen(row.industry_name)}>
+              <td className="rankCell">#{row.rank}</td>
+              <td>{row.industry_name}</td>
+              <td className={row.flow_amount >= 0 ? "positive" : "negative"}>{flowText(row.flow_amount)}</td>
+              <td>{row.stock_count}</td>
+              <td>{row.positive_count}</td>
+              <td>{row.negative_count}</td>
+            </tr>
+          ))}
+          {!rows.length ? (
+            <tr>
+              <td colSpan={6}>No industry fund flow data.</td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function IndustryFlowPage({ initialDate, initialMarket }: { initialDate: string; initialMarket: Market }) {
+  const [market, setMarket] = useState<Market>(initialMarket);
+  const [asOfDate, setAsOfDate] = useState(initialDate);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [ranking, setRanking] = useState<IndustryFlowRanking | null>(null);
+  const [trend, setTrend] = useState<IndustryFlowTrend | null>(null);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadTrend = (industries: string[], requestedMarket = market) => {
+    if (!industries.length) {
+      setTrend(null);
+      return;
+    }
+    fetchIndustryFlowTrend(requestedMarket, industries)
+      .then(setTrend)
+      .catch((err: Error) => setError(err.message));
+  };
+
+  const loadFlow = (requestedDate = asOfDate, requestedMarket = market) => {
+    setLoading(true);
+    setError("");
+    fetchIndustryFlowRanking(requestedMarket, requestedDate)
+      .then((result) => {
+        setRanking(result);
+        setAsOfDate(result.trade_date);
+        const defaultIndustries = result.data.slice(0, DEFAULT_FLOW_SERIES_COUNT).map((row) => row.industry_name);
+        setSelectedIndustries(defaultIndustries);
+        return fetchIndustryFlowTrend(requestedMarket, defaultIndustries);
+      })
+      .then(setTrend)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchIndustryFlowDates(520, market)
+      .then((result) => setAvailableDates(result.dates))
+      .catch(() => setAvailableDates([]));
+    loadFlow("", market);
+  }, [market]);
+
+  const openIndustry = (industryName: string) => {
+    navigateTo(`/industry-flows/${encodeURIComponent(industryName)}?date=${ranking?.trade_date ?? asOfDate}&market=${market}`);
+  };
+
+  return (
+    <main className="app">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Fund Flow</p>
+          <h1>行业资金流向</h1>
+        </div>
+        <div className="summaryStrip">
+          <span className="marketSwitch" aria-label="market switch">
+            {MARKET_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={market === option.value ? "active" : ""}
+                onClick={() => {
+                  setMarket(option.value);
+                  setAsOfDate("");
+                  setRanking(null);
+                  setTrend(null);
+                  setSelectedIndustries([]);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </span>
+          <span>Date {(ranking?.trade_date ?? asOfDate) || "--"}</span>
+          <button className="monitorButton" type="button" onClick={() => navigateTo("/")}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            股票强度排名
+          </button>
+        </div>
+      </header>
+      <section className="toolbar">
+        <TradingCalendar value={asOfDate} availableDates={availableDates} onChange={setAsOfDate} />
+        <button className="primaryButton" type="button" onClick={() => loadFlow()} disabled={loading}>
+          <RefreshCw size={16} aria-hidden="true" />
+          {loading ? "Loading" : "Refresh"}
+        </button>
+      </section>
+      {error ? <div className="errorLine">{error}</div> : null}
+      <IndustryFlowSelector
+        rows={ranking?.data ?? []}
+        selectedIndustries={selectedIndustries}
+        onToggle={(industryName) => {
+          const next = selectedIndustries.includes(industryName)
+            ? selectedIndustries.filter((item) => item !== industryName)
+            : [...selectedIndustries, industryName];
+          setSelectedIndustries(next);
+          loadTrend(next);
+        }}
+        onResetTop={() => {
+          const next = (ranking?.data ?? []).slice(0, DEFAULT_FLOW_SERIES_COUNT).map((row) => row.industry_name);
+          setSelectedIndustries(next);
+          loadTrend(next);
+        }}
+        onClear={() => {
+          setSelectedIndustries([]);
+          setTrend(null);
+        }}
+      />
+      <IndustryFlowInteractiveChart trend={trend} />
+      <section className="rankingPanel flowRankingPanel">
+        <div className="panelHeader">
+          <div>
+            <p className="eyebrow">Ranking / {ranking?.trade_date ?? "--"}</p>
+            <h2>行业资金流入流出排名表</h2>
+          </div>
+          <span className="statusText">{ranking ? `${ranking.count} industries` : "--"}</span>
+        </div>
+        <IndustryFlowTable ranking={ranking} market={market} onOpen={openIndustry} />
+      </section>
+    </main>
+  );
+}
+
+function IndustryFlowDetailPage({
+  industryName,
+  initialDate,
+  market
+}: {
+  industryName: string;
+  initialDate: string;
+  market: Market;
+}) {
+  const [asOfDate, setAsOfDate] = useState(initialDate);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [ranking, setRanking] = useState<IndustryStockFlowRanking | null>(null);
+  const [trend, setTrend] = useState<IndustryFlowTrend | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadDetail = (requestedDate = asOfDate) => {
+    setLoading(true);
+    setError("");
+    Promise.all([
+      fetchIndustryStockFlows(market, industryName, requestedDate),
+      fetchIndustryFlowTrend(market, [industryName])
+    ])
+      .then(([stockResult, trendResult]) => {
+        setRanking(stockResult);
+        setAsOfDate(stockResult.trade_date);
+        setTrend(trendResult);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchIndustryFlowDates(520, market)
+      .then((result) => setAvailableDates(result.dates))
+      .catch(() => setAvailableDates([]));
+    loadDetail(initialDate);
+  }, [industryName, market]);
+
+  return (
+    <main className="app">
+      <button className="ghostButton" type="button" onClick={() => navigateTo(`/industry-flows?date=${asOfDate}&market=${market}`)}>
+        <ArrowLeft size={16} aria-hidden="true" />
+        Back
+      </button>
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Industry Detail / {market.toUpperCase()}</p>
+          <h1>{industryName}</h1>
+        </div>
+        <div className="summaryStrip">
+          <span>Date {(ranking?.trade_date ?? asOfDate) || "--"}</span>
+          <span>{ranking ? `${ranking.count} stocks` : "--"}</span>
+        </div>
+      </header>
+      <section className="toolbar">
+        <TradingCalendar value={asOfDate} availableDates={availableDates} onChange={setAsOfDate} />
+        <button className="primaryButton" type="button" onClick={() => loadDetail()} disabled={loading}>
+          <RefreshCw size={16} aria-hidden="true" />
+          {loading ? "Loading" : "Refresh"}
+        </button>
+      </section>
+      {error ? <div className="errorLine">{error}</div> : null}
+      <IndustryFlowInteractiveChart trend={trend} />
+      <section className="rankingPanel flowRankingPanel">
+        <div className="panelHeader">
+          <div>
+            <p className="eyebrow">Stocks / {ranking?.trade_date ?? "--"}</p>
+            <h2>板块内个股资金流向排名</h2>
+          </div>
+        </div>
+        <div className="tableWrap flowTableWrap">
+          <table className="flowTable">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>代码</th>
+                <th>名称</th>
+                <th>同花顺代码</th>
+                <th>净流入</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(ranking?.data ?? []).map((row) => (
+                <tr key={`${row.rank}-${row.ticker}`}>
+                  <td className="rankCell">#{row.rank}</td>
+                  <td>{row.ticker}</td>
+                  <td>{row.name}</td>
+                  <td>{row.ths_code}</td>
+                  <td className={row.flow_amount >= 0 ? "positive" : "negative"}>{flowText(row.flow_amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function DashboardPage() {
   const [market, setMarket] = useState<Market>("us");
   const [windowSize, setWindowSize] = useState(DEFAULT_WINDOW);
@@ -1019,6 +1648,10 @@ function DashboardPage() {
           ) : (
             <span>前复权日线 / 恒生科技基准</span>
           )}
+          <button className="monitorButton" type="button" onClick={() => navigateTo(`/industry-flows?market=${market}`)}>
+            <BarChart3 size={16} aria-hidden="true" />
+            行业资金流向
+          </button>
           <button className="monitorButton" type="button" onClick={openAlerts}>
             <Activity size={16} aria-hidden="true" />
             排名监测
@@ -1713,6 +2346,12 @@ export default function App() {
 
   if (route.page === "stock" && route.ticker) {
     return <StockDetailPage ticker={route.ticker} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
+  }
+  if (route.page === "industryFlowDetail" && route.industryName) {
+    return <IndustryFlowDetailPage industryName={route.industryName} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
+  }
+  if (route.page === "industryFlows") {
+    return <IndustryFlowPage initialDate={route.date ?? ""} initialMarket={route.market ?? "us"} />;
   }
   return <DashboardPage />;
 }

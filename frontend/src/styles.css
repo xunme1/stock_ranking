@@ -759,6 +759,201 @@ tbody td {
   transform: translateY(-50%) rotate(45deg);
 }
 
+.flowChartPanel,
+.flowRankingPanel {
+  margin-top: 16px;
+}
+
+.flowChartWrap {
+  position: relative;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: crosshair;
+  overflow: hidden;
+  padding: 12px 12px 14px;
+}
+
+.flowChartCanvas {
+  width: 100%;
+  min-height: 400px;
+}
+
+.flowHoverMarker {
+  position: absolute;
+  top: 12px;
+  bottom: 42px;
+  z-index: 4;
+  width: 1px;
+  background: rgba(65, 81, 104, 0.48);
+  pointer-events: none;
+}
+
+.flowTooltip {
+  position: absolute;
+  z-index: 6;
+  display: none;
+  width: 252px;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #cbd6e4;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 30px rgba(24, 33, 47, 0.16);
+  padding: 10px 11px;
+  pointer-events: none;
+}
+
+.flowTooltip strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #18212f;
+  font-size: 13px;
+}
+
+.flowTooltip span {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin: 5px 0;
+  color: #415168;
+  font-size: 12px;
+}
+
+.flowTooltip i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.flowTooltip em {
+  overflow: hidden;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flowTooltip b {
+  font-size: 12px;
+}
+
+.flowLegend,
+.flowSelectorTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  color: #415168;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.flowLegend {
+  margin-top: 10px;
+}
+
+.flowLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flowLegend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.flowSelector {
+  margin: 8px 0 12px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 9px 10px;
+}
+
+.flowSelectorTop {
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.flowSelectorTop .searchBox {
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+
+.flowSelectorTop .searchBox input {
+  width: 100%;
+}
+
+.flowSelectorTop .ghostButton {
+  margin-bottom: 0;
+  height: 32px;
+  padding: 0 9px;
+}
+
+.flowSelectorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 6px;
+  max-height: 112px;
+  overflow: auto;
+  margin-top: 9px;
+  padding-right: 4px;
+}
+
+.flowSelectorGrid label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #e2e7ef;
+  border-radius: 7px;
+  background: #f9fbfd;
+  color: #415168;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 6px 7px;
+}
+
+.flowSelectorGrid label.selected {
+  border-color: #9fc5ff;
+  background: #edf4ff;
+}
+
+.flowSelectorGrid strong {
+  overflow: hidden;
+  color: #18212f;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flowSelectorGrid em {
+  color: #607086;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.flowTableWrap {
+  height: min(760px, calc(100vh - 220px));
+  max-height: 760px;
+  min-height: 520px;
+}
+
+.flowTable {
+  min-width: 760px;
+}
+
+.flowTable thead th:nth-child(2),
+.flowTable tbody td:nth-child(2),
+.flowTable thead th:nth-child(3),
+.flowTable tbody td:nth-child(3) {
+  text-align: left;
+}
+
 .rankPopoverTop {
   display: flex;
   align-items: center;
