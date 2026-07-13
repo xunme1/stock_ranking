@@ -251,9 +251,9 @@ This reference lists the main functions agents need when modifying or operating 
 `experiments/daily_brief/llm_analysis.py`
 
 - `build_analysis_payload(brief) -> dict` compacts data sent to model.
-- `build_llm_messages(brief) -> list[dict[str, str]]` creates Qwen prompt messages.
-- `load_dashscope_key() -> str` reads `DASHSCOPE_API_KEY` or `BAILIAN_API_KEY`.
-- `generate_model_interpretation(brief, model, timeout, max_tokens) -> dict` calls DashScope-compatible API.
+- `build_llm_messages(brief) -> list[dict[str, str]]` creates the daily-brief analysis prompt messages.
+- `load_deepseek_key() -> str` reads `DEEPSEEK_API_KEY` or `DEEPSEEK_KEY`.
+- `generate_model_interpretation(brief, model, timeout, max_tokens) -> dict` calls DeepSeek by default; `qwen*` or `dashscope:*` model names use DashScope-compatible API.
 
 `experiments/daily_brief/render_html.py`
 
@@ -277,17 +277,16 @@ This reference lists the main functions agents need when modifying or operating 
 - `register_font() -> None` chooses usable CJK font; watch server TTC/PostScript issues.
 - Drawing helpers: `text`, `right_text`, `center_text`, `panel`, `wrapped`, `fmt`, `pct_color`, `delta_label`.
 - Page renderers: `render_page_one` through `render_page_five`.
-- `main()` renders PDF from JSON. Retained as a fallback; the main path is JSON -> HTML -> PDF.
+- `main()` renders PDF from JSON. Retained as a fallback; the main email path is JSON -> HTML -> email link.
 
 `scripts/send_daily_brief_email.py`
 
 - `split_recipients(value) -> list[str]` supports multiple recipients.
 - `load_config(cli_to) -> dict[str, str]` reads SMTP env vars and CLI recipient override.
-- `discover_latest_reports(windows) -> tuple[str, list[Path], list[dict]]` finds latest PDFs.
-- `build_body(as_of_date, briefs) -> str` creates email body.
-- `attach_file(message, path) -> None` attaches PDFs.
-- `send_email(config, subject, body, attachments, dry_run) -> None` sends via SMTP.
-- `main()` sends latest reports for requested windows.
+- `discover_latest_reports(markets, window) -> tuple[str, list[Path], list[dict]]` finds latest HTML reports.
+- `build_bodies(as_of_date, briefs, html_files, public_base_url) -> tuple[str, str]` creates plain-text and HTML email bodies with report links.
+- `send_email(config, subject, text_body, html_body, html_files, dry_run) -> None` sends via SMTP.
+- `main()` sends latest report links for requested markets.
 
 ## Experiments: Sector Cloud
 

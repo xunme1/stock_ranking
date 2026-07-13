@@ -18,8 +18,10 @@ POLYGON_API_KEY=...          # legacy fallback
 
 TUSHARE_TOKEN=...
 ALPHA_VANTAGE_API_KEY=...
-DASHSCOPE_API_KEY=...
-BAILIAN_API_KEY=...
+DEEPSEEK_API_KEY=...
+DEEPSEEK_MODEL=deepseek-chat
+DASHSCOPE_API_KEY=...       # optional qwen fallback
+BAILIAN_API_KEY=...          # optional qwen fallback
 
 SMTP_HOST=...
 SMTP_PORT=...
@@ -28,6 +30,7 @@ SMTP_PASSWORD=...
 SMTP_FROM=...
 SMTP_TO=a@example.com,b@example.com
 SMTP_USE_TLS=true
+DAILY_BRIEF_PUBLIC_BASE_URL=https://your-domain.example/daily-briefs/files
 ```
 
 Never commit `.env`.
@@ -194,32 +197,34 @@ data/processed/rankings/ranking_window_10.csv
 data/processed/rankings/ranking_window_20.csv
 ```
 
-## Daily Brief PDF
+## Daily Brief HTML Email
 
 Generate one window without LLM:
 
 ```powershell
 .\.venv\Scripts\python.exe -B experiments\daily_brief\generate_brief_data.py --window 10
-.\.venv\Scripts\python.exe -B experiments\daily_brief\render_pdf.py --input experiments\daily_brief\output\daily_brief_YYYY-MM-DD_w10.json
+.\.venv\Scripts\python.exe -B experiments\daily_brief\render_html.py --input experiments\daily_brief\output\daily_brief_YYYY-MM-DD_w10.json
 ```
 
-Generate with Qwen:
+Generate with DeepSeek:
 
 ```powershell
-.\.venv\Scripts\python.exe -B experiments\daily_brief\generate_brief_data.py --window 10 --use-llm --llm-model qwen3.7-plus --llm-timeout 180 --llm-max-tokens 1500
+.\.venv\Scripts\python.exe -B experiments\daily_brief\generate_brief_data.py --window 10 --use-llm --llm-timeout 180 --llm-max-tokens 1500
 ```
 
-Send latest reports to configured recipients:
+Send latest HTML report links to configured recipients:
 
 ```powershell
-.\.venv\Scripts\python.exe -B scripts\send_daily_brief_email.py --windows 10,20
+.\.venv\Scripts\python.exe -B scripts\send_daily_brief_email.py --markets us --window 10
+.\.venv\Scripts\python.exe -B scripts\send_daily_brief_email.py --markets cn,hk --window 10
 ```
 
 Server all-in-one:
 
 ```bash
 cd /root/stock_ranking
-bash scripts/run_daily_brief_email.sh
+MARKET_GROUP=us bash scripts/run_daily_brief_email.sh
+MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh
 ```
 
 Multiple recipients are comma-separated in `SMTP_TO`, or passed by CLI if supported.
@@ -300,10 +305,11 @@ Beijing 09:00 daily data update:
 0 9 * * 1-5 cd /root/stock_ranking && bash scripts/server_daily_update.sh >> logs/cron_daily_update.log 2>&1
 ```
 
-Beijing 09:30 daily brief email:
+Beijing 08:00 US daily brief email and 17:00 A/HK daily brief email:
 
 ```cron
-30 9 * * 1-5 cd /root/stock_ranking && bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email.log 2>&1
+0 8 * * 1-5 cd /root/stock_ranking && MARKET_GROUP=us bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_us.log 2>&1
+0 17 * * 1-5 cd /root/stock_ranking && MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_asia.log 2>&1
 ```
 
 Ensure server timezone is Asia/Shanghai:

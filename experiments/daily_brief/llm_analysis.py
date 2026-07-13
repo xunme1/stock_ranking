@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DASHSCOPE_COMPAT_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+DEEPSEEK_COMPAT_URL = "https://api.deepseek.com/chat/completions"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
 
 
 def _compact_items(items: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
@@ -110,35 +112,131 @@ def load_dashscope_key() -> str:
     return key
 
 
-def generate_model_interpretation(
-    brief: dict[str, Any],
-    model: str = "qwen3.7-plus",
-    timeout: int = 60,
-    max_tokens: int = 1500,
-) -> dict[str, Any]:
-    api_key = load_dashscope_key()
-    response = requests.post(
-        DASHSCOPE_COMPAT_URL,
+def load_deepseek_key() -> str:
+    load_dotenv(ROOT_DIR / ".env")
+    key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_KEY")
+    if not key:
+        raise RuntimeError("Missing DEEPSEEK_API_KEY in environment.")
+    return key
+
+
+def deepseek_model_name(model: str | None) -> str:
+    load_dotenv(ROOT_DIR / ".env")
+    if model and model != DEFAULT_DEEPSEEK_MODEL:
+        return model
+    return os.getenv("DEEPSEEK_MODEL") or os.getenv("DEEPSEEK_CHAT_MODEL") or DEFAULT_DEEPSEEK_MODEL
+
+
+def deepseek_base_url() -> str:
+    load_dotenv(ROOT_DIR / ".env")
+    return os.getenv("DEEPSEEK_BASE_URL") or os.getenv("DEEPSEEK_API_BASE") or DEEPSEEK_COMPAT_URL
+
+
+def should_use_dashscope(model: str) -> bool:
+    value = model.lower()
+    return value.startswith("qwen") or value.startswith("dashscope:")
+
+
+def post_llm_request(url: str, api_key: str, payload: dict[str, Any], timeout: int) -> requests.Response:
+    session = requests.Session()
+    session.trust_env = False
+    return session.post(
+        url,
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        json={
-            "model": model,
+        json=payload,
+        timeout=timeout,
+    )
+
+
+def extract_choice_text(data: dict[str, Any]) -> str:
+    choices = data.get("choices") or []
+    if not choices:
+        raise RuntimeError("LLM response has no choices.")
+    message = choices[0].get("message") or {}
+    content = message.get("content")
+    if isinstance(content, list):
+        text = "\n".join(str(item.get("text") or item.get("content") or "") for item in content if isinstance(item, dict))
+    else:
+        text = str(content or "")
+    if not text.strip():
+        text = str(message.get("reasoning_content") or "")
+    text = text.strip()
+    if not text:
+        raise RuntimeError("LLM returned empty content.")
+    return text
+
+
+def generate_dashscope_interpretation(
+    brief: dict[str, Any],
+    model: str,
+    timeout: int,
+    max_tokens: int,
+) -> dict[str, Any]:
+    api_key = load_dashscope_key()
+    response = post_llm_request(
+        DASHSCOPE_COMPAT_URL,
+        api_key,
+        {
+            "model": model.removeprefix("dashscope:"),
             "messages": build_llm_messages(brief),
             "temperature": 0.25,
             "top_p": 0.8,
             "max_tokens": max_tokens,
         },
-        timeout=timeout,
+        timeout,
     )
     response.raise_for_status()
     data = response.json()
-    text = data["choices"][0]["message"]["content"].strip()
+    text = extract_choice_text(data)
     return {
         "status": "ok",
         "provider": "dashscope",
-        "model": model,
+        "model": model.removeprefix("dashscope:"),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "text": text,
     }
+
+
+def generate_deepseek_interpretation(
+    brief: dict[str, Any],
+    model: str | None,
+    timeout: int,
+    max_tokens: int,
+) -> dict[str, Any]:
+    model_name = deepseek_model_name(model)
+    response = post_llm_request(
+        deepseek_base_url(),
+        load_deepseek_key(),
+        {
+            "model": model_name,
+            "messages": build_llm_messages(brief),
+            "temperature": 0.25,
+            "top_p": 0.8,
+            "max_tokens": max_tokens,
+        },
+        timeout,
+    )
+    response.raise_for_status()
+    data = response.json()
+    text = extract_choice_text(data)
+    return {
+        "status": "ok",
+        "provider": "deepseek",
+        "model": model_name,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "text": text,
+    }
+
+
+def generate_model_interpretation(
+    brief: dict[str, Any],
+    model: str = DEFAULT_DEEPSEEK_MODEL,
+    timeout: int = 60,
+    max_tokens: int = 1500,
+) -> dict[str, Any]:
+    if should_use_dashscope(model):
+        return generate_dashscope_interpretation(brief, model, timeout, max_tokens)
+    return generate_deepseek_interpretation(brief, model, timeout, max_tokens)

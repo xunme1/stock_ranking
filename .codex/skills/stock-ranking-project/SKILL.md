@@ -1,6 +1,6 @@
 ---
 name: stock-ranking-project
-description: Use this skill when working on the stock_ranking / us_stock_data_project repository: Nasdaq-100 ATR ranking web app, Polygon daily-data download/update scripts, ranking cache, A-share peer mapping, daily PDF brief, sector cloud experiment, local/server runbooks, and context-recovery for future agents.
+description: Use this skill when working on the stock_ranking / us_stock_data_project repository: Nasdaq-100 ATR ranking web app, Polygon daily-data download/update scripts, ranking cache, A-share peer mapping, daily HTML brief, sector cloud experiment, local/server runbooks, and context-recovery for future agents.
 metadata:
   short-description: Work on the stock ranking web app
 ---
@@ -23,7 +23,7 @@ Server root used so far:
 /root/stock_ranking
 ```
 
-The repo is a Nasdaq-100 relative-strength ranking web app. It downloads Polygon daily OHLCV data, computes ranking metrics, exposes a FastAPI backend, renders a Vite/React frontend, and has experiments for PDF daily briefs and sector treemaps.
+The repo is a Nasdaq-100 relative-strength ranking web app. It downloads Polygon daily OHLCV data, computes ranking metrics, exposes a FastAPI backend, renders a Vite/React frontend, and has experiments for HTML daily briefs and sector treemaps.
 
 ## First Rules
 
@@ -61,7 +61,7 @@ scripts/
   update_company_profiles.py      Polygon company profile + Chinese summary
   update_earnings_calendar.py     Alpha Vantage earnings dates
   server_daily_update.sh          server daily data pipeline + API restart
-  run_daily_brief_email.sh        generate and email PDF briefs
+  run_daily_brief_email.sh        generate HTML briefs and email report links
 
 config/
   nasdaq100_tickers.txt           ranking universe
@@ -75,7 +75,7 @@ data/
   fundamental/*.csv               options, earnings, profiles, A-share peers
 
 experiments/
-  daily_brief/                    ranking anomaly brief JSON/PDF + LLM text
+  daily_brief/                    ranking anomaly brief JSON/HTML + LLM text
   sector_cloud/                   standalone sector treemap HTML
 ```
 
@@ -149,13 +149,11 @@ Rebuild A-share peer cache:
 .\.venv\Scripts\python.exe -B scripts\build_a_share_peer_cache.py
 ```
 
-Generate 10/20-day daily brief PDFs:
+Generate 10-day daily brief HTML:
 
 ```powershell
 .\.venv\Scripts\python.exe -B experiments\daily_brief\generate_brief_data.py --window 10
-.\.venv\Scripts\python.exe -B experiments\daily_brief\render_pdf.py --input experiments\daily_brief\output\daily_brief_YYYY-MM-DD_w10.json
-.\.venv\Scripts\python.exe -B experiments\daily_brief\generate_brief_data.py --window 20
-.\.venv\Scripts\python.exe -B experiments\daily_brief\render_pdf.py --input experiments\daily_brief\output\daily_brief_YYYY-MM-DD_w20.json
+.\.venv\Scripts\python.exe -B experiments\daily_brief\render_html.py --input experiments\daily_brief\output\daily_brief_YYYY-MM-DD_w10.json
 ```
 
 ## Verification Checklist
@@ -164,4 +162,4 @@ Generate 10/20-day daily brief PDFs:
 - `GET /api/rankings/latest?window=10&benchmark=QQQ&apply_announced_rebalance=true` returns data.
 - `GET /api/stocks/MU/peers` returns `source: "csv_mapping"` and A-share peers from `config/us_a_share_peer_mapping.csv`.
 - `npm run build` passes after frontend edits.
-- If PDF layout changes, render the PDF and inspect output visually.
+- If HTML daily-brief layout changes, render the HTML and inspect output visually.
