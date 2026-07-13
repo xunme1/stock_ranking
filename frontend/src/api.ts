@@ -163,6 +163,23 @@ export type IndustryStockFlowRanking = {
   data: IndustryStockFlowRow[];
 };
 
+export type DailyBriefReport = {
+  market: Market;
+  market_label: string;
+  date: string;
+  window: number;
+  filename: string;
+  url: string;
+  size_bytes: number;
+  updated_at: number;
+};
+
+export type DailyBriefList = {
+  count: number;
+  dates: string[];
+  data: DailyBriefReport[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 export type Market = "us" | "cn" | "hk";
 
@@ -265,4 +282,8 @@ export function fetchIndustryStockFlows(market: Market, industryName: string, tr
   return requestJson<IndustryStockFlowRanking>(
     `/api/industry-flows/${encodeURIComponent(industryName)}/stocks?${params}`
   );
+}
+
+export function fetchDailyBriefs() {
+  return requestJson<DailyBriefList>("/api/daily-briefs");
 }

@@ -23,6 +23,7 @@ STOCK_PROFILES_FILE = CONFIG_DIR / "stock_profiles.csv"
 STOCK_SUBTYPES_FILE = CONFIG_DIR / "stock_subtypes.csv"
 CN_STOCK_POOL_FILE = CONFIG_DIR / "cn_stock_pool.csv"
 HK_STOCK_POOL_FILE = CONFIG_DIR / "hk_stock_pool.csv"
+DAILY_BRIEF_OUTPUT_DIR = PROJECT_ROOT / "experiments" / "daily_brief" / "output"
 
 DEFAULT_BENCHMARK = "QQQ"
 CN_DEFAULT_BENCHMARK = "000905"

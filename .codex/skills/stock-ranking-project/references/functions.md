@@ -255,12 +255,29 @@ This reference lists the main functions agents need when modifying or operating 
 - `load_dashscope_key() -> str` reads `DASHSCOPE_API_KEY` or `BAILIAN_API_KEY`.
 - `generate_model_interpretation(brief, model, timeout, max_tokens) -> dict` calls DashScope-compatible API.
 
+`experiments/daily_brief/render_html.py`
+
+- Project-compatible CLI wrapper for the interactive HTML renderer.
+- Supports `--input`, `--output`, `--market`, `--as-of-date`, and `--theme`.
+- `main()` writes `experiments/daily_brief/output/daily_brief_{market}_YYYY-MM-DD_w10.html`.
+
+`experiments/daily_brief/interactive_daily_brief.py`
+
+- `generate_html(data, theme="dark") -> str` renders a structured daily brief JSON into a standalone interactive HTML report.
+- `load_report(path) -> dict` validates an existing daily brief JSON file.
+- `main()` can be used directly with `input.json -o report.html --theme light`.
+
+`experiments/daily_brief/html_to_pdf.py`
+
+- Exports a generated HTML report to PDF through Playwright when available, otherwise a local Chromium-compatible browser.
+- `main()` writes a PDF next to the input HTML unless `--output` is provided.
+
 `experiments/daily_brief/render_pdf.py`
 
 - `register_font() -> None` chooses usable CJK font; watch server TTC/PostScript issues.
 - Drawing helpers: `text`, `right_text`, `center_text`, `panel`, `wrapped`, `fmt`, `pct_color`, `delta_label`.
 - Page renderers: `render_page_one` through `render_page_five`.
-- `main()` renders PDF from JSON.
+- `main()` renders PDF from JSON. Retained as a fallback; the main path is JSON -> HTML -> PDF.
 
 `scripts/send_daily_brief_email.py`
 

@@ -835,6 +835,116 @@ tbody td {
   white-space: nowrap;
 }
 
+.dailyBriefsPage {
+  max-width: 1280px;
+}
+
+.dailyBriefHero,
+.dailyBriefDateGroup,
+.dailyBriefEmpty {
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.dailyBriefHero {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.dailyBriefHero p:last-child {
+  margin: 8px 0 0;
+  color: #415168;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dailyBriefArchive {
+  display: grid;
+  gap: 14px;
+}
+
+.dailyBriefDateGroup {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+}
+
+.dailyBriefDate {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  color: #415168;
+}
+
+.dailyBriefDate svg {
+  color: #1f6feb;
+}
+
+.dailyBriefDate strong {
+  color: #18212f;
+  font-size: 18px;
+}
+
+.dailyBriefDate span {
+  color: #607086;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dailyBriefGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.dailyBriefCard {
+  display: grid;
+  gap: 6px;
+  min-height: 118px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #18212f;
+  padding: 13px;
+  text-decoration: none;
+}
+
+.dailyBriefCard:hover {
+  border-color: #9fc5ff;
+  background: #edf4ff;
+}
+
+.dailyBriefCard span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 8px;
+}
+
+.dailyBriefCard strong {
+  font-size: 17px;
+}
+
+.dailyBriefCard em,
+.dailyBriefCard small {
+  color: #607086;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.dailyBriefEmpty {
+  color: #607086;
+  font-weight: 800;
+  padding: 18px;
+  text-align: center;
+}
+
 .flowTooltip b {
   font-size: 12px;
 }
@@ -1748,6 +1858,10 @@ tbody td {
   }
 
   .alertGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dailyBriefDateGroup {
     grid-template-columns: 1fr;
   }
 

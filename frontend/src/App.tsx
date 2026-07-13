@@ -6,6 +6,7 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  FileText,
   HelpCircle,
   RefreshCw,
   Search
@@ -23,6 +24,7 @@ import {
 } from "lightweight-charts";
 import {
   fetchDailyBars,
+  fetchDailyBriefs,
   fetchIndustryFlowDates,
   fetchIndustryFlowRanking,
   fetchIndustryFlowTrend,
@@ -35,6 +37,7 @@ import {
   type AShareLeader,
   type CompanyProfile,
   type DailyBar,
+  type DailyBriefReport,
   type IndustryFlowRanking,
   type IndustryFlowTrend,
   type IndustryFlowTrendSeries,
@@ -92,7 +95,7 @@ const SECTOR_LABELS: Record<string, string> = {
 };
 
 type RouteState = {
-  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail";
+  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs";
   ticker?: string;
   industryName?: string;
   date?: string;
@@ -381,6 +384,9 @@ function parseRoute(): RouteState {
       date: new URLSearchParams(window.location.search).get("date") ?? "",
       market
     };
+  }
+  if (window.location.pathname === "/daily-briefs") {
+    return { page: "dailyBriefs" };
   }
   const match = window.location.pathname.match(/^\/stocks\/([A-Za-z0-9.-]+)$/);
   if (!match) return { page: "dashboard" };
@@ -1529,6 +1535,112 @@ function IndustryFlowDetailPage({
   );
 }
 
+function fileSizeText(value: number) {
+  if (!Number.isFinite(value)) return "--";
+  if (value >= 1_000_000) return `${numberText(value / 1_000_000, 2)} MB`;
+  if (value >= 1_000) return `${numberText(value / 1_000, 1)} KB`;
+  return `${numberText(value, 0)} B`;
+}
+
+function DailyBriefCard({ report }: { report: DailyBriefReport }) {
+  return (
+    <a className="dailyBriefCard" href={report.url} target="_blank" rel="noreferrer">
+      <span>{report.market_label}</span>
+      <strong>{report.date}</strong>
+      <em>{report.window} 日窗口</em>
+      <small>{fileSizeText(report.size_bytes)}</small>
+    </a>
+  );
+}
+
+function DailyBriefsPage() {
+  const [reports, setReports] = useState<DailyBriefReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadReports = () => {
+    setLoading(true);
+    setError("");
+    fetchDailyBriefs()
+      .then((result) => setReports(result.data))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, DailyBriefReport[]>();
+    reports.forEach((report) => {
+      const rows = map.get(report.date) ?? [];
+      rows.push(report);
+      map.set(report.date, rows);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, rows]) => ({
+        date,
+        rows: rows.sort((a, b) => {
+          const order: Record<Market, number> = { us: 0, cn: 1, hk: 2 };
+          return order[a.market] - order[b.market];
+        })
+      }));
+  }, [reports]);
+
+  return (
+    <main className="app dailyBriefsPage">
+      <header className="topbar">
+        <div>
+          <button className="ghostButton" type="button" onClick={() => navigateTo("/")}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            返回主页
+          </button>
+          <p className="eyebrow">Daily Brief Repository</p>
+          <h1>历史日报</h1>
+        </div>
+        <div className="summaryStrip">
+          <span>{reports.length} 份日报</span>
+          <button className="monitorButton" type="button" onClick={loadReports} disabled={loading}>
+            <RefreshCw size={16} aria-hidden="true" />
+            {loading ? "刷新中" : "刷新列表"}
+          </button>
+        </div>
+      </header>
+
+      <section className="dailyBriefHero">
+        <div>
+          <p className="eyebrow">HTML Reports</p>
+          <h2>按日期归档的日报 HTML</h2>
+          <p>点击任意市场卡片会在新窗口打开对应日报。列表只展示已经生成的正式日报文件。</p>
+        </div>
+      </section>
+
+      {error ? <div className="errorLine">{error}</div> : null}
+      {loading ? <div className="dailyBriefEmpty">正在加载日报列表...</div> : null}
+      {!loading && !grouped.length ? <div className="dailyBriefEmpty">还没有生成日报 HTML。</div> : null}
+
+      <section className="dailyBriefArchive">
+        {grouped.map((group) => (
+          <article className="dailyBriefDateGroup" key={group.date}>
+            <div className="dailyBriefDate">
+              <CalendarDays size={18} aria-hidden="true" />
+              <strong>{group.date}</strong>
+              <span>{group.rows.length} 份</span>
+            </div>
+            <div className="dailyBriefGrid">
+              {group.rows.map((report) => (
+                <DailyBriefCard key={report.filename} report={report} />
+              ))}
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+  );
+}
+
 function DashboardPage() {
   const [market, setMarket] = useState<Market>("us");
   const [windowSize, setWindowSize] = useState(DEFAULT_WINDOW);
@@ -1651,6 +1763,10 @@ function DashboardPage() {
           <button className="monitorButton" type="button" onClick={() => navigateTo(`/industry-flows?market=${market}`)}>
             <BarChart3 size={16} aria-hidden="true" />
             行业资金流向
+          </button>
+          <button className="monitorButton" type="button" onClick={() => navigateTo("/daily-briefs")}>
+            <FileText size={16} aria-hidden="true" />
+            历史日报
           </button>
           <button className="monitorButton" type="button" onClick={openAlerts}>
             <Activity size={16} aria-hidden="true" />
@@ -2352,6 +2468,9 @@ export default function App() {
   }
   if (route.page === "industryFlows") {
     return <IndustryFlowPage initialDate={route.date ?? ""} initialMarket={route.market ?? "us"} />;
+  }
+  if (route.page === "dailyBriefs") {
+    return <DailyBriefsPage />;
   }
   return <DashboardPage />;
 }
