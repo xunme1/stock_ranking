@@ -213,6 +213,13 @@ def update_one_ticker_ths(ticker: str, start: date, end: date) -> tuple[str, int
         return "skipped", 0
     try:
         result = fetch_ifind_history(ticker, "cn", start, end)
+        if ticker == BENCHMARK_CODE and not result.frame.empty:
+            close = pd.to_numeric(result.frame["close"], errors="coerce").dropna()
+            if not close.empty and close.median() < 1000:
+                raise ValueError(
+                    f"unexpected CSI 500 close values from {result.code}; "
+                    "expected index points, got equity-like prices"
+                )
         new_rows = merge_daily_csv(ticker_csv_path(ticker), ticker, result.frame, EXTENDED_COLUMNS)
         return "success", new_rows
     except Exception as exc:  # noqa: BLE001 - vendor SDK errors include plain dicts/strings.

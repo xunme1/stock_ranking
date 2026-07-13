@@ -19,6 +19,9 @@ EXTENDED_COLUMNS = STANDARD_COLUMNS + ["turnover"]
 
 HISTORY_INDICATORS = "preClose,open,high,low,close,avgPrice,change,changeRatio,volume,amount"
 HISTORY_PARAMS = "Interval:D,CPS:1,baseDate:1900-01-01,Currency:YSHB,fill:Previous"
+CN_INDEX_SUFFIXES = {
+    "000905": ".SH",  # CSI 500 Index. The same numeric code also exists on SZSE as an equity.
+}
 
 
 class IFindError(RuntimeError):
@@ -125,9 +128,14 @@ def unique_items(items: list[str]) -> list[str]:
 def ths_code_candidates(ticker: str, market: str, us_exchange_suffixes: dict[str, str] | None = None) -> list[str]:
     market = market.lower()
     if market == "cn":
+        raw_code = str(ticker or "").strip().upper()
+        if raw_code.endswith((".SH", ".SZ", ".BJ")):
+            return [raw_code]
         code = normalize_cn_ticker(ticker)
         if not code.isdigit():
             return [code]
+        if code in CN_INDEX_SUFFIXES:
+            return [f"{code}{CN_INDEX_SUFFIXES[code]}"]
         if code.startswith(("6", "9")):
             return [f"{code}.SH"]
         if code.startswith(("0", "3")):
