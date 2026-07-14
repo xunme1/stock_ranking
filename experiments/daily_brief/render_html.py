@@ -11,7 +11,6 @@ OUTPUT_DIR = EXPERIMENT_DIR / "output"
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
 
-from generate_brief_data import build_brief  # noqa: E402
 from interactive_daily_brief import generate_html  # noqa: E402
 
 
@@ -29,6 +28,8 @@ def parse_args() -> argparse.Namespace:
 def load_or_build_brief(args: argparse.Namespace) -> dict:
     if args.input:
         return json.loads(Path(args.input).read_text(encoding="utf-8"))
+
+    from generate_brief_data import build_brief
 
     brief = build_brief(args.window, args.as_of_date, top_n=20, move_threshold=10, market=args.market)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

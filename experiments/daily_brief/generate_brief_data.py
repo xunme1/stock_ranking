@@ -253,6 +253,50 @@ def build_rank_history(recent: pd.DataFrame, tickers: set[str]) -> dict[str, lis
     return history
 
 
+def build_dual_window_top20(
+    top20_10d: list[dict[str, Any]],
+    latest_date: str,
+    names: dict[str, str],
+    market: str,
+    benchmark: str,
+    top_n: int,
+) -> list[dict[str, Any]]:
+    try:
+        df20 = load_ranking(20, market)
+    except FileNotFoundError:
+        return []
+
+    dates20 = sorted(item for item in df20["as_of_date"].dropna().unique().tolist() if item <= latest_date)
+    if not dates20:
+        return []
+
+    latest20_date = dates20[-1]
+    latest20 = df20[df20["as_of_date"] == latest20_date].copy().sort_values("rank")
+    top20_rows = latest20[
+        (latest20["ticker"] != benchmark)
+        & latest20["rank"].notna()
+        & (latest20["rank"] <= top_n)
+    ]
+    rank20_map = {str(row.ticker): row_to_item(row, names, market) for row in top20_rows.itertuples(index=False)}
+
+    rows: list[dict[str, Any]] = []
+    for item in top20_10d:
+        ticker = str(item.get("ticker") or "")
+        item20 = rank20_map.get(ticker)
+        if not item20:
+            continue
+        row = dict(item)
+        row["rank_10"] = item.get("rank")
+        row["rank_20"] = item20.get("rank")
+        row["rank_20_date"] = latest20_date
+        row["atr_score_20"] = item20.get("atr_score")
+        row["price_vs_center_pct_20"] = item20.get("price_vs_center_pct")
+        rows.append(row)
+
+    rows.sort(key=lambda item: ((item.get("rank_10") or 9999) + (item.get("rank_20") or 9999), item.get("rank_10") or 9999))
+    return rows
+
+
 def _names(items: list[dict[str, Any]], limit: int = 4) -> str:
     labels = [str(item.get("name") or item.get("ticker") or "") for item in items[:limit]]
     labels = [label for label in labels if label]
@@ -354,6 +398,7 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
     ]
 
     top20 = [item for item in latest_items if item["ticker"] != benchmark][:top_n]
+    dual_window_top20 = build_dual_window_top20(top20, latest_date, names, market, benchmark, top_n)
 
     rank_lists = {
         ticker: [int(rank) for rank in group.sort_values("as_of_date")["rank"].tolist()]
@@ -408,9 +453,11 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
         "upward_moves": type_distribution(upward_moves, market=market),
         "downward_moves": type_distribution(downward_moves, market=market),
         "top20": type_distribution(top20, market=market),
+        "dual_window_top20": type_distribution(dual_window_top20, market=market),
     }
 
     focus_tickers = {item["ticker"] for item in top20[:8]}
+    focus_tickers.update(item["ticker"] for item in dual_window_top20[:8])
     focus_tickers.update(item["ticker"] for item in upward_moves[:5])
     focus_tickers.update(item["ticker"] for item in downward_moves[:5])
     focus_tickers.update(item["ticker"] for item in technology_focus.get("top10", [])[:5])
@@ -430,6 +477,7 @@ def build_brief(window: int, as_of_date: str | None, top_n: int, move_threshold:
         "recent_dates": recent_dates,
         "benchmark": benchmark_item,
         "top20": top20,
+        "dual_window_top20": dual_window_top20,
         "stable_top20": stable_top20,
         "upward_moves": upward_moves,
         "downward_moves": downward_moves,
@@ -469,6 +517,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--llm-model", default="deepseek-chat", help="LLM model name. Defaults to DeepSeek; qwen* uses DashScope.")
     parser.add_argument("--llm-timeout", type=int, default=60, help="LLM request timeout seconds.")
     parser.add_argument("--llm-max-tokens", type=int, default=1500, help="LLM max output tokens.")
+    parser.add_argument("--llm-research-depth", choices=["full", "quant"], default="full", help="Research pipeline depth. full uses web search; quant skips it.")
+    parser.add_argument("--llm-search-results", type=int, default=5, help="Tavily results per search task.")
+    parser.add_argument("--llm-lookback-days", type=int, default=7, help="Search result date lookback window.")
+    parser.add_argument("--llm-max-report-tokens", type=int, default=12000, help="LLM max output tokens for the full research report.")
+    parser.add_argument("--llm-disable-web", action="store_true", help="Disable web search and write a quantitative-only report.")
     parser.add_argument("--output", default=None, help="Output JSON path.")
     return parser.parse_args()
 
@@ -483,6 +536,11 @@ def main() -> None:
                 model=args.llm_model,
                 timeout=args.llm_timeout,
                 max_tokens=args.llm_max_tokens,
+                research_depth=args.llm_research_depth,
+                search_results=args.llm_search_results,
+                lookback_days=args.llm_lookback_days,
+                max_report_tokens=args.llm_max_report_tokens,
+                disable_web=args.llm_disable_web,
             )
         except Exception as exc:
             brief["model_interpretation"] = {

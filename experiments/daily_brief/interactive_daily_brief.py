@@ -46,7 +46,7 @@ a{color:inherit}.shell{width:min(1480px,calc(100% - 32px));margin:0 auto;padding
 .benchmark{padding:22px;position:relative;overflow:hidden}.benchmark-top{display:flex;align-items:flex-start;justify-content:space-between}.ticker{font-size:26px;font-weight:850;letter-spacing:-.03em}.name{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rank-orb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) var(--rank-angle),rgba(127,148,180,.13) 0);position:relative}.rank-orb:before{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--bg2)}.rank-orb span{position:relative;font-size:13px;font-weight:800}.metric-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}.mini-metric{padding:12px;border-radius:13px;background:var(--panel2);border:1px solid var(--line)}.mini-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.mini-value{font-size:18px;font-weight:790;margin-top:4px}.positive{color:var(--up)!important}.negative{color:var(--down)!important}.neutral{color:var(--muted)!important}
 .leader-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.leader{padding:15px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);position:relative;overflow:hidden}.leader-rank{position:absolute;right:12px;top:9px;font-size:38px;font-weight:900;color:rgba(130,151,185,.13)}.leader-ticker{font-size:19px;font-weight:840}.leader-type{font-size:11px;color:var(--muted);margin-top:2px}.leader-score{font-size:25px;font-weight:840;margin:13px 0 3px}.leader-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 .bar-list{display:grid;gap:12px}.bar-row{display:grid;grid-template-columns:minmax(95px,1fr) 2.2fr 48px;align-items:center;gap:10px}.bar-label{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:8px;border-radius:999px;background:rgba(127,148,180,.13);overflow:hidden}.bar-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .7s ease}.bar-value{text-align:right;font-size:11px;color:var(--muted)}
-.ai-copy{font-size:13px;color:var(--muted)}.ai-block{padding:14px 0;border-top:1px solid var(--line)}.ai-block:first-child{border-top:0;padding-top:0}.ai-heading{font-size:13px;font-weight:780;color:var(--text);margin-bottom:5px}.ai-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.ai-copy{font-size:13px;color:var(--muted)}.ai-block{padding:14px 0;border-top:1px solid var(--line)}.ai-block:first-child{border-top:0;padding-top:0}.ai-heading{font-size:13px;font-weight:780;color:var(--text);margin-bottom:5px}.ai-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.ai-report-btn{display:none}.ai-report-btn.visible{display:inline-flex}
 .movers{display:grid;grid-template-columns:1fr 1fr;gap:14px}.mover-col{border-radius:16px;border:1px solid var(--line);background:var(--panel2);padding:14px}.mover-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:770;margin-bottom:8px}.mover-list{display:grid}.mover{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}.mover:first-child{border-top:0}.mover-rank{font-size:11px;color:var(--muted)}.mover-symbol{font-size:13px;font-weight:800}.mover-meta{font-size:10px;color:var(--muted)}.mover-change{text-align:right;font-size:12px;font-weight:800}.mover-rankchange{font-size:10px;color:var(--muted);font-weight:600}
 .tabs{display:flex;gap:8px;flex-wrap:wrap}.tab-btn,.filter-btn{padding:8px 11px;font-size:12px;cursor:pointer;font-weight:710}.tab-btn.active,.filter-btn.active{background:linear-gradient(135deg,var(--accent),#6675ef);border-color:transparent;color:white;box-shadow:0 8px 22px rgba(92,112,255,.22)}.table-tools{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}.search{padding:9px 12px;outline:none;min-width:230px}.search:focus,.select:focus{border-color:rgba(124,140,255,.55)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px}.data-table{width:100%;border-collapse:collapse;min-width:1020px;font-size:12px}.data-table th{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--bg2) 92%,transparent);color:var(--muted);text-align:right;padding:12px 11px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer}.data-table th:nth-child(2),.data-table th:nth-child(3),.data-table th:nth-child(4){text-align:left}.data-table td{padding:11px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.data-table tr:last-child td{border-bottom:0}.data-table tr:hover td{background:rgba(124,140,255,.045)}.data-table td:nth-child(2),.data-table td:nth-child(3),.data-table td:nth-child(4){text-align:left}.rank-badge{display:inline-grid;place-items:center;min-width:29px;height:25px;border-radius:8px;background:rgba(124,140,255,.10);font-weight:780}.symbol-cell{font-weight:820;font-size:13px}.type-pill{display:inline-flex;padding:4px 7px;border-radius:7px;background:rgba(45,212,191,.08);color:var(--accent2);border:1px solid rgba(45,212,191,.12);font-size:10px}.rank-up:before{content:"▲ ";font-size:8px}.rank-down:before{content:"▼ ";font-size:8px}
 .chart-area{height:270px;position:relative}.chart-svg{width:100%;height:100%;overflow:visible}.chart-grid{stroke:var(--line);stroke-width:1}.chart-line{fill:none;stroke:url(#lineGradient);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-dot{fill:var(--panel);stroke:var(--accent2);stroke-width:2}.chart-axis{fill:var(--muted);font-size:10px}.chart-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.select{padding:8px 10px;outline:none}.spark{width:80px;height:26px}.spark-line{fill:none;stroke:var(--accent);stroke-width:2}.spark-dot{fill:var(--accent2)}
@@ -58,9 +58,10 @@ a{color:inherit}.shell{width:min(1480px,calc(100% - 32px));margin:0 auto;padding
 @media print{body{background:white;color:#111}.shell{width:100%;padding:0}.actions,.tabs,.table-tools,.footer .interactive-only{display:none!important}.card,.hero{box-shadow:none;break-inside:avoid;background:white;border-color:#ddd}.grid-main{grid-template-columns:1fr}.section{break-inside:avoid}.data-table th{position:static;background:#f4f4f4}.table-wrap{overflow:visible}.data-table{min-width:0;font-size:9px}.data-table td,.data-table th{padding:7px 5px}}
 
 .section-actions,.mover-head-actions{display:flex;align-items:center;gap:9px}.view-toggle{border:1px solid var(--line);background:rgba(124,140,255,.08);color:var(--text);border-radius:10px;padding:6px 9px;font-size:11px;font-weight:760;cursor:pointer;white-space:nowrap;transition:.18s ease}.view-toggle:hover{border-color:rgba(124,140,255,.55);transform:translateY(-1px)}.view-toggle.active{color:white;border-color:transparent;background:linear-gradient(135deg,var(--accent),#6675ef);box-shadow:0 7px 18px rgba(92,112,255,.22)}
+.report-backdrop{position:fixed;inset:0;background:rgba(3,9,18,.58);backdrop-filter:blur(8px);z-index:40;opacity:0;pointer-events:none;transition:.2s ease}.report-backdrop.open{opacity:1;pointer-events:auto}.report-drawer{position:fixed;top:0;right:0;width:min(760px,100vw);height:100vh;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-24px 0 65px rgba(0,0,0,.28);z-index:41;transform:translateX(105%);transition:.24s ease;display:flex;flex-direction:column}.report-drawer.open{transform:translateX(0)}.report-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px;border-bottom:1px solid var(--line);background:var(--panel)}.report-title{font-size:20px;font-weight:820;letter-spacing:-.02em}.report-sub{font-size:12px;color:var(--muted);margin-top:4px}.report-close{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-size:22px;line-height:1}.report-body{padding:24px;overflow:auto}.report-section{padding:18px 0;border-top:1px solid var(--line)}.report-section:first-child{border-top:0;padding-top:0}.report-section h3{margin:0 0 10px;font-size:14px}.report-text{font-size:14px;color:var(--text);line-height:1.82}.report-text h1,.report-text h2,.report-text h3{margin:20px 0 9px;color:var(--text);line-height:1.25}.report-text h1{font-size:20px}.report-text h2{font-size:17px}.report-text h3{font-size:15px}.report-text p{margin:0 0 12px}.report-text ul,.report-text ol{margin:0 0 14px;padding-left:22px}.report-text li{margin:5px 0}.report-text strong{font-weight:820;color:var(--text)}.structured-report{display:grid;gap:16px}.report-block{padding:0 0 16px;border-bottom:1px solid var(--line)}.report-block:last-child{border-bottom:0;padding-bottom:0}.report-block-title{font-size:15px;font-weight:820;margin-bottom:8px}.report-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}.report-list li,.driver-item{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(127,148,180,.07);font-size:13px;line-height:1.7}.driver-item{display:grid;gap:5px}.driver-title{font-weight:800}.driver-meta{font-size:10px;color:var(--muted)}.report-kv{display:grid;gap:7px}.report-kv-row{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:13px;line-height:1.7}.report-kv-row b{color:var(--text)}.citation{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:rgba(124,140,255,.14);color:var(--accent);font-size:11px;font-weight:800;text-decoration:none}.source-list{display:grid;gap:6px}.source-item{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}.source-title{font-weight:760;font-size:12px;line-height:1.3}.source-meta{font-size:10px;color:var(--muted);margin-top:1px}.source-snippet{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.audit-list{display:grid;gap:8px}.audit-item{padding:10px;border-radius:10px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.18);font-size:12px}.stage-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stage-pill{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:11px;color:var(--muted)}.stage-pill b{color:var(--text)}
 .mover-col{min-width:0}.mover-viewport{height:420px;overflow:auto;padding-right:5px}.main-table-viewport,.main-industry-view{height:560px;overflow:auto}.hidden{display:none!important}.scroll-zone{scrollbar-width:thin;scrollbar-color:rgba(124,140,255,.55) rgba(127,148,180,.10)}.scroll-zone::-webkit-scrollbar{width:9px;height:9px}.scroll-zone::-webkit-scrollbar-track{background:rgba(127,148,180,.08);border-radius:999px}.scroll-zone::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent),var(--accent2));border-radius:999px;border:2px solid transparent;background-clip:padding-box}
 .industry-panel{min-height:100%;padding:7px 2px}.industry-overview{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:11px 12px 14px;border-bottom:1px solid var(--line);margin-bottom:4px}.industry-total{font-size:24px;font-weight:850;letter-spacing:-.04em}.industry-caption{font-size:11px;color:var(--muted)}.industry-row{padding:13px 10px;border-bottom:1px solid var(--line)}.industry-row:last-child{border-bottom:0}.industry-row-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.industry-name{font-size:12px;font-weight:760;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.industry-value{font-size:11px;color:var(--muted);white-space:nowrap}.industry-track{height:8px;border-radius:999px;background:rgba(127,148,180,.13);overflow:hidden}.industry-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2));transform-origin:left;animation:growBar .55s ease both}.industry-note{padding:11px 10px;color:var(--muted);font-size:10px;line-height:1.65}.main-industry-view{border:1px solid var(--line);border-radius:15px;padding:12px 15px}.main-industry-view .industry-row{padding-left:4px;padding-right:4px}@keyframes growBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@media(max-width:760px){.section-actions{width:100%;justify-content:space-between}.mover-viewport{height:390px}.main-table-viewport,.main-industry-view{height:520px}.mover-head-actions{gap:6px}.view-toggle{padding:6px 8px}}
+@media(max-width:760px){.section-actions{width:100%;justify-content:space-between}.mover-viewport{height:390px}.main-table-viewport,.main-industry-view{height:520px}.mover-head-actions{gap:6px}.view-toggle{padding:6px 8px}.report-drawer{width:100vw}.report-head,.report-body{padding:18px}.stage-grid{grid-template-columns:1fr}}
 @media print{.view-toggle{display:none!important}.mover-viewport,.main-table-viewport,.main-industry-view{height:auto!important;overflow:visible!important}.hidden{display:none!important}}
 
 </style>
@@ -114,7 +115,7 @@ a{color:inherit}.shell{width:min(1480px,calc(100% - 32px));margin:0 auto;padding
 
       <section class="card section">
         <div class="section-head"><div><div class="section-title">股票排名明细</div><div class="section-sub">支持切换数据集、搜索、排序及榜单行业占比查看</div></div><div class="section-actions"><button class="view-toggle" id="mainViewToggle" type="button">行业占比</button><span class="tag">INTERACTIVE TABLE</span></div></div>
-        <div class="table-tools"><div class="tabs" id="tableTabs"><button class="tab-btn active" data-mode="top20">当前 Top20</button><button class="tab-btn" data-mode="stable_top20">稳定 Top20</button><button class="tab-btn" data-mode="entered_top20">新进入</button><button class="tab-btn" data-mode="dropped_top20">跌出 Top20</button><button class="tab-btn" id="techTableTab" data-mode="technology_focus.top10">科技 Top10</button></div><input class="search" id="tableSearch" placeholder="搜索代码、名称或类型…"></div>
+        <div class="table-tools"><div class="tabs" id="tableTabs"><button class="tab-btn active" data-mode="top20">当前 Top20</button><button class="tab-btn" data-mode="dual_window_top20">双窗 Top20</button><button class="tab-btn" data-mode="stable_top20">稳定 Top20</button><button class="tab-btn" data-mode="entered_top20">新进入</button><button class="tab-btn" data-mode="dropped_top20">跌出 Top20</button><button class="tab-btn" id="techTableTab" data-mode="technology_focus.top10">科技 Top10</button></div><input class="search" id="tableSearch" placeholder="搜索代码、名称或类型…"></div>
         <div class="table-wrap main-table-viewport scroll-zone" id="mainTableWrap"><table class="data-table"><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table></div><div class="industry-panel main-industry-view scroll-zone hidden" id="mainIndustryView"></div>
       </section>
 
@@ -134,7 +135,8 @@ a{color:inherit}.shell{width:min(1480px,calc(100% - 32px));margin:0 auto;padding
       </section>
 
       <section class="card section">
-        <div class="section-head"><div><div class="section-title">模型解读</div><div class="section-sub">基于当前量化结果自动生成</div></div><span class="tag">AI INTERPRETATION</span></div>
+        <div class="section-head"><div><div class="section-title">模型解读</div><div class="section-sub">基于当前量化结果自动生成</div></div><div class="section-actions"><button class="view-toggle ai-report-btn" id="reportOpenBtn" type="button">展开研报</button><span class="tag">AI INTERPRETATION</span></div></div>
+        <div class="ai-copy" id="aiCopy"></div><div class="ai-meta" id="aiMeta"></div>
         <div class="ai-copy" id="aiCopy"></div><div class="ai-meta" id="aiMeta"></div>
       </section>
 
@@ -153,6 +155,14 @@ a{color:inherit}.shell{width:min(1480px,calc(100% - 32px));margin:0 auto;padding
 
   <footer class="footer"><span>数据来源：本地量化日报 JSON · 指标仅用于研究与观察，不构成投资建议。</span><span class="interactive-only">单文件离线页面 · 可直接浏览、打印或另存为 PDF</span></footer>
 </div>
+<div class="report-backdrop" id="reportBackdrop"></div>
+<aside class="report-drawer" id="reportDrawer" aria-hidden="true">
+  <div class="report-head">
+    <div><div class="report-title">完整模型研报</div><div class="report-sub" id="reportDrawerMeta"></div></div>
+    <button class="report-close" id="reportCloseBtn" type="button" aria-label="关闭">×</button>
+  </div>
+  <div class="report-body scroll-zone" id="reportDrawerBody"></div>
+</aside>
 <script id="reportData" type="application/json">__REPORT_JSON__</script>
 <script>
 const D=JSON.parse(document.getElementById('reportData').textContent);
@@ -260,13 +270,133 @@ function cleanModelText(value){
   if(/(可以提到|描述\s*QQQ|描述.*相对位置|需要解读数据|给定\s*JSON|写作要求)/.test(text.slice(0,500)))return '';
   return text;
 }
-function renderAI(){
-  const m=D.model_interpretation||{}; const text=cleanModelText(m.text);
-  const paragraphs=text.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
-  $('#aiCopy').innerHTML=paragraphs.length?paragraphs.map(p=>{const lines=p.split(/\n+/).map(x=>x.trim()).filter(Boolean);const h=lines.shift()||'模型观察';return `<div class="ai-block"><div class="ai-heading">${esc(h)}</div><div>${esc(lines.join(' ')||h)}</div></div>`}).join(''):'<div class="empty">暂无模型解读</div>';
-  $('#aiMeta').innerHTML=`<span class="chip">状态 <b>${esc(m.status||'—')}</b></span><span class="chip">模型 <b>${esc(m.model||m.provider||'—')}</b></span>`;
+function paragraphBlocks(text){
+  const paragraphs=cleanModelText(text).split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
+  return paragraphs.length?paragraphs.map(p=>{const lines=p.split(/\n+/).map(x=>x.trim()).filter(Boolean);const h=lines.shift()||'模型观察';return `<div class="ai-block"><div class="ai-heading">${esc(h)}</div><div>${esc(lines.join(' ')||h)}</div></div>`}).join(''):'<div class="empty">暂无模型解读</div>';
 }
-function renderTech(){
+function inlineMarkdown(value){
+  return esc(value).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\[(\d+)\]/g,(_,id)=>`<a class="citation" href="#source-${id}">[${id}]</a>`);
+}
+function cleanReportText(value){
+  return String(value||'')
+    .replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi,'')
+    .replace(/^\s*```(?:markdown|md)?\s*/i,'')
+    .replace(/\s*```$/,'')
+    .trim();
+}
+function markdownHTML(text){
+  const lines=cleanReportText(text).replace(/\r\n/g,'\n').split('\n');
+  const out=[];let list=null;const closeList=()=>{if(list){out.push(`</${list}>`);list=null}};
+  for(const raw of lines){
+    const line=raw.trim();
+    if(!line){closeList();continue}
+    const heading=line.match(/^(#{1,3})\s+(.+)$/);
+    if(heading){closeList();out.push(`<h${heading[1].length}>${inlineMarkdown(heading[2])}</h${heading[1].length}>`);continue}
+    const numbered=line.match(/^\d+[.)、]\s+(.+)$/);
+    if(numbered){if(list!=='ol'){closeList();list='ol';out.push('<ol>')}out.push(`<li>${inlineMarkdown(numbered[1])}</li>`);continue}
+    const bullet=line.match(/^[-*]\s+(.+)$/);
+    if(bullet){if(list!=='ul'){closeList();list='ul';out.push('<ul>')}out.push(`<li>${inlineMarkdown(bullet[1])}</li>`);continue}
+    closeList();out.push(`<p>${inlineMarkdown(line)}</p>`);
+  }
+  closeList();return out.join('')||'<div class="empty">暂无研报正文</div>';
+}
+function reportValueHTML(value){
+  if(value===null||value===undefined||value==='')return '';
+  if(Array.isArray(value))return value.map(reportValueHTML).filter(Boolean).join('；');
+  if(typeof value==='object')return Object.entries(value).filter(([,v])=>v!==null&&v!==undefined&&v!==''&&!(Array.isArray(v)&&!v.length)).map(([k,v])=>`${esc(k)}: ${reportValueHTML(v)}`).join('；');
+  return inlineMarkdown(String(value));
+}
+function reportListHTML(value){
+  const rows=Array.isArray(value)?value:[value];
+  const html=rows.map(x=>{
+    if(!x&&x!==0)return '';
+    if(typeof x==='object'&&!Array.isArray(x)){
+      const label=x.display||x.ticker||x.name||x.title||x.topic||'条目';
+      const detail=Object.entries(x).filter(([k,v])=>!['display','ticker','name','title','topic'].includes(k)&&v!==null&&v!==undefined&&v!==''&&!(Array.isArray(v)&&!v.length)).map(([k,v])=>`${esc(k)}: ${reportValueHTML(v)}`).join('；');
+      return `<li><strong>${esc(label)}</strong>${detail?`：${detail}`:''}</li>`;
+    }
+    return `<li>${reportValueHTML(x)}</li>`;
+  }).filter(Boolean).join('');
+  return html?`<ul class="report-list">${html}</ul>`:'';
+}
+function reportKVHTML(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return reportListHTML(value);
+  const html=Object.entries(value).filter(([,v])=>v!==null&&v!==undefined&&v!==''&&!(Array.isArray(v)&&!v.length)).map(([k,v])=>`<div class="report-kv-row"><b>${esc(k)}</b><span>${reportValueHTML(v)}</span></div>`).join('');
+  return html?`<div class="report-kv">${html}</div>`:'';
+}
+function renderDrivers(drivers){
+  const rows=Array.isArray(drivers)?drivers:[drivers];
+  const html=rows.map(x=>{
+    if(!x)return '';
+    if(typeof x!=='object'||Array.isArray(x))return `<article class="driver-item">${reportValueHTML(x)}</article>`;
+    const ids=Array.isArray(x.evidence_ids)?x.evidence_ids:[];
+    const cites=ids.map(id=>`<a class="citation" href="#source-${esc(id)}">[${esc(id)}]</a>`).join(' ');
+    const meta=[x.confidence!==undefined&&x.confidence!==null?`置信度 ${esc(x.confidence)}`:'',x.causality||x.causality_strength?`因果强度 ${esc(x.causality||x.causality_strength)}`:''].filter(Boolean).join(' · ');
+    return `<article class="driver-item"><div class="driver-title">${esc(x.title||x.topic||'驱动因素')} ${cites}</div>${x.analysis||x.summary||x.claim?`<div>${inlineMarkdown(x.analysis||x.summary||x.claim)}</div>`:''}${meta?`<div class="driver-meta">${meta}</div>`:''}</article>`;
+  }).filter(Boolean).join('');
+  return html||'<div class="empty">暂无证据驱动项</div>';
+}
+function structuredReportHTML(report){
+  if(!report||typeof report!=='object'||Array.isArray(report))return '';
+  const blocks=[
+    ['market_regime','市场状态',reportKVHTML],
+    ['executive_summary','核心摘要',reportListHTML],
+    ['quantitative_reading','量化结构',reportListHTML],
+    ['drivers','驱动因素与证据',renderDrivers],
+    ['trend_judgment','趋势判断',reportListHTML],
+    ['watchlist','关键研究对象',reportListHTML],
+    ['risk_scenarios','风险情景',reportListHTML],
+    ['next_session_watch','下一交易日观察',reportListHTML],
+    ['disclaimer','免责声明',v=>`<p>${reportValueHTML(v)}</p>`]
+  ].map(([key,title,renderer])=>{
+    const value=report[key];
+    if(value===null||value===undefined||value===''||(Array.isArray(value)&&!value.length))return '';
+    return `<div class="report-block"><div class="report-block-title">${title}</div>${renderer(value)}</div>`;
+  }).filter(Boolean).join('');
+  const headline=report.headline?`<h1>${esc(report.headline)}</h1>`:'';
+  return blocks?`<div class="structured-report">${headline}${blocks}</div>`:'';
+}
+function renderReportBody(m,summary){
+  const markdown=cleanReportText(m.full_report||'');
+  if(markdown)return `<div class="report-text">${markdownHTML(markdown)}</div>`;
+  const structured=structuredReportHTML(m.report);
+  if(structured)return structured;
+  return `<div class="report-text">${markdownHTML(m.text||summary)}</div>`;
+}
+function renderEvidence(evidence){
+  const rows=Array.isArray(evidence)?evidence:[];
+  if(!rows.length)return '<div class="empty">暂无外部引用来源；本次研报以量化结构为主。</div>';
+  return `<div class="source-list">${rows.map((x,i)=>{const id=esc(x.id||String(i+1));const title=x.title_zh||x.title||x.source||'来源';const snippet=x.summary_zh||x.claim||x.relevance||x.snippet||'';const support=x.relevance||x.claim||'';const meta=[x.source||'',x.published_at||'',x.source_type||'',x.source_quality||'',x.causality_strength||''].filter(Boolean).map(esc).join(' · ');return `<article class="source-item" id="source-${id}"><div class="source-title"><a href="${esc(x.url||'#')}" target="_blank" rel="noreferrer">[${id}] ${esc(title)}</a></div><div class="source-meta">${meta}</div>${support?`<div class="source-meta">支持：${esc(support)}</div>`:''}<div class="source-snippet">${esc(snippet)}</div></article>`}).join('')}</div>`;
+}
+function renderAudit(audit){
+  const a=audit||{},issues=Array.isArray(a.issues)?a.issues:[];
+  const issueHTML=issues.length?`<div class="audit-list">${issues.map(x=>`<div class="audit-item"><b>${esc(x.severity||'note')} · ${esc(x.type||'audit')}</b><br>${esc(x.message||'')}</div>`).join('')}</div>`:'<div class="section-sub">未发现需要展示的审计问题。</div>';
+  return `<div class="chip">审计 <b>${esc(a.status||'--')}</b></div><div class="section-sub" style="margin:10px 0">${esc(a.final_notes||'')}</div>${issueHTML}`;
+}
+function renderPipeline(pipeline){
+  const p=pipeline||{},stages=Array.isArray(p.stages)?p.stages:[];
+  if(!stages.length)return '<div class="empty">暂无流水线元信息</div>';
+  return `<div class="stage-grid">${stages.map(s=>`<div class="stage-pill"><b>${esc(s.stage||'stage')}</b><br>${esc(s.status||'--')} ${s.duration_ms!==undefined?`· ${esc(s.duration_ms)}ms`:''}</div>`).join('')}</div>`;
+}
+function openReportDrawer(){
+  $('#reportBackdrop')?.classList.add('open');$('#reportDrawer')?.classList.add('open');$('#reportDrawer')?.setAttribute('aria-hidden','false');
+}
+function closeReportDrawer(){
+  $('#reportBackdrop')?.classList.remove('open');$('#reportDrawer')?.classList.remove('open');$('#reportDrawer')?.setAttribute('aria-hidden','true');
+}
+function renderAI(){
+  const m=D.model_interpretation||{}; const summary=m.summary||m.text||m.full_report||'';
+  $('#aiCopy').innerHTML=paragraphBlocks(summary);
+  $('#aiMeta').innerHTML=`<span class="chip">状态 <b>${esc(m.status||'--')}</b></span><span class="chip">模型 <b>${esc(m.model||m.provider||'--')}</b></span>${m.audit?.status?`<span class="chip">审计 <b>${esc(m.audit.status)}</b></span>`:''}`;
+  const hasStructured=Boolean(m.report&&typeof m.report==='object'&&Object.keys(m.report).length);
+  const hasReport=hasStructured||Boolean(cleanReportText(m.full_report||m.text||''));
+  $('#reportOpenBtn')?.classList.toggle('visible',hasReport);
+  $('#reportDrawerMeta').textContent=`${D.market_label||D.market||'市场'} · ${D.as_of_date||''} · ${m.model||m.provider||'模型'}`;
+  $('#reportDrawerBody').innerHTML=`<section class="report-section"><h3>研报正文</h3>${renderReportBody(m,summary)}</section><section class="report-section"><h3>引用来源</h3>${renderEvidence(m.evidence)}</section><section class="report-section"><h3>事实和逻辑审计</h3>${renderAudit(m.audit)}</section><section class="report-section"><h3>生成流水线</h3>${renderPipeline(m.pipeline)}</section>`;
+  $('#reportOpenBtn')&&( $('#reportOpenBtn').onclick=openReportDrawer );
+  $('#reportCloseBtn')&&( $('#reportCloseBtn').onclick=closeReportDrawer );
+  $('#reportBackdrop')&&( $('#reportBackdrop').onclick=closeReportDrawer );
+}function renderTech(){
   const section=$('#techSection'),tab=$('#techTableTab');
   if(!hasTech()){section?.classList.add('hidden');tab?.classList.add('hidden');return}
   section?.classList.remove('hidden');tab?.classList.remove('hidden');
@@ -279,18 +409,32 @@ function renderStable(){
   $('#stableWatch').innerHTML=rows.length?rows.map(x=>`<div class="watch"><div><b>${esc(x.display||x.ticker)}</b><div class="mover-meta">均位 ${fmt(x.avg_rank_5,1)}</div></div><span>#${x.rank??'—'}</span></div>`).join(''):'<div class="empty">暂无稳定前20股票</div>';
 }
 
-const columns=[['rank','排名'],['ticker','代码'],['stock_type','类型'],['name','公司'],['close','收盘'],['atr_score','ATR'],['price_vs_center_pct','距重心'],['price_change_3d_pct','3日涨跌'],['daily_change_pct','日涨跌'],['rank_change','排名变化']];
+const baseColumns=[['rank','排名'],['ticker','代码'],['stock_type','类型'],['name','公司'],['close','收盘'],['atr_score','ATR'],['price_vs_center_pct','距重心'],['price_change_3d_pct','3日涨跌'],['daily_change_pct','日涨跌'],['rank_change','排名变化']];
+const dualWindowColumns=[['rank_10','10日排名'],['rank_20','20日排名'],['ticker','代码'],['stock_type','类型'],['name','公司'],['close','收盘'],['atr_score','10日ATR'],['atr_score_20','20日ATR'],['price_vs_center_pct','10日距重心'],['price_vs_center_pct_20','20日距重心'],['daily_change_pct','日涨跌']];
 let tableMode='top20',sortKey='rank',sortDir=1,tableView='detail';
 function currentRows(){const rows=pathGet(D,tableMode);return Array.isArray(rows)?rows:[]}
+function currentColumns(){return tableMode==='dual_window_top20'?dualWindowColumns:baseColumns}
+function cellHTML(x,k){
+  if(k==='rank'||k==='rank_10'||k==='rank_20')return `<span class="rank-badge">${x[k]??'--'}</span>`;
+  if(k==='ticker')return esc(x.ticker);
+  if(k==='stock_type')return `<span class="type-pill">${esc(x.stock_type||x.sector||'未分类')}</span>`;
+  if(k==='name')return esc(x.name||x.display||'--');
+  if(k==='close')return price(x.close);
+  if(k==='atr_score'||k==='atr_score_20')return fmt(x[k],3);
+  if(k==='price_vs_center_pct'||k==='price_vs_center_pct_20'||k==='price_change_3d_pct'||k==='daily_change_pct')return pct(x[k]);
+  if(k==='rank_change')return signed(x.rank_change);
+  return esc(x[k]??'--');
+}
 function renderTable(){
-  $('#tableHead').innerHTML='<tr>'+columns.map(([k,l])=>`<th data-key="${k}">${l}${sortKey===k?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')+'</tr>';
+  const columns=currentColumns();
+  if(tableMode==='dual_window_top20'&&sortKey==='rank')sortKey='rank_10';
+  $('#tableHead').innerHTML='<tr>'+columns.map(([k,l])=>`<th data-key="${k}" class="${['ticker','stock_type','name'].includes(k)?'cell-left':''}">${l}${sortKey===k?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')+'</tr>';
   const q=$('#tableSearch').value.trim().toLowerCase(); let rows=currentRows().filter(x=>!q||[x.ticker,x.display,x.name,x.stock_type,x.sector].some(v=>String(v||'').toLowerCase().includes(q)));
   rows=rows.slice().sort((a,b)=>{const av=a[sortKey],bv=b[sortKey];if(num(av)!==null&&num(bv)!==null)return(Number(av)-Number(bv))*sortDir;return String(av??'').localeCompare(String(bv??''))*sortDir});
-  $('#tableBody').innerHTML=rows.length?rows.map(x=>`<tr><td><span class="rank-badge">${x.rank??'—'}</span></td><td class="symbol-cell">${esc(x.ticker)}</td><td><span class="type-pill">${esc(x.stock_type||x.sector||'未分类')}</span></td><td title="${esc(x.name)}">${esc(x.name||x.display||'—')}</td><td>${price(x.close)}</td><td class="${cls(x.atr_score)}">${fmt(x.atr_score,3)}</td><td class="${cls(x.price_vs_center_pct)}">${pct(x.price_vs_center_pct)}</td><td class="${cls(x.price_change_3d_pct)}">${pct(x.price_change_3d_pct)}</td><td class="${cls(x.daily_change_pct)}">${pct(x.daily_change_pct)}</td><td class="${cls(x.rank_change)} ${Number(x.rank_change)>0?'rank-up':Number(x.rank_change)<0?'rank-down':''}">${signed(x.rank_change)}</td></tr>`).join(''):'<tr><td colspan="10"><div class="empty">没有匹配结果</div></td></tr>';
+  $('#tableBody').innerHTML=rows.length?rows.map(x=>`<tr>${columns.map(([k])=>`<td class="${k==='ticker'?'symbol-cell':''} ${['ticker','stock_type','name'].includes(k)?'cell-left':''} ${cls(x[k])} ${k==='rank_change'?(Number(x.rank_change)>0?'rank-up':Number(x.rank_change)<0?'rank-down':''):''}" title="${k==='name'?esc(x.name):''}">${cellHTML(x,k)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${columns.length}"><div class="empty">没有匹配结果</div></td></tr>`;
   $$('#tableHead th').forEach(th=>th.onclick=()=>{const k=th.dataset.key;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1}renderTable()});
   $('#mainIndustryView').innerHTML=industryHTML(currentRows(),tableMode);
-}
-function applyMainView(){
+}function applyMainView(){
   const industry=tableView==='industry'; $('#mainTableWrap').classList.toggle('hidden',industry); $('#mainIndustryView').classList.toggle('hidden',!industry); $('#tableSearch').classList.toggle('hidden',industry); $('#mainViewToggle').classList.toggle('active',industry); $('#mainViewToggle').textContent=industry?'返回明细':'行业占比';
   if(industry)$('#mainIndustryView').innerHTML=industryHTML(currentRows(),tableMode);
 }
@@ -310,7 +454,7 @@ function renderRankChart(ticker){
   $('#rankChart').innerHTML=`<svg class="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="lineGradient"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/></linearGradient></defs>${grid}<path class="chart-line" d="${d}"/>${dots}${labels}</svg>`;
   const delta=ranks[0]-ranks[ranks.length-1];$('#chartSummary').innerHTML=`<b>${esc(ticker)}</b>：${rows[0].date} 的 #${ranks[0]} → ${rows.at(-1).date} 的 #${ranks.at(-1)}，<span class="${cls(delta)}">${delta>0?'改善':delta<0?'回落':'持平'} ${Math.abs(delta)} 位</span>`;
 }
-function initActions(){$('#themeBtn').onclick=()=>{const html=document.documentElement;html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'};$('#printBtn').onclick=()=>window.print()}
+function initActions(){$('#themeBtn').onclick=()=>{const html=document.documentElement;html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'};$('#printBtn').onclick=()=>window.print();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeReportDrawer()})}
 
 renderMeta();renderKPIs();renderSummary();renderBenchmark();renderLeaders();renderBars('#typeBars',D.type_stats?.top20?.length?D.type_stats.top20:computedIndustry(D.top20||[],'sector').map(x=>({stock_type:x.name,count:x.count,pct:x.pct})),8);initMovers();renderAI();renderTech();renderStable();initTable();initRankChart();initActions();
 </script>

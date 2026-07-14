@@ -26,6 +26,11 @@ USE_LLM="${USE_LLM:-1}"
 LLM_MODEL="${LLM_MODEL:-${DEEPSEEK_MODEL:-deepseek-chat}}"
 LLM_TIMEOUT="${LLM_TIMEOUT:-180}"
 LLM_MAX_TOKENS="${LLM_MAX_TOKENS:-1500}"
+LLM_RESEARCH_DEPTH="${LLM_RESEARCH_DEPTH:-full}"
+LLM_SEARCH_RESULTS="${LLM_SEARCH_RESULTS:-5}"
+LLM_LOOKBACK_DAYS="${LLM_LOOKBACK_DAYS:-7}"
+LLM_MAX_REPORT_TOKENS="${LLM_MAX_REPORT_TOKENS:-12000}"
+LLM_DISABLE_WEB="${LLM_DISABLE_WEB:-0}"
 HTML_THEME="${HTML_THEME:-light}"
 MAIL_TO_OVERRIDE="${MAIL_TO_OVERRIDE:-}"
 DRY_RUN="${DRY_RUN:-0}"
@@ -45,6 +50,7 @@ IFS=',' read -r -a MARKET_LIST <<< "$MARKETS"
   echo "Market group: $MARKET_GROUP"
   echo "Markets: $MARKETS"
   echo "Use LLM: $USE_LLM"
+  echo "LLM research depth: $LLM_RESEARCH_DEPTH"
 
   if [[ ! -x "$PYTHON_BIN" ]]; then
     echo "ERROR: Python not found or not executable: $PYTHON_BIN"
@@ -75,7 +81,14 @@ IFS=',' read -r -a MARKET_LIST <<< "$MARKETS"
         --llm-model "$LLM_MODEL"
         --llm-timeout "$LLM_TIMEOUT"
         --llm-max-tokens "$LLM_MAX_TOKENS"
+        --llm-research-depth "$LLM_RESEARCH_DEPTH"
+        --llm-search-results "$LLM_SEARCH_RESULTS"
+        --llm-lookback-days "$LLM_LOOKBACK_DAYS"
+        --llm-max-report-tokens "$LLM_MAX_REPORT_TOKENS"
       )
+      if [[ "$LLM_DISABLE_WEB" == "1" ]]; then
+        GENERATE_ARGS+=(--llm-disable-web)
+      fi
     fi
     "$PYTHON_BIN" "${GENERATE_ARGS[@]}"
 
