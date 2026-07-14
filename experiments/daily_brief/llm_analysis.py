@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,12 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 DASHSCOPE_COMPAT_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 DEEPSEEK_COMPAT_URL = "https://api.deepseek.com/chat/completions"
 DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
+FINAL_SECTION_RE = re.compile(r"(市场情绪|强势结构|异常变化|科技专项|类型占比|观察清单)\s*[：:\n]")
+OPENING_SECTION_RE = re.compile(r"市场情绪\s*[：:\n]")
+THINK_BLOCK_RE = re.compile(r"<think\b[^>]*>.*?</think>", re.IGNORECASE | re.DOTALL)
+THINK_PREFIX_RE = re.compile(r"^\s*(思考过程|推理过程|分析过程|Reasoning|Thought process)\s*[：:\n]", re.IGNORECASE)
+REASONING_LEAK_RE = re.compile(r"^\s*(我们被要求|需要解读|需要提取|给定JSON|要求[:：]|We need|We are asked)", re.IGNORECASE)
+DRAFT_LEAK_RE = re.compile(r"(可以提到|描述\s*QQQ|描述.*相对位置|需要解读数据|给定\s*JSON|写作要求)")
 
 
 def _compact_items(items: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
@@ -98,6 +105,7 @@ def build_llm_messages(brief: dict[str, Any]) -> list[dict[str, str]]:
 结构化数据 JSON：
 {json.dumps(payload, ensure_ascii=False, indent=2)}
 """.strip()
+    user_prompt += "\n\n重要：只输出最终可展示在日报里的正文；不要输出思考过程、推理过程、任务复述、提纲、草稿或对写作要求的解释。正文必须直接从“市场情绪”开始。"
     return [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -161,11 +169,24 @@ def extract_choice_text(data: dict[str, Any]) -> str:
         text = "\n".join(str(item.get("text") or item.get("content") or "") for item in content if isinstance(item, dict))
     else:
         text = str(content or "")
-    if not text.strip():
-        text = str(message.get("reasoning_content") or "")
-    text = text.strip()
+    text = clean_model_text(text)
     if not text:
         raise RuntimeError("LLM returned empty content.")
+    return text
+
+
+def clean_model_text(text: str) -> str:
+    text = THINK_BLOCK_RE.sub("", str(text or "")).strip()
+    text = THINK_PREFIX_RE.sub("", text).strip()
+    if REASONING_LEAK_RE.search(text):
+        match = OPENING_SECTION_RE.search(text)
+        text = text[match.start() :].strip() if match else ""
+    else:
+        match = FINAL_SECTION_RE.search(text)
+        if match and match.start() > 0:
+            text = text[match.start() :].strip()
+    if DRAFT_LEAK_RE.search(text[:500]):
+        return ""
     return text
 
 

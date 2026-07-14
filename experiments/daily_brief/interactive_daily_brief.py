@@ -247,8 +247,21 @@ function renderMover(kind){
 function initMovers(){
   ['up','down'].forEach(kind=>{ $(`#${kind}ViewToggle`).onclick=()=>{moverState[kind]=moverState[kind]==='detail'?'industry':'detail';renderMover(kind)};renderMover(kind)});
 }
+function cleanModelText(value){
+  let text=String(value||'').replace(/<think\\b[^>]*>[\\s\\S]*?<\\/think>/gi,'').trim();
+  text=text.replace(/^\\s*(思考过程|推理过程|分析过程|Reasoning|Thought process)\\s*[：:\\n]/i,'').trim();
+  if(/^\\s*(我们被要求|需要解读|需要提取|给定JSON|要求[:：]|We need|We are asked)/i.test(text)){
+    const opening=text.match(/市场情绪\\s*[：:\\n]/);
+    text=opening?text.slice(opening.index).trim():'';
+  }else{
+    const match=text.match(/(市场情绪|强势结构|异常变化|科技专项|类型占比|观察清单)\\s*[：:\\n]/);
+    if(match&&match.index>0)text=text.slice(match.index).trim();
+  }
+  if(/(可以提到|描述\\s*QQQ|描述.*相对位置|需要解读数据|给定\\s*JSON|写作要求)/.test(text.slice(0,500)))return '';
+  return text;
+}
 function renderAI(){
-  const m=D.model_interpretation||{}; const text=String(m.text||'').trim();
+  const m=D.model_interpretation||{}; const text=cleanModelText(m.text);
   const paragraphs=text.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
   $('#aiCopy').innerHTML=paragraphs.length?paragraphs.map(p=>{const lines=p.split(/\n+/).map(x=>x.trim()).filter(Boolean);const h=lines.shift()||'模型观察';return `<div class="ai-block"><div class="ai-heading">${esc(h)}</div><div>${esc(lines.join(' ')||h)}</div></div>`}).join(''):'<div class="empty">暂无模型解读</div>';
   $('#aiMeta').innerHTML=`<span class="chip">状态 <b>${esc(m.status||'—')}</b></span><span class="chip">模型 <b>${esc(m.model||m.provider||'—')}</b></span>`;
