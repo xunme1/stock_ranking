@@ -248,16 +248,16 @@ function initMovers(){
   ['up','down'].forEach(kind=>{ $(`#${kind}ViewToggle`).onclick=()=>{moverState[kind]=moverState[kind]==='detail'?'industry':'detail';renderMover(kind)};renderMover(kind)});
 }
 function cleanModelText(value){
-  let text=String(value||'').replace(/<think\\b[^>]*>[\\s\\S]*?<\\/think>/gi,'').trim();
-  text=text.replace(/^\\s*(思考过程|推理过程|分析过程|Reasoning|Thought process)\\s*[：:\\n]/i,'').trim();
-  if(/^\\s*(我们被要求|需要解读|需要提取|给定JSON|要求[:：]|We need|We are asked)/i.test(text)){
-    const opening=text.match(/市场情绪\\s*[：:\\n]/);
+  let text=String(value||'').replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi,'').trim();
+  text=text.replace(/^\s*(思考过程|推理过程|分析过程|Reasoning|Thought process)\s*[：:\n]/i,'').trim();
+  if(/^\s*(我们被要求|需要解读|需要提取|给定JSON|要求[:：]|We need|We are asked)/i.test(text)){
+    const opening=text.match(/市场情绪\s*[：:\n]/);
     text=opening?text.slice(opening.index).trim():'';
   }else{
-    const match=text.match(/(市场情绪|强势结构|异常变化|科技专项|类型占比|观察清单)\\s*[：:\\n]/);
+    const match=text.match(/(市场情绪|强势结构|异常变化|科技专项|类型占比|观察清单)\s*[：:\n]/);
     if(match&&match.index>0)text=text.slice(match.index).trim();
   }
-  if(/(可以提到|描述\\s*QQQ|描述.*相对位置|需要解读数据|给定\\s*JSON|写作要求)/.test(text.slice(0,500)))return '';
+  if(/(可以提到|描述\s*QQQ|描述.*相对位置|需要解读数据|给定\s*JSON|写作要求)/.test(text.slice(0,500)))return '';
   return text;
 }
 function renderAI(){
