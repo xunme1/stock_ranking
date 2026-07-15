@@ -13,6 +13,7 @@ if str(DAILY_BRIEF_DIR) not in sys.path:
     sys.path.insert(0, str(DAILY_BRIEF_DIR))
 
 import llm_analysis  # noqa: E402
+import interactive_daily_brief  # noqa: E402
 
 
 def complete_markdown_report() -> str:
@@ -184,6 +185,148 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
         self.assertEqual(evidence[0]["causality_strength"], "follow_up")
         self.assertEqual(evidence[0]["source_type"], "media")
 
+    def test_prefilter_search_results_tiers_candidates(self) -> None:
+        brief = sample_brief()
+        rows = [
+            {
+                "title": "APP earnings guidance",
+                "url": "https://www.reuters.com/app",
+                "source": "reuters.com",
+                "source_quality": "mainstream",
+                "source_type": "media",
+                "published_at": "2026-07-01",
+                "date_relation": "same_day",
+                "snippet": "APP earnings guidance update",
+                "target": "APP",
+                "query": "APP earnings guidance",
+                "score": 0.9,
+            },
+            {
+                "title": "Old semiconductor background",
+                "url": "https://www.reuters.com/old",
+                "source": "reuters.com",
+                "source_quality": "mainstream",
+                "source_type": "media",
+                "published_at": "2026-06-15",
+                "date_relation": "before_as_of",
+                "snippet": "Semiconductor policy background",
+                "target": "AMD",
+                "query": "AMD semiconductor policy",
+                "score": 0.7,
+            },
+            {
+                "title": "Ticker blog",
+                "url": "https://blog.example.com/app",
+                "source": "blog.example.com",
+                "source_quality": "other",
+                "source_type": "other",
+                "published_at": "2026-07-01",
+                "date_relation": "same_day",
+                "snippet": "APP stock rumor",
+                "target": "APP",
+                "query": "APP stock",
+                "score": 0.8,
+            },
+            {
+                "title": "Future APP item",
+                "url": "https://www.reuters.com/future",
+                "source": "reuters.com",
+                "source_quality": "mainstream",
+                "source_type": "media",
+                "published_at": "2026-07-02",
+                "date_relation": "after_as_of",
+                "snippet": "APP future item",
+                "target": "APP",
+                "query": "APP news",
+                "score": 0.9,
+            },
+        ]
+
+        buckets, stage = llm_analysis.prefilter_search_results(rows, brief)
+
+        self.assertEqual(stage["status"], "ok")
+        self.assertTrue(any(item["url"] == "https://www.reuters.com/app" for item in buckets["core_evidence"]))
+        self.assertTrue(any(item["url"] == "https://www.reuters.com/old" for item in buckets["background_evidence"]))
+        self.assertTrue(any(item["url"] == "https://blog.example.com/app" for item in buckets["watchlist_evidence"]))
+        self.assertTrue(any(item["url"] == "https://www.reuters.com/future" for item in buckets["rejected_evidence"]))
+        self.assertFalse(any(item["url"] == "https://www.reuters.com/future" for item in buckets["candidate_evidence"]))
+
+    def test_normalize_evidence_does_not_upgrade_other_source_to_core(self) -> None:
+        search_results = [
+            {
+                "title": "Blog item",
+                "url": "https://blog.example.com/app",
+                "source": "blog.example.com",
+                "source_quality": "other",
+                "source_type": "other",
+                "published_at": "2026-07-01",
+                "date_relation": "same_day",
+                "snippet": "Blog item",
+                "evidence_tier": "watchlist_evidence",
+                "can_support_core_driver": False,
+            }
+        ]
+        raw = [
+            {
+                "url": "https://blog.example.com/app",
+                "source_quality": "other",
+                "evidence_tier": "core_evidence",
+                "can_support_core_driver": True,
+                "causality_strength": "strong",
+            }
+        ]
+
+        evidence = llm_analysis.normalize_evidence(raw, search_results)
+
+        self.assertEqual(evidence[0]["evidence_tier"], "watchlist_evidence")
+        self.assertFalse(evidence[0]["can_support_core_driver"])
+
+    def test_normalize_evidence_does_not_upgrade_background_source_to_core(self) -> None:
+        search_results = [
+            {
+                "title": "Reuters item",
+                "url": "https://www.reuters.com/markets/story/",
+                "source": "reuters.com",
+                "source_quality": "mainstream",
+                "source_type": "media",
+                "published_at": "2026-07-14",
+                "date_relation": "same_day",
+                "snippet": "Market context",
+                "evidence_tier": "background_evidence",
+                "can_support_core_driver": False,
+            }
+        ]
+        raw = [
+            {
+                "url": "https://reuters.com/markets/story",
+                "source_quality": "mainstream",
+                "evidence_tier": "core_evidence",
+                "can_support_core_driver": True,
+                "causality_strength": "strong",
+            }
+        ]
+
+        evidence = llm_analysis.normalize_evidence(raw, search_results)
+
+        self.assertEqual(evidence[0]["evidence_tier"], "background_evidence")
+        self.assertFalse(evidence[0]["can_support_core_driver"])
+
+    def test_normalize_evidence_treats_unknown_source_as_watchlist(self) -> None:
+        raw = [
+            {
+                "url": "https://www.reuters.com/markets/unknown",
+                "source_quality": "mainstream",
+                "evidence_tier": "core_evidence",
+                "can_support_core_driver": True,
+                "causality_strength": "strong",
+            }
+        ]
+
+        evidence = llm_analysis.normalize_evidence(raw, [])
+
+        self.assertEqual(evidence[0]["evidence_tier"], "watchlist_evidence")
+        self.assertFalse(evidence[0]["can_support_core_driver"])
+
     def test_normalize_evidence_keeps_up_to_24_items(self) -> None:
         search_results = [
             {
@@ -224,6 +367,22 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
         self.assertTrue(any(item.startswith("full_report_too_short") for item in issues))
         self.assertTrue(any(item.startswith("missing_sections") for item in issues))
 
+    def test_normalize_executive_points_limits_and_falls_back(self) -> None:
+        raw = {
+            "executive_points": [
+                {"text": f"核心结论 {index}", "rationale": "来自研报", "evidence_ids": [index], "priority": 7 - index}
+                for index in range(8)
+            ]
+        }
+
+        points = llm_analysis.normalize_executive_points(raw, sample_brief())
+        fallback = llm_analysis.normalize_executive_points([], sample_brief())
+
+        self.assertEqual(len(points), 6)
+        self.assertEqual(points[0]["priority"], 1)
+        self.assertEqual(points[0]["evidence_ids"], ["6"])
+        self.assertEqual(fallback[0]["text"], "榜单换手较高。")
+
     @patch("llm_analysis.tavily_search")
     @patch("llm_analysis.call_chat_model")
     def test_generate_model_interpretation_returns_full_schema(self, call_chat_model, tavily_search) -> None:
@@ -232,6 +391,7 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
             (json.dumps({"evidence": [{"id": "1", "title": "APP update", "title_zh": "APP 股价异动更新", "summary_zh": "该来源用于解释 APP 当日异动。", "url": "https://www.reuters.com/app", "source": "reuters.com", "published_at": "2026-07-01", "snippet": "APP news", "relevance": "解释异动", "used_by": ["APP"]}]}), "deepseek", "deepseek-chat"),
             (json.dumps({"summary": "摘要：APP 异动值得关注 [1]", "full_report": complete_markdown_report()}), "deepseek", "deepseek-v4-pro"),
             (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", "deepseek-chat"),
+            (json.dumps({"executive_points": [{"text": "APP 异动是今日最重要观察。", "rationale": "研报把 APP 列为关键对象。", "evidence_ids": ["1"], "priority": 1}]}), "deepseek", "deepseek-chat"),
         ]
         tavily_search.return_value = [
             {"title": "APP update", "url": "https://www.reuters.com/app", "published_date": "2026-07-01", "content": "APP news", "score": 0.9}
@@ -250,26 +410,66 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
         self.assertEqual(result["evidence"][0]["summary_zh"], "该来源用于解释 APP 当日异动。")
         self.assertIn("causality_strength", result["evidence"][0])
         self.assertEqual(result["audit"]["status"], "ok")
+        self.assertEqual(result["executive_points"][0]["text"], "APP 异动是今日最重要观察。")
+        self.assertEqual(result["executive_points"][0]["evidence_ids"], ["1"])
         self.assertTrue(result["pipeline"]["stages"])
         self.assertEqual(call_chat_model.call_args_list[0].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
         self.assertEqual(call_chat_model.call_args_list[1].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
         self.assertEqual(call_chat_model.call_args_list[2].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
         self.assertEqual(call_chat_model.call_args_list[3].args[1], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
+        self.assertEqual(call_chat_model.call_args_list[4].args[1], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
 
     @patch("llm_analysis.tavily_search", side_effect=RuntimeError("network blocked"))
     @patch("llm_analysis.call_chat_model")
     def test_generate_model_interpretation_partial_when_search_fails(self, call_chat_model, _tavily_search) -> None:
         call_chat_model.side_effect = [
             (json.dumps({"research_questions": [], "search_tasks": [{"query": "APP stock news", "target": "APP"}]}), "deepseek", "deepseek-chat"),
-            (json.dumps({"summary": "量化摘要", "full_report": "完整量化研报"}), "deepseek", "deepseek-chat"),
+            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", "deepseek-chat"),
             (json.dumps({"status": "warning", "issues": [{"type": "source_quality", "severity": "medium", "message": "缺少联网证据"}], "final_notes": "需人工复核"}), "deepseek", "deepseek-chat"),
+            (json.dumps({"executive_points": [{"text": "缺少联网证据，结论仅供观察。", "rationale": "搜索失败。", "priority": 1}]}), "deepseek", "deepseek-chat"),
         ]
 
         result = llm_analysis.generate_model_interpretation(sample_brief(), timeout=10)
 
         self.assertEqual(result["status"], "partial")
         self.assertEqual(result["summary"], "量化摘要")
+        self.assertEqual(result["executive_points"][0]["text"], "缺少联网证据，结论仅供观察。")
         self.assertTrue(result["pipeline"]["errors"])
+
+    @patch("llm_analysis.tavily_search")
+    @patch("llm_analysis.call_chat_model")
+    def test_generate_model_interpretation_falls_back_when_executive_points_fail(self, call_chat_model, tavily_search) -> None:
+        call_chat_model.side_effect = [
+            (json.dumps({"research_questions": [], "search_tasks": []}), "deepseek", "deepseek-v4-pro"),
+            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", "deepseek-v4-pro"),
+            (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", "deepseek-chat"),
+            RuntimeError("executive unavailable"),
+        ]
+        tavily_search.return_value = []
+
+        result = llm_analysis.generate_model_interpretation(sample_brief(), timeout=10)
+
+        self.assertNotEqual(result["status"], "error")
+        self.assertEqual(result["executive_points"][0]["text"], "榜单换手较高。")
+        self.assertTrue(any(stage.get("stage") == "executive_points" and stage.get("status") == "error" for stage in result["pipeline"]["stages"]))
+
+    def test_html_template_contains_citation_popover_and_executive_points_logic(self) -> None:
+        brief = sample_brief()
+        brief["model_interpretation"] = {
+            "summary": "摘要",
+            "text": "摘要",
+            "full_report": "## 核心结论\nAPP 值得观察 [1]",
+            "executive_points": [{"text": "模型结论优先展示", "rationale": "来自研报", "evidence_ids": ["1"], "priority": 1}],
+            "evidence": [{"id": "1", "title_zh": "APP 新闻", "url": "https://www.reuters.com/app", "summary_zh": "APP 摘要"}],
+            "audit": {"status": "warning", "issues": [{"type": "source_quality", "severity": "medium", "message": "关注 [1] 来源质量"}], "final_notes": "需复核"},
+        }
+
+        html = interactive_daily_brief.generate_html(brief, "light")
+
+        self.assertIn('id="citationPopover"', html)
+        self.assertIn("data-citation-id", html)
+        self.assertIn("executive_points", html)
+        self.assertIn("定位引用卡", html)
 
 
 if __name__ == "__main__":

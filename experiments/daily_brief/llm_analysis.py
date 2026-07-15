@@ -23,6 +23,28 @@ DEFAULT_DEEPSEEK_PRO_MODEL = "deepseek-v4-pro"
 MAX_RESEARCH_TASKS = 8
 MAX_EVIDENCE_ITEMS = 24
 MIN_FULL_REPORT_CHARS = 1800
+MAX_PREFILTERED_SEARCH_RESULTS = 40
+EVENT_KEYWORDS = (
+    "公告",
+    "财报",
+    "业绩",
+    "预告",
+    "监管",
+    "政策",
+    "减持",
+    "增持",
+    "回购",
+    "guidance",
+    "earnings",
+    "results",
+    "outlook",
+    "forecast",
+    "sec",
+    "filing",
+    "approval",
+    "regulatory",
+    "policy",
+)
 REQUIRED_REPORT_SECTIONS = (
     "核心结论",
     "市场结构",
@@ -102,6 +124,14 @@ def _domain(url: str) -> str:
     return host.removeprefix("www.")
 
 
+def _url_key(url: str) -> str:
+    parsed = urlparse(str(url or "").strip())
+    if not parsed.netloc:
+        return str(url or "").strip().rstrip("/")
+    path = parsed.path.rstrip("/")
+    return f"{parsed.scheme.lower()}://{parsed.netloc.lower().removeprefix('www.')}{path}".rstrip("/")
+
+
 def _source_quality(url: str) -> str:
     host = _domain(url)
     if any(token in host for token in PRIMARY_SOURCE_DOMAINS):
@@ -146,6 +176,32 @@ def _date_relation(value: Any, as_of_value: Any) -> str:
     if parsed.date() == as_of.date():
         return "same_day"
     return "before_as_of"
+
+
+def _days_from_as_of(value: Any, as_of_value: Any) -> int | None:
+    parsed = _parse_date(value)
+    as_of = _parse_date(as_of_value)
+    if not parsed or not as_of:
+        return None
+    return (as_of.date() - parsed.date()).days
+
+
+def _tokenize_query_text(value: Any) -> set[str]:
+    text = str(value or "").lower()
+    tokens = set(re.findall(r"[a-z0-9.\-]{2,}|[\u4e00-\u9fff]{2,}", text))
+    stop_words = {
+        "stock",
+        "stocks",
+        "news",
+        "market",
+        "earnings",
+        "announcement",
+        "日报",
+        "市场",
+        "股票",
+        "行业",
+    }
+    return {token for token in tokens if token not in stop_words}
 
 
 def _compact_items(items: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
@@ -626,6 +682,7 @@ def build_evidence_messages(
             "content": (
                 "你是证据提取模型。只能从搜索结果中提取可支持研报结论的证据。"
                 "不要补充搜索结果之外的事实。为每条证据生成中文标题和中文摘要。"
+                "输入搜索结果已经过 Python 预筛，包含 evidence_tier、evidence_score、can_support_core_driver。"
                 "晚于日报日期的材料不能作为当日行情原因，只能标记为后续观察。只输出 JSON。"
             ),
         },
@@ -636,9 +693,11 @@ def build_evidence_messages(
                 "\"title_zh\":\"中文标题\",\"summary_zh\":\"80字以内中文摘要\",\"source\":\"...\",\"published_at\":\"...\","
                 "\"event_date\":\"...\",\"topic\":\"...\",\"claim\":\"搜索结果支持的事实主张\",\"affected_tickers\":[\"...\"],"
                 "\"source_type\":\"company|exchange|regulator|media|data|other\",\"source_quality\":\"primary|mainstream|other\","
+                "\"evidence_tier\":\"core_evidence|background_evidence|watchlist_evidence\",\"can_support_core_driver\":true,"
                 "\"supports_json_signal\":true,\"causality_strength\":\"strong|medium|weak|follow_up|none\","
                 "\"confidence\":0.0,\"snippet\":\"...\",\"relevance\":\"这条证据支持了哪个结论或研究问题\",\"used_by\":[\"...\"]}]}。"
-                "最多保留 24 条，优先一级来源和主流媒体。source_quality=other 的材料只能作为待验证线索，不得支撑核心驱动。\n"
+                "最多保留 24 条，优先 core_evidence。"
+                "Python 标记 can_support_core_driver=false 或 source_quality=other 的材料只能作为背景或待验证线索，不得升级为核心驱动。\n"
                 f"日报日期: {brief.get('as_of_date')}\n"
                 f"研究上下文:\n{json.dumps(research_context, ensure_ascii=False, indent=2)}\n"
                 f"特征:\n{json.dumps(features, ensure_ascii=False, indent=2)}\n"
@@ -675,7 +734,9 @@ def build_writer_messages(
                 "核心结论、市场结构、驱动因素与证据、驱动因素源头拆解、趋势判断、关键观察对象、风险情景、下一交易日观察、免责声明。\n"
                 "驱动因素与证据必须逐条展开，每条至少写：现象、源头、证据、影响链条、置信度、不确定性、引用编号。"
                 "趋势判断必须写足逻辑链：量化信号、证据支持、反证条件、后续验证指标。"
-                "若 evidence 为空，只写量化结构，不做新闻归因；source_quality=other 的证据只能写为待验证线索。\n"
+                "若 evidence 为空，只写量化结构，不做新闻归因。"
+                "只有 evidence_tier=core_evidence 且 can_support_core_driver=true 的证据可以支撑核心驱动。"
+                "background_evidence 只能写进行业背景或趋势背景；watchlist_evidence/source_quality=other 只能写成不确定性或待验证线索。\n"
                 f"研究上下文:\n{json.dumps(research_context, ensure_ascii=False, indent=2)}\n"
                 f"校验:\n{json.dumps(validation, ensure_ascii=False, indent=2)}\n"
                 f"特征:\n{json.dumps(features, ensure_ascii=False, indent=2)}\n"
@@ -704,6 +765,8 @@ def build_audit_messages(
             "claim": item.get("claim"),
             "affected_tickers": item.get("affected_tickers"),
             "source_quality": item.get("source_quality"),
+            "evidence_tier": item.get("evidence_tier"),
+            "can_support_core_driver": item.get("can_support_core_driver"),
             "causality_strength": item.get("causality_strength"),
             "supports_json_signal": item.get("supports_json_signal"),
             "summary_zh": item.get("summary_zh") or item.get("relevance"),
@@ -720,7 +783,8 @@ def build_audit_messages(
             "role": "system",
             "content": (
                 "你是事实和逻辑审计模型。检查研报是否存在无证据外部事实、过度归因、日期不匹配、"
-                "来源质量不足、量化逻辑不一致。只输出 JSON。"
+                "来源质量不足、量化逻辑不一致。特别检查研报是否把 background_evidence 或 watchlist_evidence "
+                "误写成核心驱动，或把 can_support_core_driver=false 的证据用于强因果归因。只输出 JSON。"
             ),
         },
         {
@@ -733,6 +797,57 @@ def build_audit_messages(
                 f"特征:\n{json.dumps(features, ensure_ascii=False, indent=2)}\n"
                 f"证据:\n{json.dumps(compact_evidence, ensure_ascii=False, indent=2)}\n"
                 f"研报:\n{json.dumps(compact_report, ensure_ascii=False, indent=2)}"
+            ),
+        },
+    ]
+
+
+def build_executive_points_messages(
+    brief: dict[str, Any],
+    report: dict[str, Any],
+    evidence: list[dict[str, Any]],
+    audit: dict[str, Any],
+) -> list[dict[str, str]]:
+    compact_evidence = [
+        {
+            "id": item.get("id"),
+            "title_zh": item.get("title_zh") or item.get("title"),
+            "summary_zh": item.get("summary_zh") or item.get("claim") or item.get("relevance"),
+            "source": item.get("source"),
+            "published_at": item.get("published_at"),
+            "evidence_tier": item.get("evidence_tier"),
+            "source_quality": item.get("source_quality"),
+            "can_support_core_driver": item.get("can_support_core_driver"),
+            "causality_strength": item.get("causality_strength"),
+        }
+        for item in evidence[:MAX_EVIDENCE_ITEMS]
+    ]
+    compact_report = {
+        "summary": report.get("summary", "")[:1200],
+        "full_report": report.get("full_report", "")[:12000],
+    }
+    return [
+        {
+            "role": "system",
+            "content": (
+                "你是中文金融日报的信息提炼编辑。请从最终研报中提炼首页最值得优先看的核心结论。"
+                "结论要短、具体、有信息增量，避免重复原始榜单流水账。只输出 JSON。"
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                "输出格式: {\"executive_points\":[{\"text\":\"首页展示的一句话结论\","
+                "\"rationale\":\"30-80字依据\", \"evidence_ids\":[\"1\"], \"audit_note\":\"可选审计提示\","
+                "\"priority\":1}]}。\n"
+                "要求：输出 4-6 条；优先覆盖市场状态、主线/行业、关键驱动、趋势判断、风险或下一交易日观察；"
+                "如果结论依赖证据，必须填 evidence_ids；如果审计提示削弱了结论，需要写入 audit_note；"
+                "不要写投资建议，不要发明研报和证据之外的信息。\n"
+                f"市场: {brief.get('market_label') or brief.get('market')}，日期: {brief.get('as_of_date')}\n"
+                f"旧规则结论:\n{json.dumps(brief.get('summary_points', []), ensure_ascii=False, indent=2)}\n"
+                f"最终研报:\n{json.dumps(compact_report, ensure_ascii=False, indent=2)}\n"
+                f"证据:\n{json.dumps(compact_evidence, ensure_ascii=False, indent=2)}\n"
+                f"审计:\n{json.dumps(audit, ensure_ascii=False, indent=2)}"
             ),
         },
     ]
@@ -1022,6 +1137,57 @@ def normalize_report_output(
     }
 
 
+def normalize_executive_points(raw_items: Any, brief: dict[str, Any], limit: int = 6) -> list[dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = raw_items.get("executive_points") or raw_items.get("points") or raw_items.get("items") or []
+    if not isinstance(raw_items, list):
+        raw_items = []
+    points: list[dict[str, Any]] = []
+    for index, item in enumerate(raw_items, start=1):
+        if isinstance(item, dict):
+            text = str(item.get("text") or item.get("conclusion") or item.get("summary") or "").strip()
+            rationale = str(item.get("rationale") or item.get("reason") or item.get("basis") or "").strip()
+            audit_note = str(item.get("audit_note") or item.get("audit") or "").strip()
+            evidence_ids = item.get("evidence_ids") or item.get("evidence") or item.get("citations") or []
+            priority = _safe_int(item.get("priority")) or index
+        else:
+            text = str(item or "").strip()
+            rationale = ""
+            audit_note = ""
+            evidence_ids = []
+            priority = index
+        if not text:
+            continue
+        if not isinstance(evidence_ids, list):
+            evidence_ids = [evidence_ids]
+        points.append(
+            {
+                "text": clean_model_text(text)[:260],
+                "rationale": clean_model_text(rationale)[:220],
+                "evidence_ids": [str(value).strip() for value in evidence_ids if str(value).strip()][:6],
+                "audit_note": clean_model_text(audit_note)[:180],
+                "priority": max(1, priority),
+            }
+        )
+    if points:
+        return sorted(points, key=lambda item: item.get("priority") or 999)[:limit]
+
+    fallback_points = brief.get("summary_points") if isinstance(brief, dict) else []
+    if not isinstance(fallback_points, list):
+        fallback_points = []
+    return [
+        {
+            "text": str(text).strip()[:260],
+            "rationale": "规则摘要兜底。",
+            "evidence_ids": [],
+            "audit_note": "",
+            "priority": index,
+        }
+        for index, text in enumerate(fallback_points[:limit], start=1)
+        if str(text).strip()
+    ]
+
+
 def report_quality_issues(full_report: str) -> list[str]:
     text = clean_report_text(full_report)
     issues: list[str] = []
@@ -1294,34 +1460,202 @@ def run_tavily_searches(
     }
 
 
+def score_search_result(row: dict[str, Any], brief: dict[str, Any]) -> dict[str, Any]:
+    source_quality = str(row.get("source_quality") or _source_quality(str(row.get("url") or "")))
+    source_type = str(row.get("source_type") or _source_type(str(row.get("url") or "")))
+    date_relation = str(row.get("date_relation") or _date_relation(row.get("published_at"), brief.get("as_of_date")))
+    days_from_as_of = _days_from_as_of(row.get("published_at"), brief.get("as_of_date"))
+    tavily_score = _safe_float(row.get("score")) or 0.0
+    title = str(row.get("title") or "")
+    snippet = str(row.get("snippet") or "")
+    target = str(row.get("target") or "")
+    query = str(row.get("query") or "")
+    text_blob = f"{title} {snippet} {query}".lower()
+    target_tokens = _tokenize_query_text(target)
+    query_tokens = _tokenize_query_text(query)
+    target_matched = bool(target_tokens and any(token in text_blob for token in target_tokens))
+    query_overlap = len(query_tokens & _tokenize_query_text(f"{title} {snippet}"))
+    has_event_keyword = any(keyword.lower() in text_blob for keyword in EVENT_KEYWORDS)
+
+    score = 0.0
+    score += {"primary": 45, "mainstream": 35, "other": 10}.get(source_quality, 0)
+    score += {"company": 22, "exchange": 22, "regulator": 22, "media": 12, "data": 8, "other": 0}.get(source_type, 0)
+    if date_relation == "after_as_of":
+        score -= 100
+    elif days_from_as_of is None:
+        score -= 5
+    elif days_from_as_of < 0:
+        score -= 100
+    elif days_from_as_of == 0:
+        score += 20
+    elif days_from_as_of <= 2:
+        score += 16
+    elif days_from_as_of <= 7:
+        score += 10
+    elif days_from_as_of <= 30:
+        score -= 2
+    else:
+        score -= 25
+    score += min(15.0, max(0.0, tavily_score) * 15.0)
+    if target_matched:
+        score += 10
+    elif target:
+        score -= 12
+    score += min(8, query_overlap * 2)
+    if has_event_keyword:
+        score += 8
+
+    reject_reasons: list[str] = []
+    if date_relation == "after_as_of" or (days_from_as_of is not None and days_from_as_of < 0):
+        reject_reasons.append("after_as_of")
+    if days_from_as_of is not None and days_from_as_of > 90:
+        reject_reasons.append("too_old")
+    if target and not target_matched and query_overlap == 0:
+        reject_reasons.append("target_mismatch")
+    if not title and not snippet:
+        reject_reasons.append("empty_content")
+
+    can_support_core_driver = not reject_reasons and source_quality in {"primary", "mainstream"} and date_relation != "after_as_of"
+    if days_from_as_of is not None and days_from_as_of > 14:
+        can_support_core_driver = False
+    if source_quality == "other":
+        can_support_core_driver = False
+
+    if reject_reasons:
+        tier = "rejected_evidence"
+    elif can_support_core_driver and score >= 62:
+        tier = "core_evidence"
+    elif source_quality in {"primary", "mainstream"} and (days_from_as_of is None or days_from_as_of <= 45):
+        tier = "background_evidence"
+    else:
+        tier = "watchlist_evidence"
+
+    if tier == "background_evidence" and days_from_as_of is not None and days_from_as_of <= 7 and source_quality == "mainstream" and has_event_keyword and score >= 55:
+        tier = "core_evidence"
+        can_support_core_driver = True
+
+    return {
+        "evidence_score": round(score, 2),
+        "evidence_tier": tier,
+        "can_support_core_driver": can_support_core_driver,
+        "reject_reason": ", ".join(reject_reasons),
+        "days_from_as_of": days_from_as_of,
+        "target_matched": target_matched,
+        "query_overlap": query_overlap,
+        "has_event_keyword": has_event_keyword,
+    }
+
+
+def prefilter_search_results(
+    search_results: list[dict[str, Any]],
+    brief: dict[str, Any],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+    started = time.perf_counter()
+    buckets: dict[str, list[dict[str, Any]]] = {
+        "core_evidence": [],
+        "background_evidence": [],
+        "watchlist_evidence": [],
+        "rejected_evidence": [],
+    }
+    for row in search_results:
+        scored = {**row, **score_search_result(row, brief)}
+        tier = scored.get("evidence_tier") if scored.get("evidence_tier") in buckets else "watchlist_evidence"
+        buckets[str(tier)].append(scored)
+
+    for tier, rows in buckets.items():
+        rows.sort(
+            key=lambda item: (
+                {"core_evidence": 0, "background_evidence": 1, "watchlist_evidence": 2, "rejected_evidence": 3}.get(str(item.get("evidence_tier")), 9),
+                -(float(item.get("evidence_score") or 0)),
+                {"primary": 0, "mainstream": 1, "other": 2}.get(str(item.get("source_quality")), 3),
+            )
+        )
+
+    candidates = (
+        buckets["core_evidence"][:MAX_EVIDENCE_ITEMS]
+        + buckets["background_evidence"][:MAX_EVIDENCE_ITEMS]
+        + buckets["watchlist_evidence"][:MAX_EVIDENCE_ITEMS]
+    )
+    candidates = sorted(candidates, key=lambda item: ({"core_evidence": 0, "background_evidence": 1, "watchlist_evidence": 2}.get(str(item.get("evidence_tier")), 9), -(float(item.get("evidence_score") or 0))))[
+        :MAX_PREFILTERED_SEARCH_RESULTS
+    ]
+    buckets["candidate_evidence"] = candidates
+
+    stage = {
+        "stage": "evidence_prefilter",
+        "status": "ok",
+        "duration_ms": _elapsed(started),
+        "input_count": len(search_results),
+        "candidate_count": len(candidates),
+        "core_count": len(buckets["core_evidence"]),
+        "background_count": len(buckets["background_evidence"]),
+        "watchlist_count": len(buckets["watchlist_evidence"]),
+        "rejected_count": len(buckets["rejected_evidence"]),
+        "rejected_reasons": {},
+    }
+    reasons: dict[str, int] = {}
+    for row in buckets["rejected_evidence"]:
+        for reason in str(row.get("reject_reason") or "unknown").split(","):
+            reason = reason.strip() or "unknown"
+            reasons[reason] = reasons.get(reason, 0) + 1
+    stage["rejected_reasons"] = reasons
+    return buckets, stage
+
+
 def normalize_evidence(raw_items: Any, search_results: list[dict[str, Any]], limit: int = MAX_EVIDENCE_ITEMS) -> list[dict[str, Any]]:
     if not isinstance(raw_items, list):
         raw_items = []
-    url_lookup = {item.get("url"): item for item in search_results}
+    url_lookup = {_url_key(str(item.get("url") or "")): item for item in search_results if item.get("url")}
     evidence: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     for index, item in enumerate(raw_items[:limit], start=1):
         if not isinstance(item, dict):
             continue
         url = str(item.get("url") or "").strip()
-        if not url or url in seen_urls:
+        url_key = _url_key(url)
+        if not url or url_key in seen_urls:
             continue
-        source_row = url_lookup.get(url, {})
-        seen_urls.add(url)
+        source_row = url_lookup.get(url_key, {})
+        source_was_prefiltered = bool(source_row)
+        seen_urls.add(url_key)
         event_date = str(item.get("event_date") or item.get("published_at") or source_row.get("published_at") or "")
         published_at = str(item.get("published_at") or source_row.get("published_at") or "")
         date_relation = item.get("date_relation") or source_row.get("date_relation") or ""
         source_quality = str(item.get("source_quality") or source_row.get("source_quality") or _source_quality(url))
         source_type = str(item.get("source_type") or source_row.get("source_type") or _source_type(url))
+        source_tier = str(source_row.get("evidence_tier") or "")
+        evidence_tier = str(item.get("evidence_tier") or source_tier or "watchlist_evidence")
+        if evidence_tier not in {"core_evidence", "background_evidence", "watchlist_evidence"}:
+            evidence_tier = "watchlist_evidence"
+        if source_tier in {"background_evidence", "watchlist_evidence"} and evidence_tier == "core_evidence":
+            evidence_tier = source_tier
+        if not source_was_prefiltered and evidence_tier == "core_evidence":
+            evidence_tier = "watchlist_evidence"
         supports_json_signal = item.get("supports_json_signal")
         if not isinstance(supports_json_signal, bool):
             supports_json_signal = date_relation != "after_as_of"
+        can_support_core_driver = item.get("can_support_core_driver")
+        source_can_support = source_row.get("can_support_core_driver")
+        if not isinstance(can_support_core_driver, bool):
+            can_support_core_driver = bool(source_can_support) if isinstance(source_can_support, bool) else evidence_tier == "core_evidence"
+        if not source_was_prefiltered:
+            can_support_core_driver = False
         causality_strength = str(item.get("causality_strength") or "").strip().lower()
         if causality_strength not in {"strong", "medium", "weak", "follow_up", "none"}:
             causality_strength = "follow_up" if date_relation == "after_as_of" else "weak"
         if date_relation == "after_as_of":
             supports_json_signal = False
             causality_strength = "follow_up"
+            can_support_core_driver = False
+            evidence_tier = "watchlist_evidence"
+        if source_quality == "other":
+            can_support_core_driver = False
+            if evidence_tier == "core_evidence":
+                evidence_tier = "watchlist_evidence"
+        if source_can_support is False:
+            can_support_core_driver = False
+            if evidence_tier == "core_evidence":
+                evidence_tier = "background_evidence" if source_quality in {"primary", "mainstream"} else "watchlist_evidence"
         confidence = _safe_float(item.get("confidence"))
         if confidence is None:
             confidence = 0.75 if source_quality == "primary" else 0.6 if source_quality == "mainstream" else 0.45
@@ -1344,6 +1678,11 @@ def normalize_evidence(raw_items: Any, search_results: list[dict[str, Any]], lim
                 "affected_tickers": [str(value)[:40] for value in affected_tickers if str(value).strip()][:8],
                 "source_type": source_type,
                 "source_quality": source_quality,
+                "evidence_tier": evidence_tier,
+                "evidence_score": source_row.get("evidence_score") or item.get("evidence_score"),
+                "can_support_core_driver": can_support_core_driver,
+                "reject_reason": str(source_row.get("reject_reason") or item.get("reject_reason") or "")[:240],
+                "days_from_as_of": source_row.get("days_from_as_of") if source_row.get("days_from_as_of") is not None else item.get("days_from_as_of"),
                 "supports_json_signal": supports_json_signal,
                 "causality_strength": causality_strength,
                 "confidence": round(max(0.0, min(1.0, confidence)), 2),
@@ -1545,6 +1884,37 @@ def revise_research_report(
     }
 
 
+def generate_executive_points(
+    brief: dict[str, Any],
+    report: dict[str, Any],
+    evidence: list[dict[str, Any]],
+    audit: dict[str, Any],
+    timeout: int,
+    max_tokens: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    started = time.perf_counter()
+    text, provider, model_name = call_chat_model(
+        build_executive_points_messages(brief, report, evidence, audit),
+        DEFAULT_DEEPSEEK_MODEL,
+        timeout,
+        max(max_tokens, 2500),
+        temperature=0.18,
+        json_mode=True,
+        use_env_model=False,
+    )
+    data, repaired = parse_or_repair_json_text(text, timeout)
+    points = normalize_executive_points(data, brief)
+    return points, {
+        "stage": "executive_points",
+        "status": "ok" if points else "partial",
+        "provider": provider,
+        "model": model_name,
+        "duration_ms": _elapsed(started),
+        "point_count": len(points),
+        "json_repaired": repaired,
+    }
+
+
 def generate_dashscope_interpretation(
     brief: dict[str, Any],
     model: str,
@@ -1605,6 +1975,13 @@ def generate_model_interpretation(
         stages.append({"stage": "research_plan", "status": "error", "error": str(exc)})
 
     raw_search_results: list[dict[str, Any]] = []
+    screened_results: dict[str, list[dict[str, Any]]] = {
+        "core_evidence": [],
+        "background_evidence": [],
+        "watchlist_evidence": [],
+        "rejected_evidence": [],
+        "candidate_evidence": [],
+    }
     if disable_web or research_depth == "quant":
         stages.append({"stage": "web_search", "status": "skipped", "result_count": 0, "reason": "disabled"})
     else:
@@ -1623,15 +2000,20 @@ def generate_model_interpretation(
             errors.append(f"web_search: {exc}")
             stages.append({"stage": "web_search", "status": "error", "error": str(exc), "result_count": 0})
 
+    screened_results, stage = prefilter_search_results(raw_search_results, brief)
+    stages.append(stage)
+    candidate_search_results = screened_results.get("candidate_evidence", [])
+
     evidence: list[dict[str, Any]] = []
     try:
-        evidence, stage = extract_evidence(brief, features, research_context, research_plan, raw_search_results, model, timeout, max_tokens)
+        evidence, stage = extract_evidence(brief, features, research_context, research_plan, candidate_search_results, model, timeout, max_tokens)
         stages.append(stage)
     except Exception as exc:
         errors.append(f"evidence_extract: {exc}")
         stages.append({"stage": "evidence_extract", "status": "error", "error": str(exc), "evidence_count": 0})
-        evidence = normalize_evidence(raw_search_results[:MAX_EVIDENCE_ITEMS], raw_search_results)
+        evidence = normalize_evidence(candidate_search_results[:MAX_EVIDENCE_ITEMS], candidate_search_results)
 
+    quality_issues: list[str] = []
     try:
         report, stage = write_research_report(
             brief,
@@ -1719,6 +2101,14 @@ def generate_model_interpretation(
             errors.append(f"report_revision: {exc}")
             stages.append({"stage": "report_revision", "status": "error", "error": str(exc)})
 
+    executive_points = normalize_executive_points([], brief)
+    try:
+        executive_points, stage = generate_executive_points(brief, report, evidence, audit, timeout, max_tokens)
+        stages.append(stage)
+    except Exception as exc:
+        errors.append(f"executive_points: {exc}")
+        stages.append({"stage": "executive_points", "status": "error", "error": str(exc), "point_count": len(executive_points)})
+
     if errors or any(stage.get("status") in {"error", "partial"} for stage in stages):
         status = "partial"
     elif audit.get("status") in {"warning", "fail"} or validation.get("status") == "error":
@@ -1737,6 +2127,7 @@ def generate_model_interpretation(
         "summary": report["summary"],
         "full_report": report["full_report"],
         "report": report.get("report") or {},
+        "executive_points": executive_points,
         "text": report["summary"],
         "validation": validation,
         "features": features,
@@ -1749,6 +2140,22 @@ def generate_model_interpretation(
             "disable_web": disable_web,
             "lookback_days": lookback_days,
             "search_results_per_task": search_results,
+            "evidence_prefilter": {
+                "core_count": len(screened_results.get("core_evidence", [])),
+                "background_count": len(screened_results.get("background_evidence", [])),
+                "watchlist_count": len(screened_results.get("watchlist_evidence", [])),
+                "rejected_count": len(screened_results.get("rejected_evidence", [])),
+                "candidate_count": len(screened_results.get("candidate_evidence", [])),
+                "rejected_sample": [
+                    {
+                        "title": item.get("title"),
+                        "source": item.get("source"),
+                        "reject_reason": item.get("reject_reason"),
+                        "evidence_score": item.get("evidence_score"),
+                    }
+                    for item in screened_results.get("rejected_evidence", [])[:5]
+                ],
+            },
             "duration_ms": _elapsed(started_all),
             "stages": stages,
             "errors": errors,
