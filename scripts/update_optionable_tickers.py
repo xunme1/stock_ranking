@@ -28,7 +28,6 @@ from app.core.config import (  # noqa: E402
     OPTIONABLE_TICKERS_FILE,
 )
 from app.services.data_loader import normalize_ticker  # noqa: E402
-from app.services.ranking_service import apply_rebalance  # noqa: E402
 
 
 API_URL = "https://api.polygon.io/v3/reference/options/contracts"
@@ -73,15 +72,12 @@ def is_confirmed_previous_status(row: dict[str, str]) -> bool:
 def load_universe(
     tickers_arg: str | None,
     limit: int | None,
-    apply_announced_rebalance: bool,
     benchmark: str,
 ) -> list[str]:
     if tickers_arg:
         tickers = [normalize_ticker(item) for item in tickers_arg.split(",") if item.strip()]
     else:
         tickers = load_tickers(path=NASDAQ100_FILE, limit=limit)
-        if apply_announced_rebalance:
-            tickers = apply_rebalance(tickers)
 
     benchmark = normalize_ticker(benchmark)
     if benchmark not in tickers:
@@ -175,7 +171,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tickers", default=None, help="Comma-separated ticker subset. Defaults to config/nasdaq100_tickers.txt.")
     parser.add_argument("--limit", type=int, default=None, help="Only process first N tickers from the default ticker file.")
     parser.add_argument("--benchmark", default=DEFAULT_BENCHMARK, help="Benchmark ticker to include. Defaults to QQQ.")
-    parser.add_argument("--no-rebalance", action="store_true", help="Do not apply the announced 2026-06-22 Nasdaq-100 rebalance.")
     parser.add_argument("--key-cooldown-seconds", type=int, default=13, help="Cooldown per API key after each request.")
     parser.add_argument("--retry-wait-seconds", type=int, default=60, help="Wait time after HTTP 429.")
     parser.add_argument("--max-retries", type=int, default=2, help="Max attempts per ticker.")
@@ -189,7 +184,6 @@ def main() -> None:
     tickers = load_universe(
         tickers_arg=args.tickers,
         limit=args.limit,
-        apply_announced_rebalance=not args.no_rebalance,
         benchmark=args.benchmark,
     )
     existing = load_existing_status()

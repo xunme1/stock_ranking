@@ -34,7 +34,7 @@ def load_api_key() -> str:
 
 def top_ranked_tickers(limit: int, window: int) -> list[str]:
     ranking = build_ranking(
-        RankingConfig(window=window, benchmark="QQQ", apply_announced_rebalance=True)
+        RankingConfig(window=window, benchmark="QQQ")
     )
     return [str(row["ticker"]) for row in ranking["data"][:limit]]
 

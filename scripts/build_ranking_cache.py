@@ -23,7 +23,6 @@ from app.services.data_loader import (  # noqa: E402
     normalize_ticker_for_market,
 )
 from app.services.ranking_service import (  # noqa: E402
-    apply_rebalance,
     build_and_cache_ranking_frame,
     ranking_cache_path,
 )
@@ -36,11 +35,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--end-date", default=None, help="Latest cache date in YYYY-MM-DD. Defaults to latest benchmark date.")
     parser.add_argument("--benchmark", default=None, help="Benchmark ticker. Defaults to QQQ for US, 000905 for CN.")
     parser.add_argument("--market", choices=["us", "cn", "hk"], default="us", help="Market to build: us, cn, or hk.")
-    parser.add_argument(
-        "--no-rebalance",
-        action="store_true",
-        help="Use config/nasdaq100_tickers.txt as-is instead of applying the announced 2026-06-22 rebalance.",
-    )
     return parser.parse_args()
 
 
@@ -77,8 +71,6 @@ def main() -> None:
     dates = recent_trading_dates(benchmark, market, args.days, end_date)
 
     tickers = load_ticker_file_for_market(market)
-    if market == "us" and not args.no_rebalance:
-        tickers = apply_rebalance(tickers)
     universe = list(tickers)
     if benchmark not in universe:
         universe.append(benchmark)

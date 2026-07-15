@@ -18,7 +18,6 @@ def get_latest_ranking(
     as_of_date: date | None = Query(None),
     benchmark: str | None = Query(None, min_length=1, max_length=12),
     market: str = Query("us", pattern="^(us|cn|hk)$"),
-    apply_announced_rebalance: bool = Query(False),
 ) -> dict[str, object]:
     try:
         return build_ranking(
@@ -26,7 +25,6 @@ def get_latest_ranking(
                 window=window,
                 benchmark=benchmark,
                 market=market,
-                apply_announced_rebalance=apply_announced_rebalance,
                 as_of_date=as_of_date,
             )
         )

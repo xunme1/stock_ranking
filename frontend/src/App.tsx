@@ -52,7 +52,6 @@ import {
 
 const DEFAULT_WINDOW = 10;
 const WINDOW_OPTIONS = [10, 20];
-const APPLY_ANNOUNCED_REBALANCE = true;
 const MARKET_OPTIONS: Array<{ value: Market; label: string; benchmark: string; title: string; eyebrow: string }> = [
   { value: "us", label: "美股", benchmark: "QQQ", title: "纳指成分股 ATR 排名", eyebrow: "Nasdaq-100 Relative Strength" },
   { value: "cn", label: "A股", benchmark: "000905", title: "A股股票池 ATR 排名", eyebrow: "CSI 500 Relative Strength" },
@@ -1672,7 +1671,7 @@ function DashboardPage() {
   const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
     setError("");
-    fetchRanking(requestedWindow, requestedDate, market === "us" && APPLY_ANNOUNCED_REBALANCE, market)
+    fetchRanking(requestedWindow, requestedDate, market)
       .then((result) => {
         setRanking(result);
         setAsOfDate(result.as_of_date);
@@ -2236,7 +2235,7 @@ function StockDetailPage({ ticker, initialDate, market }: { ticker: string; init
     if (!asOfDate) return;
     let alive = true;
     setRankLoading(true);
-    fetchRanking(rankWindow, asOfDate, market === "us" && APPLY_ANNOUNCED_REBALANCE, market)
+    fetchRanking(rankWindow, asOfDate, market)
       .then((result) => {
         if (alive) setRanking(result);
       })

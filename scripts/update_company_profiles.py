@@ -171,7 +171,7 @@ def translate_cached_descriptions(path: Path = OUTPUT_FILE, sleep_seconds: float
 
 
 def ranked_tickers(limit: int | None, window: int) -> list[str]:
-    ranking = build_ranking(RankingConfig(window=window, benchmark="QQQ", apply_announced_rebalance=True))
+    ranking = build_ranking(RankingConfig(window=window, benchmark="QQQ"))
     rows = ranking["data"] if limit is None else ranking["data"][:limit]
     return [str(row["ticker"]) for row in rows]
 

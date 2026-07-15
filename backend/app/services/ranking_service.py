@@ -21,9 +21,6 @@ from app.services.data_loader import (
 )
 
 
-ANNOUNCED_2026_06_22_ADDS = ["ALAB", "CRWV", "NBIS", "RKLB", "TER"]
-ANNOUNCED_2026_06_22_REMOVES = ["CHTR", "CTSH", "INSM", "VRSK", "ZS"]
-
 RANKING_CACHE_COLUMNS = [
     "as_of_date",
     "window",
@@ -52,17 +49,7 @@ class RankingConfig:
     window: int = 10
     benchmark: str | None = DEFAULT_BENCHMARK
     market: str = "us"
-    apply_announced_rebalance: bool = False
     as_of_date: date | None = None
-
-
-def apply_rebalance(tickers: list[str]) -> list[str]:
-    remove_set = set(ANNOUNCED_2026_06_22_REMOVES)
-    result = [ticker for ticker in tickers if ticker not in remove_set]
-    for ticker in ANNOUNCED_2026_06_22_ADDS:
-        if ticker not in result:
-            result.append(ticker)
-    return result
 
 
 def default_benchmark_for_market(market: str) -> str:
@@ -333,6 +320,8 @@ def calculate_ticker_score(
 
     center = df["ma"].dropna().tail(window).mean()
     latest = df.iloc[-1]
+    if as_of_date is not None and latest["date"].date() != as_of_date:
+        return None
     atr = clean_number(latest["atr"])
     close = clean_number(latest["close"])
 
@@ -482,14 +471,12 @@ def build_ranking(config: RankingConfig) -> dict[str, object]:
     stock_profiles = load_stock_profiles_for_market(market)
     earnings_calendar = {} if market in {"cn", "hk"} else load_earnings_calendar()
     tickers = load_ticker_file_for_market(market)
-    if market == "us" and config.apply_announced_rebalance:
-        tickers = apply_rebalance(tickers)
 
     universe = list(tickers)
     if benchmark not in universe:
         universe.append(benchmark)
 
-    use_cache = market in {"cn", "hk"} or config.apply_announced_rebalance
+    use_cache = True
     cached = cached_ranking_frame(config.window, benchmark, effective_as_of_date, market) if use_cache else None
     if cached is None:
         df, skipped, benchmark_score = build_and_cache_ranking_frame(

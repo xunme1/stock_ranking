@@ -198,12 +198,11 @@ async function requestJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchRanking(window: number, asOfDate: string, applyAnnouncedRebalance: boolean, market: Market = "us") {
+export function fetchRanking(window: number, asOfDate: string, market: Market = "us") {
   const params = new URLSearchParams({
     window: String(window),
     benchmark: benchmarkForMarket(market),
-    market,
-    apply_announced_rebalance: String(applyAnnouncedRebalance)
+    market
   });
   if (asOfDate) {
     params.set("as_of_date", asOfDate);
