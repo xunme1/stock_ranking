@@ -93,6 +93,91 @@ const SECTOR_LABELS: Record<string, string> = {
   Unknown: "其他"
 };
 
+const A_SHARE_FILTER_ORDER = [
+  "半导体/电子",
+  "AI算力/通信",
+  "软件/AI应用",
+  "汽车/机器人",
+  "医疗健康",
+  "消费",
+  "金融地产",
+  "周期资源",
+  "工业/基建",
+  "军工/航天",
+  "传媒游戏",
+  "指数/ETF",
+  "其他"
+];
+
+const A_SHARE_FILTER_GROUPS: Record<string, string> = {
+  半导体: "半导体/电子",
+  "AI硬件/电子": "半导体/电子",
+  电子元件: "半导体/电子",
+  消费电子: "半导体/电子",
+  "电子/AI硬件": "半导体/电子",
+  "消费电子/端侧AI": "半导体/电子",
+  "消费电子/电子": "半导体/电子",
+  端侧AI: "半导体/电子",
+  "AI硬件/通信": "AI算力/通信",
+  通信: "AI算力/通信",
+  "通信/AI算力": "AI算力/通信",
+  AI算力: "AI算力/通信",
+  "AI算力/ICT设备": "AI算力/通信",
+  "AI算力/数据中心": "AI算力/通信",
+  网络安全: "软件/AI应用",
+  数字金融: "软件/AI应用",
+  "AI应用/软件": "软件/AI应用",
+  "企业软件/AI应用": "软件/AI应用",
+  "工业软件/数据中心": "软件/AI应用",
+  "工业软件/物理AI": "软件/AI应用",
+  工业软件: "软件/AI应用",
+  "计算机/物理AI": "软件/AI应用",
+  人工智能: "软件/AI应用",
+  互联网: "软件/AI应用",
+  "互联网/AI应用": "软件/AI应用",
+  机器人: "汽车/机器人",
+  智能汽车: "汽车/机器人",
+  "汽车零部件/机器人": "汽车/机器人",
+  物理AI: "汽车/机器人",
+  "物理AI/机器人": "汽车/机器人",
+  汽车: "汽车/机器人",
+  "电力设备/新能源车": "汽车/机器人",
+  医疗健康: "医疗健康",
+  农牧食品: "消费",
+  食品饮料: "消费",
+  社会服务: "消费",
+  商贸零售: "消费",
+  家用电器: "消费",
+  轻工制造: "消费",
+  纺织服饰: "消费",
+  美容护理: "消费",
+  农林牧渔: "消费",
+  非银金融: "金融地产",
+  银行: "金融地产",
+  房地产: "金融地产",
+  煤炭: "周期资源",
+  基础化工: "周期资源",
+  有色金属: "周期资源",
+  石油石化: "周期资源",
+  钢铁: "周期资源",
+  建筑材料: "周期资源",
+  电力基建: "工业/基建",
+  公用事业: "工业/基建",
+  环保: "工业/基建",
+  机械设备: "工业/基建",
+  交通运输: "工业/基建",
+  建筑装饰: "工业/基建",
+  商业航天: "军工/航天",
+  国防军工: "军工/航天",
+  游戏: "传媒游戏",
+  "传媒/游戏": "传媒游戏",
+  指数: "指数/ETF",
+  ETF: "指数/ETF",
+  综合: "其他",
+  未分类: "其他",
+  Unknown: "其他"
+};
+
 type RouteState = {
   page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs";
   ticker?: string;
@@ -137,6 +222,15 @@ function sectorLabel(sector: string | null | undefined) {
   return SECTOR_LABELS[sector] ?? sector;
 }
 
+function aShareFilterLabel(sector: string | null | undefined) {
+  const label = sectorLabel(sector);
+  return A_SHARE_FILTER_GROUPS[label] ?? label;
+}
+
+function rankingFilterLabel(row: RankingRow, market: Market) {
+  return market === "cn" ? aShareFilterLabel(row.sector) : sectorLabel(row.sector);
+}
+
 function marketBenchmark(market: Market) {
   return MARKET_OPTIONS.find((item) => item.value === market)?.benchmark ?? "QQQ";
 }
@@ -144,6 +238,12 @@ function marketBenchmark(market: Market) {
 function sectorSortValue(label: string) {
   const index = SECTOR_ORDER.indexOf(label);
   return index === -1 ? SECTOR_ORDER.length : index;
+}
+
+function filterSortValue(label: string, market: Market) {
+  if (market !== "cn") return sectorSortValue(label);
+  const index = A_SHARE_FILTER_ORDER.indexOf(label);
+  return index === -1 ? A_SHARE_FILTER_ORDER.length : index;
 }
 
 function rankTrend(row: RankingRow) {
@@ -1704,19 +1804,19 @@ function DashboardPage() {
     const term = query.trim().toUpperCase();
     return rows.filter((row) => {
       const matchesQuery = !term || row.ticker.includes(term) || (row.name ?? "").toUpperCase().includes(term);
-      const matchesType = typeFilter === ALL_SECTORS || sectorLabel(row.sector) === typeFilter;
+      const matchesType = typeFilter === ALL_SECTORS || rankingFilterLabel(row, market) === typeFilter;
       return matchesQuery && matchesType;
     });
-  }, [ranking, query, typeFilter]);
+  }, [ranking, market, query, typeFilter]);
 
   const typeOptions = useMemo(() => {
     const rows = ranking?.data ?? [];
-    const types = Array.from(new Set(rows.map((row) => sectorLabel(row.sector)))).sort((a, b) => {
-      const orderDiff = sectorSortValue(a) - sectorSortValue(b);
+    const types = Array.from(new Set(rows.map((row) => rankingFilterLabel(row, market)))).sort((a, b) => {
+      const orderDiff = filterSortValue(a, market) - filterSortValue(b, market);
       return orderDiff || a.localeCompare(b, "zh-CN");
     });
     return [ALL_SECTORS, ...types];
-  }, [ranking]);
+  }, [ranking, market]);
 
   const selectedRow = ranking?.data.find((row) => row.ticker === selectedTicker);
   const openStock = (ticker: string) => navigateTo(`/stocks/${ticker}?date=${ranking?.as_of_date ?? asOfDate}&market=${market}`);
