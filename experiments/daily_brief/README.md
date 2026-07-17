@@ -19,7 +19,19 @@ LLM analysis is optional. If you want the model to fill the first-page analysis,
 ```env
 DEEPSEEK_API_KEY=your_api_key
 DEEPSEEK_MODEL=deepseek-chat
+# Recommended key pool, read in numeric order.
+TAVILY_API_KEY1=first_tavily_key
+TAVILY_API_KEY2=second_tavily_key
+# Legacy single-key/list formats remain supported.
 TAVILY_API_KEY=your_tavily_api_key
+TAVILY_API_KEYS=first_tavily_key,second_tavily_key
+# One search task is tracked as 5 credits; each key has a 1000-credit monthly cap.
+TAVILY_SEARCH_CREDITS=5
+TAVILY_MONTHLY_CREDITS=1000
+# Used only when creating a new cache; the cache settings take precedence afterwards.
+TAVILY_RESET_DAY=1
+# Optional; defaults to experiments/daily_brief/output/tavily_usage.json.
+TAVILY_USAGE_FILE=experiments/daily_brief/output/tavily_usage.json
 DAILY_BRIEF_PUBLIC_BASE_URL=https://your-domain.example/daily-briefs/files
 ```
 
@@ -27,7 +39,9 @@ DAILY_BRIEF_PUBLIC_BASE_URL=https://your-domain.example/daily-briefs/files
 
 Qwen/DashScope remains available as a fallback when `--llm-model` starts with `qwen` or `dashscope:`. In that case, set `DASHSCOPE_API_KEY` or `BAILIAN_API_KEY`.
 
-Tavily is used for the deep research pipeline when `--use-llm` is enabled. If `TAVILY_API_KEY` is missing or web search fails, generation continues with a partial/fallback quantitative report instead of aborting the daily brief.
+Tavily is used for the deep research pipeline when `--use-llm` is enabled. Use `TAVILY_API_KEY1`, `TAVILY_API_KEY2`, and so on for the preferred key pool; numeric suffixes are read in order. `TAVILY_API_KEYS` and `TAVILY_API_KEY` remain supported for old deployments. The local usage file keeps an anonymous per-key monthly credit ledger (key hashes only), selects the least-consumed eligible key for each search task, and skips a key once the configured monthly cap would be exceeded.
+
+The cache contains `settings.reset_day` and each quota period's `resets_at` timestamp. The default reset day is the first day of the month; set `TAVILY_RESET_DAY` only before the cache is created, or edit `settings.reset_day` in the cache later. You may also edit a hashed key's `used_credits` to seed or correct the local balance. When the reset boundary passes, the next search automatically starts a new period without deleting history. If every key is unavailable or web search fails, generation continues with a partial/fallback quantitative report instead of aborting the daily brief.
 
 ## Generate Without LLM
 

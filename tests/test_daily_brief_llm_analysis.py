@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +137,94 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
         self.assertEqual(context["data_facts"]["benchmark"]["rank"], 66)
         self.assertTrue(context["research_questions"])
         self.assertTrue(any(item["ticker"] == "APP" for item in context["key_objects"]))
+
+    def test_load_tavily_keys_supports_numbered_pool_and_legacy_compatibility(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "TAVILY_API_KEY2": "key-b",
+                "TAVILY_API_KEY10": "key-d",
+                "TAVILY_API_KEY1": "key-a",
+                "TAVILY_API_KEYS": "key-c,key-a",
+                "TAVILY_API_KEY": "key-e",
+            },
+            clear=True,
+        ), patch("llm_analysis.load_dotenv"):
+            self.assertEqual(llm_analysis.load_tavily_keys(), ["key-a", "key-b", "key-d", "key-c", "key-e"])
+            self.assertEqual(llm_analysis.load_tavily_key(), "key-a")
+
+    def test_tavily_key_pool_balances_usage_and_respects_monthly_limit(self) -> None:
+        temporary_root = ROOT / ".tmp"
+        temporary_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=temporary_root) as temporary_directory:
+            usage_path = Path(temporary_directory) / "tavily_usage.json"
+            with patch.dict(
+                os.environ,
+                {"TAVILY_MONTHLY_CREDITS": "10", "TAVILY_SEARCH_CREDITS": "5"},
+                clear=False,
+            ):
+                llm_analysis.record_tavily_usage("key-a", credits=5, status="http_200", usage_path=usage_path)
+                llm_analysis.record_tavily_usage("key-b", credits=10, status="http_200", usage_path=usage_path)
+                ranked = llm_analysis.rank_tavily_keys(["key-a", "key-b", "key-c"], usage_path=usage_path)
+
+            self.assertEqual([item["api_key"] for item in ranked], ["key-c", "key-a"])
+            stored = json.loads(usage_path.read_text(encoding="utf-8"))
+            self.assertNotIn("key-a", usage_path.read_text(encoding="utf-8"))
+            period, _ = llm_analysis._tavily_period(datetime.now(), 1)
+            self.assertEqual(stored["periods"][period]["keys"][llm_analysis._tavily_key_id("key-b")]["used_credits"], 10)
+
+    def test_tavily_usage_cache_uses_configured_reset_day(self) -> None:
+        temporary_root = ROOT / ".tmp"
+        temporary_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=temporary_root) as temporary_directory:
+            usage_path = Path(temporary_directory) / "tavily_usage.json"
+            usage_path.write_text(json.dumps({"version": 2, "settings": {"reset_day": 15}, "periods": {}}), encoding="utf-8")
+            before_reset = datetime(2026, 7, 14, 12, 0, 0)
+            after_reset = datetime(2026, 7, 16, 9, 0, 0)
+
+            llm_analysis.record_tavily_usage("key-a", credits=5, status="http_200", usage_path=usage_path, now=before_reset)
+            stored = json.loads(usage_path.read_text(encoding="utf-8"))
+            self.assertEqual(stored["settings"]["reset_day"], 15)
+            self.assertEqual(stored["periods"]["2026-06-15"]["resets_at"], "2026-07-15T00:00:00")
+
+            ranked = llm_analysis.rank_tavily_keys(["key-a"], usage_path=usage_path, now=after_reset)
+            self.assertEqual(ranked[0]["used_credits"], 0)
+
+    def test_tavily_search_rotates_keys_and_records_credits(self) -> None:
+        temporary_root = ROOT / ".tmp"
+        temporary_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=temporary_root) as temporary_directory:
+            usage_path = Path(temporary_directory) / "tavily_usage.json"
+            response = Mock()
+            response.status_code = 200
+            response.json.return_value = {"results": [{"title": "result"}]}
+            response.raise_for_status.return_value = None
+            session = Mock()
+            session.post.return_value = response
+            with patch.dict(
+                os.environ,
+                {
+                    "TAVILY_API_KEY1": "key-a",
+                    "TAVILY_API_KEY2": "key-b",
+                    "TAVILY_API_KEYS": "key-a,key-b",
+                    "TAVILY_API_KEY": "",
+                    "TAVILY_USAGE_FILE": str(usage_path),
+                    "TAVILY_MONTHLY_CREDITS": "1000",
+                    "TAVILY_SEARCH_CREDITS": "5",
+                },
+                clear=True,
+            ), patch("llm_analysis.load_dotenv"), patch("llm_analysis.requests.Session", return_value=session):
+                self.assertEqual(llm_analysis.tavily_search("first", max_results=5, timeout=10), [{"title": "result"}])
+                self.assertEqual(llm_analysis.tavily_search("second", max_results=5, timeout=10), [{"title": "result"}])
+
+            first_key = session.post.call_args_list[0].kwargs["json"]["api_key"]
+            second_key = session.post.call_args_list[1].kwargs["json"]["api_key"]
+            self.assertEqual([first_key, second_key], ["key-a", "key-b"])
+            stored = json.loads(usage_path.read_text(encoding="utf-8"))
+            period, _ = llm_analysis._tavily_period(datetime.now(), 1)
+            period_keys = stored["periods"][period]["keys"]
+            self.assertEqual(period_keys[llm_analysis._tavily_key_id("key-a")]["used_credits"], 5)
+            self.assertEqual(period_keys[llm_analysis._tavily_key_id("key-b")]["used_credits"], 5)
 
     @patch("llm_analysis.tavily_search")
     def test_run_tavily_searches_normalizes_and_filters_results(self, tavily_search) -> None:

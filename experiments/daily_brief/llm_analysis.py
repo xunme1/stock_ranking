@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import re
@@ -24,6 +25,9 @@ MAX_RESEARCH_TASKS = 8
 MAX_EVIDENCE_ITEMS = 24
 MIN_FULL_REPORT_CHARS = 1800
 MAX_PREFILTERED_SEARCH_RESULTS = 40
+DEFAULT_TAVILY_MONTHLY_CREDITS = 1000
+DEFAULT_TAVILY_SEARCH_CREDITS = 5
+DEFAULT_TAVILY_RESET_DAY = 1
 EVENT_KEYWORDS = (
     "公告",
     "财报",
@@ -869,12 +873,196 @@ def load_deepseek_key() -> str:
     return key
 
 
-def load_tavily_key() -> str:
+def load_tavily_keys() -> list[str]:
+    """Load numbered Tavily keys first while preserving legacy pool configuration."""
     load_dotenv(ROOT_DIR / ".env")
-    key = os.getenv("TAVILY_API_KEY", "").strip()
-    if not key:
-        raise RuntimeError("Missing TAVILY_API_KEY in environment.")
-    return key
+    keys: list[str] = []
+    numbered_keys = sorted(
+        (
+            (int(match.group(1)), value.strip())
+            for name, value in os.environ.items()
+            if (match := re.fullmatch(r"TAVILY_API_KEY(\d+)", name)) and value.strip()
+        ),
+        key=lambda item: item[0],
+    )
+    keys.extend(value for _, value in numbered_keys)
+    for raw_value in (os.getenv("TAVILY_API_KEYS", ""), os.getenv("TAVILY_API_KEY", "")):
+        keys.extend(item.strip() for item in re.split(r"[,;\s]+", raw_value) if item.strip())
+    unique_keys = list(dict.fromkeys(keys))
+    if not unique_keys:
+        raise RuntimeError("Missing TAVILY_API_KEY1...N, TAVILY_API_KEYS, or TAVILY_API_KEY in environment.")
+    return unique_keys
+
+
+def load_tavily_key() -> str:
+    """Compatibility helper for callers that still expect a single Tavily key."""
+    return load_tavily_keys()[0]
+
+
+def _positive_env_int(name: str, default: int, maximum: int = 1_000_000) -> int:
+    value = _safe_int(os.getenv(name))
+    if value is None:
+        return default
+    return _bounded_int(value, 1, maximum)
+
+
+def tavily_quota_config() -> dict[str, int]:
+    load_dotenv(ROOT_DIR / ".env")
+    return {
+        "monthly_credits": _positive_env_int("TAVILY_MONTHLY_CREDITS", DEFAULT_TAVILY_MONTHLY_CREDITS),
+        "search_credits": _positive_env_int("TAVILY_SEARCH_CREDITS", DEFAULT_TAVILY_SEARCH_CREDITS, 100_000),
+    }
+
+
+def tavily_usage_path() -> Path:
+    load_dotenv(ROOT_DIR / ".env")
+    configured = os.getenv("TAVILY_USAGE_FILE", "").strip()
+    if configured:
+        path = Path(configured).expanduser()
+        return path if path.is_absolute() else ROOT_DIR / path
+    return ROOT_DIR / "experiments" / "daily_brief" / "output" / "tavily_usage.json"
+
+
+def _tavily_month(now: datetime | None = None) -> str:
+    """Legacy month label retained for callers that inspect historical usage."""
+    return (now or datetime.now()).strftime("%Y-%m")
+
+
+def _tavily_reset_day(value: Any) -> int:
+    return _bounded_int(_safe_int(value) or DEFAULT_TAVILY_RESET_DAY, 1, 28)
+
+
+def _tavily_period(now: datetime, reset_day: int) -> tuple[str, str]:
+    """Return the active quota period and its next local-time reset boundary."""
+    if now.day < reset_day:
+        year, month = (now.year - 1, 12) if now.month == 1 else (now.year, now.month - 1)
+    else:
+        year, month = now.year, now.month
+    period_start = datetime(year, month, reset_day)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    reset_at = datetime(next_year, next_month, reset_day)
+    return period_start.strftime("%Y-%m-%d"), reset_at.isoformat(timespec="seconds")
+
+
+def _tavily_key_id(api_key: str) -> str:
+    return f"key_{hashlib.sha256(api_key.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _load_tavily_usage_store(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    settings = data.get("settings")
+    if not isinstance(settings, dict):
+        settings = {}
+    settings = {"reset_day": _tavily_reset_day(settings.get("reset_day", os.getenv("TAVILY_RESET_DAY")))}
+
+    periods = data.get("periods")
+    if not isinstance(periods, dict):
+        periods = {}
+    # Migrate the first cache format, where records were keyed by calendar month.
+    if not periods and isinstance(data.get("months"), dict):
+        for month, entry in data["months"].items():
+            if re.fullmatch(r"\d{4}-\d{2}", str(month)):
+                periods[f"{month}-01"] = entry
+    return {"version": 2, "settings": settings, "periods": periods}
+
+
+def _write_tavily_usage_store(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_name(f"{path.name}.tmp")
+    temporary_path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def rank_tavily_keys(
+    keys: list[str] | None = None,
+    usage_path: Path | None = None,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Return available keys in least-consumed order without exposing them in persisted state."""
+    keys = keys or load_tavily_keys()
+    config = tavily_quota_config()
+    monthly_credits = config["monthly_credits"]
+    search_credits = config["search_credits"]
+    path = usage_path or tavily_usage_path()
+    store = _load_tavily_usage_store(path)
+    period, _ = _tavily_period(now or datetime.now(), store["settings"]["reset_day"])
+    period_data = store["periods"].get(period, {})
+    stored_keys = period_data.get("keys", {}) if isinstance(period_data, dict) else {}
+
+    ranked: list[dict[str, Any]] = []
+    for index, api_key in enumerate(keys):
+        key_id = _tavily_key_id(api_key)
+        entry = stored_keys.get(key_id, {}) if isinstance(stored_keys, dict) else {}
+        used_credits = max(0, _safe_int(entry.get("used_credits")) or 0)
+        request_count = max(0, _safe_int(entry.get("request_count")) or 0)
+        if used_credits + search_credits > monthly_credits:
+            continue
+        ranked.append(
+            {
+                "api_key": api_key,
+                "key_id": key_id,
+                "used_credits": used_credits,
+                "remaining_credits": monthly_credits - used_credits,
+                "request_count": request_count,
+                "sort_index": index,
+            }
+        )
+    return sorted(ranked, key=lambda item: (item["used_credits"], item["request_count"], item["sort_index"]))
+
+
+def record_tavily_usage(
+    api_key: str,
+    *,
+    credits: int = 0,
+    status: str,
+    usage_path: Path | None = None,
+    now: datetime | None = None,
+) -> None:
+    """Persist anonymous per-key usage for the current month.
+
+    Credits are reserved before a request so a scheduled run cannot unknowingly exceed
+    the local allowance. Authentication failures release that reservation afterwards.
+    """
+    path = usage_path or tavily_usage_path()
+    store = _load_tavily_usage_store(path)
+    period, reset_at = _tavily_period(now or datetime.now(), store["settings"]["reset_day"])
+    period_data = store["periods"].setdefault(
+        period,
+        {
+            "started_at": f"{period}T00:00:00",
+            "resets_at": reset_at,
+            "reset_day": store["settings"]["reset_day"],
+            "keys": {},
+        },
+    )
+    if not isinstance(period_data, dict):
+        period_data = {"started_at": f"{period}T00:00:00", "resets_at": reset_at, "keys": {}}
+        store["periods"][period] = period_data
+    period_data["resets_at"] = reset_at
+    period_data["reset_day"] = store["settings"]["reset_day"]
+    keys_data = period_data.setdefault("keys", {})
+    if not isinstance(keys_data, dict):
+        keys_data = {}
+        period_data["keys"] = keys_data
+
+    key_id = _tavily_key_id(api_key)
+    entry = keys_data.setdefault(key_id, {})
+    used_credits = max(0, (_safe_int(entry.get("used_credits")) or 0) + credits)
+    request_count = max(0, (_safe_int(entry.get("request_count")) or 0) + (1 if credits > 0 else 0))
+    entry.update(
+        {
+            "used_credits": used_credits,
+            "request_count": request_count,
+            "last_status": status[:80],
+            "last_used_at": _now(),
+        }
+    )
+    _write_tavily_usage_store(path, store)
 
 
 def deepseek_model_name(model: str | None) -> str:
@@ -1377,24 +1565,60 @@ def generate_research_plan(
 
 
 def tavily_search(query: str, max_results: int, timeout: int) -> list[dict[str, Any]]:
-    api_key = load_tavily_key()
+    candidates = rank_tavily_keys()
+    if not candidates:
+        config = tavily_quota_config()
+        raise RuntimeError(
+            "All Tavily API keys have reached the local monthly quota "
+            f"({config['monthly_credits']} credits per key)."
+        )
+
+    search_credits = tavily_quota_config()["search_credits"]
     session = requests.Session()
     session.trust_env = False
-    response = session.post(
-        TAVILY_SEARCH_URL,
-        json={
-            "api_key": api_key,
-            "query": query,
-            "search_depth": "advanced",
-            "max_results": max_results,
-            "include_answer": False,
-            "include_raw_content": False,
-        },
-        timeout=timeout,
-    )
-    response.raise_for_status()
-    payload = response.json()
-    return payload.get("results") or []
+    key_errors: list[str] = []
+    for candidate in candidates:
+        api_key = candidate["api_key"]
+        key_id = candidate["key_id"]
+        # A Tavily search task normally consumes five credits. Reserve before the
+        # request, then release only clear authentication failures.
+        record_tavily_usage(api_key, credits=search_credits, status="reserved")
+        try:
+            response = session.post(
+                TAVILY_SEARCH_URL,
+                json={
+                    "api_key": api_key,
+                    "query": query,
+                    "search_depth": "advanced",
+                    "max_results": max_results,
+                    "include_answer": False,
+                    "include_raw_content": False,
+                },
+                timeout=timeout,
+            )
+        except requests.RequestException as exc:
+            record_tavily_usage(api_key, status=f"request_error:{type(exc).__name__}")
+            raise RuntimeError(f"Tavily request failed for {key_id}: {type(exc).__name__}") from exc
+
+        status_code = int(response.status_code)
+        record_tavily_usage(api_key, status=f"http_{status_code}")
+        if status_code in (401, 403):
+            record_tavily_usage(api_key, credits=-search_credits, status=f"http_{status_code}_released")
+            key_errors.append(f"{key_id}: HTTP {status_code}")
+            continue
+        if status_code == 429:
+            key_errors.append(f"{key_id}: HTTP 429")
+            continue
+        try:
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise RuntimeError(f"Tavily request failed for {key_id}: HTTP {status_code}") from exc
+
+        payload = response.json()
+        return payload.get("results") or []
+
+    details = "; ".join(key_errors) or "no usable key"
+    raise RuntimeError(f"Tavily search could not use an available key ({details}).")
 
 
 def run_tavily_searches(
