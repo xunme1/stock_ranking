@@ -87,6 +87,17 @@ Run incremental updates:
 .\.venv\Scripts\python.exe -B scripts\update_hk_daily.py --source ths
 ```
 
+## Maintain CN/HK Stock Pools
+
+The normalized pool files consumed by the application are `config/cn_stock_pool.csv` and `config/hk_stock_pool.csv`. Add or update a single ticker with the helper script; it normalizes market suffixes and updates an existing ticker in place rather than adding a duplicate.
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\add_stock_to_pool.py --market cn --ticker 002432.SZ --name 九安医疗 --sector 医疗健康 --stock-type 医疗器械/体外诊断
+.\.venv\Scripts\python.exe -B scripts\add_stock_to_pool.py --market hk --ticker 0020.HK --name "商汤 - W" --sector 人工智能 --stock-type 视觉AI平台 --is-hstech Y --source-url "https://example.com/reference"
+```
+
+Use `--dry-run` to verify the normalized ticker and resulting row before writing. After adding a ticker, download its daily history and rebuild that market's ranking cache.
+
 Update CN/HK daily bars and rebuild CN/HK ranking caches:
 
 ```powershell
