@@ -9,7 +9,8 @@ import {
   FileText,
   HelpCircle,
   RefreshCw,
-  Search
+  Search,
+  X
 } from "lucide-react";
 import {
   CandlestickSeries,
@@ -61,6 +62,7 @@ const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
 const ALL_SECTORS = "全部";
+type DualWindowSignal = "bullish" | "bearish";
 const SECTOR_ORDER = [
   "科技",
   "通信传媒",
@@ -205,6 +207,31 @@ function volumeText(value: number | null | undefined) {
 function percentText(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   return `${value >= 0 ? "+" : ""}${numberText(value, 2)}%`;
+}
+
+function addDays(date: string, days: number) {
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const result = new Date(Date.UTC(year, month - 1, day + days));
+  return result.toISOString().slice(0, 10);
+}
+
+function buildDualWindowSignals(current: RankingResponse, otherWindow: RankingResponse): Record<string, DualWindowSignal> {
+  const otherScores = new Map(otherWindow.data.map((row) => [row.ticker, row.excess_atr_vs_benchmark]));
+  const signals: Record<string, DualWindowSignal> = {};
+
+  current.data.forEach((row) => {
+    if (row.ticker === current.benchmark) return;
+    const otherScore = otherScores.get(row.ticker);
+    if (otherScore === undefined) return;
+    if (row.excess_atr_vs_benchmark > 0 && otherScore > 0) {
+      signals[row.ticker] = "bullish";
+    } else if (row.excess_atr_vs_benchmark < 0 && otherScore < 0) {
+      signals[row.ticker] = "bearish";
+    }
+  });
+
+  return signals;
 }
 
 function flowText(value: number | null | undefined) {
@@ -902,6 +929,7 @@ function RankingTable({
   rows,
   benchmark,
   market,
+  dualWindowSignals,
   selectedTicker,
   onPreview,
   onOpen
@@ -909,6 +937,7 @@ function RankingTable({
   rows: RankingRow[];
   benchmark: string;
   market: Market;
+  dualWindowSignals: Record<string, DualWindowSignal>;
   selectedTicker: string;
   onPreview: (ticker: string) => void;
   onOpen: (ticker: string) => void;
@@ -986,6 +1015,7 @@ function RankingTable({
             const isBenchmark = row.ticker === benchmark;
             const isSelected = row.ticker === selectedTicker;
             const trend = rankTrend(row);
+            const dualWindowSignal = dualWindowSignals[row.ticker];
             return (
               <tr
                 key={row.ticker}
@@ -1003,18 +1033,28 @@ function RankingTable({
                   </span>
                 </td>
                 <td>
-                  <button
-                    className="tickerButton"
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onOpen(row.ticker);
-                    }}
-                    title={`打开 ${row.ticker} 详情页`}
-                  >
-                    <BarChart3 size={14} aria-hidden="true" />
-                    {row.ticker}
-                  </button>
+                  <div className="tickerCell">
+                    <button
+                      className="tickerButton"
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(row.ticker);
+                      }}
+                      title={`打开 ${row.ticker} 详情页`}
+                    >
+                      <BarChart3 size={14} aria-hidden="true" />
+                      {row.ticker}
+                    </button>
+                    {dualWindowSignal ? (
+                      <span
+                        className={`dualWindowSignal ${dualWindowSignal}`}
+                        title={dualWindowSignal === "bullish" ? "10日、20日均跑赢基准：大氛围多头" : "10日、20日均跑输基准：大氛围空头"}
+                      >
+                        {dualWindowSignal === "bullish" ? "多" : "空"}
+                      </span>
+                    ) : null}
+                  </div>
                 </td>
                 {showName ? <td>{row.name || "--"}</td> : null}
                 <td className={row.has_options === "Y" ? "optionYes" : row.has_options === "N" ? "optionNo" : "optionUnknown"}>
@@ -1040,6 +1080,89 @@ function RankingTable({
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function EarningsCalendarModal({
+  rows,
+  asOfDate,
+  onClose,
+  onOpen
+}: {
+  rows: RankingRow[];
+  asOfDate: string;
+  onClose: () => void;
+  onOpen: (ticker: string) => void;
+}) {
+  const endDate = addDays(asOfDate, 6);
+  const earningsRows = useMemo(
+    () =>
+      rows
+        .filter((row) => row.earnings_date && row.earnings_date >= asOfDate && row.earnings_date <= endDate)
+        .sort((a, b) => a.earnings_date.localeCompare(b.earnings_date) || a.rank - b.rank),
+    [asOfDate, endDate, rows]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="modalBackdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="earningsModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="earnings-modal-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="modalHeader">
+          <div>
+            <p className="eyebrow">{asOfDate} - {endDate}</p>
+            <h2 id="earnings-modal-title">未来 7 天预计发布财报</h2>
+          </div>
+          <button className="iconButton" type="button" onClick={onClose} aria-label="关闭财报日历" title="关闭">
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="earningsModalTableWrap">
+          <table className="earningsModalTable">
+            <thead>
+              <tr>
+                <th>财报日</th>
+                <th>代码</th>
+                <th>公司</th>
+                <th>当前排名</th>
+              </tr>
+            </thead>
+            <tbody>
+              {earningsRows.map((row) => (
+                <tr key={row.ticker}>
+                  <td>{row.earnings_date}</td>
+                  <td>
+                    <button className="tickerButton" type="button" onClick={() => onOpen(row.ticker)} title={`打开 ${row.ticker} 详情页`}>
+                      <BarChart3 size={14} aria-hidden="true" />
+                      {row.ticker}
+                    </button>
+                  </td>
+                  <td>{row.name || "--"}</td>
+                  <td>#{row.rank}</td>
+                </tr>
+              ))}
+              {!earningsRows.length ? (
+                <tr>
+                  <td className="earningsEmpty" colSpan={4}>这个时段没有可用的预计财报数据。</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1749,6 +1872,8 @@ function DashboardPage() {
   const [selectedTicker, setSelectedTicker] = useState("QQQ");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL_SECTORS);
+  const [showEarningsCalendar, setShowEarningsCalendar] = useState(false);
+  const [dualWindowSignals, setDualWindowSignals] = useState<Record<string, DualWindowSignal>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [alerts, setAlerts] = useState<RankingAlerts | null>(null);
@@ -1777,8 +1902,15 @@ function DashboardPage() {
         setAsOfDate(result.as_of_date);
         if (!result.data.some((row) => row.ticker === selectedTicker)) setSelectedTicker(result.benchmark);
         loadAlerts(alertWindow, result.as_of_date);
+        const otherWindow = result.window === 10 ? 20 : 10;
+        fetchRanking(otherWindow, result.as_of_date, market)
+          .then((otherResult) => setDualWindowSignals(buildDualWindowSignals(result, otherResult)))
+          .catch(() => setDualWindowSignals({}));
       })
-      .catch((err: Error) => setError(err.message))
+      .catch((err: Error) => {
+        setDualWindowSignals({});
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -1840,6 +1972,8 @@ function DashboardPage() {
                   setAsOfDate("");
                   setRanking(null);
                   setAlerts(null);
+                  setDualWindowSignals({});
+                  setShowEarningsCalendar(false);
                   setSelectedTicker(option.benchmark);
                   setTypeFilter(ALL_SECTORS);
                 }}
@@ -1921,6 +2055,12 @@ function DashboardPage() {
           <RefreshCw size={16} aria-hidden="true" />
           {loading ? "计算中" : "刷新"}
         </button>
+        {market === "us" ? (
+          <button className="earningsCalendarButton" type="button" onClick={() => setShowEarningsCalendar(true)} disabled={!ranking}>
+            <CalendarDays size={16} aria-hidden="true" />
+            财报日历
+          </button>
+        ) : null}
       </section>
 
       {error ? <div className="errorLine">{error}</div> : null}
@@ -1942,6 +2082,7 @@ function DashboardPage() {
             rows={filteredRows}
             benchmark={ranking?.benchmark ?? marketMeta.benchmark}
             market={market}
+            dualWindowSignals={dualWindowSignals}
             selectedTicker={selectedTicker}
             onPreview={setSelectedTicker}
             onOpen={openStock}
@@ -1949,6 +2090,17 @@ function DashboardPage() {
         </section>
         <MiniChartPanel ticker={selectedTicker} asOfDate={ranking?.as_of_date ?? asOfDate} market={market} />
       </section>
+      {showEarningsCalendar && ranking ? (
+        <EarningsCalendarModal
+          rows={ranking.data}
+          asOfDate={ranking.as_of_date}
+          onClose={() => setShowEarningsCalendar(false)}
+          onOpen={(ticker) => {
+            setShowEarningsCalendar(false);
+            openStock(ticker);
+          }}
+        />
+      ) : null}
     </main>
   );
 }

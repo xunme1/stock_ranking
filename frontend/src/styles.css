@@ -318,6 +318,32 @@ h2 {
   color: #18212f;
 }
 
+.earningsCalendarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  min-width: 112px;
+  border: 1px solid #b9ccdf;
+  border-radius: 6px;
+  background: #f7fbff;
+  color: #1f5fbf;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.earningsCalendarButton:hover:not(:disabled) {
+  border-color: #1f6feb;
+  background: #edf4ff;
+}
+
+.earningsCalendarButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .primaryButton,
 .tickerButton,
 .ghostButton,
@@ -718,6 +744,33 @@ tbody td {
   color: #b42318;
 }
 
+.tickerCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dualWindowSignal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dualWindowSignal.bullish {
+  background: #ddf3e8;
+  color: #08764f;
+}
+
+.dualWindowSignal.bearish {
+  background: #fde7e5;
+  color: #b42318;
+}
+
 .rankFlat {
   color: #8a96a6;
 }
@@ -757,6 +810,65 @@ tbody td {
   border-bottom: 1px solid #cbd6e4;
   background: #ffffff;
   transform: translateY(-50%) rotate(45deg);
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 33, 47, 0.38);
+}
+
+.earningsModal {
+  width: min(720px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid #cbd6e4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 22px 52px rgba(24, 33, 47, 0.24);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #e2e7ef;
+}
+
+.modalHeader h2 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+
+.earningsModalTableWrap {
+  overflow: auto;
+  max-height: calc(min(720px, 100vh - 48px) - 92px);
+}
+
+.earningsModalTable {
+  min-width: 580px;
+}
+
+.earningsModalTable th,
+.earningsModalTable td {
+  text-align: left;
+}
+
+.earningsModalTable th:last-child,
+.earningsModalTable td:last-child {
+  text-align: right;
+}
+
+.earningsEmpty {
+  padding: 28px 16px;
+  color: #6b7b90;
+  text-align: center !important;
 }
 
 .flowChartPanel,
@@ -1841,8 +1953,13 @@ tbody td {
   .calendarTrigger,
   .selectBox,
   .searchBox,
-  .primaryButton {
+  .primaryButton,
+  .earningsCalendarButton {
     width: 100%;
+  }
+
+  .modalBackdrop {
+    padding: 16px;
   }
 
   .calendarPopover {
