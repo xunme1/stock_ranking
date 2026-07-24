@@ -216,24 +216,41 @@ function addDays(date: string, days: number) {
   return result.toISOString().slice(0, 10);
 }
 
-function buildMarketClimate(rankings: RankingResponse[]): MarketClimate {
-  const benchmarkRows = rankings.map((ranking) => ranking.data.find((row) => row.ticker === ranking.benchmark));
-  if (benchmarkRows.some((row) => !row || row.latest_ma === null)) return "neutral";
+function benchmarkDisplayName(benchmark: string) {
+  if (benchmark === "000905") return "中证500";
+  if (benchmark === "HSTECH") return "恒生科技";
+  return benchmark;
+}
 
-  const rows = benchmarkRows as RankingRow[];
-  if (rows.every((row) => row.close > (row.latest_ma ?? Number.POSITIVE_INFINITY))) return "bullish";
-  if (rows.every((row) => row.close < (row.latest_ma ?? Number.NEGATIVE_INFINITY))) return "bearish";
+function buildMarketClimate(current: RankingResponse, otherWindow: RankingResponse): MarketClimate {
+  const ranking10 = current.window === 10 ? current : otherWindow;
+  const ranking20 = current.window === 20 ? current : otherWindow;
+  const benchmark10 = ranking10.data.find((row) => row.ticker === ranking10.benchmark);
+  const benchmark20 = ranking20.data.find((row) => row.ticker === ranking20.benchmark);
+
+  if (!benchmark10 || !benchmark20 || benchmark10.latest_ma === null || benchmark20.latest_ma === null) return "neutral";
+  if (benchmark10.close > benchmark10.latest_ma && benchmark20.close > benchmark20.latest_ma) return "bullish";
+  if (benchmark10.close < benchmark10.latest_ma && benchmark20.close < benchmark20.latest_ma) return "bearish";
   return "neutral";
 }
 
-function MarketClimateTag({ climate, compact = false }: { climate: MarketClimate; compact?: boolean }) {
+function MarketClimateTag({
+  climate,
+  benchmark,
+  compact = false
+}: {
+  climate: MarketClimate;
+  benchmark: string;
+  compact?: boolean;
+}) {
   const label = climate === "bullish" ? "多" : climate === "bearish" ? "空" : "无";
+  const benchmarkName = benchmarkDisplayName(benchmark);
   const title =
     climate === "bullish"
-      ? "QQQ、中证500、恒生科技均在20日均线上方：大氛围多头"
+      ? `${benchmarkName}同时在10日、20日均线上方：大氛围多头`
       : climate === "bearish"
-        ? "QQQ、中证500、恒生科技均在20日均线下方：大氛围空头"
-        : "三个基准未同时位于20日均线同一侧：大氛围无"
+        ? `${benchmarkName}同时在10日、20日均线下方：大氛围空头`
+        : `${benchmarkName}未同时位于10日、20日均线同一侧：大氛围无`
 
   return (
     <span className={`marketClimateTag ${climate} ${compact ? "compact" : ""}`} title={title}>
@@ -713,11 +730,13 @@ function MiniChartPanel({
   ticker,
   asOfDate,
   market,
+  benchmark,
   marketClimate
 }: {
   ticker: string;
   asOfDate: string;
   market: Market;
+  benchmark: string;
   marketClimate: MarketClimate;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -774,7 +793,7 @@ function MiniChartPanel({
           <h2>{ticker} 详情预览</h2>
         </div>
         <div className="chartHeaderMeta">
-          <MarketClimateTag climate={marketClimate} />
+          <MarketClimateTag climate={marketClimate} benchmark={benchmark} />
           <span className="statusText">默认显示最近 20 日</span>
         </div>
       </div>
@@ -1066,7 +1085,7 @@ function RankingTable({
                       <BarChart3 size={14} aria-hidden="true" />
                       {row.ticker}
                     </button>
-                    {isBenchmark ? <MarketClimateTag climate={marketClimate} compact /> : null}
+                    {isBenchmark ? <MarketClimateTag climate={marketClimate} benchmark={benchmark} compact /> : null}
                   </div>
                 </td>
                 {showName ? <td>{row.name || "--"}</td> : null}
@@ -1906,9 +1925,10 @@ function DashboardPage() {
       .finally(() => setAlertLoading(false));
   };
 
-  const loadMarketClimate = (requestedDate: string) => {
-    Promise.all(MARKET_OPTIONS.map((option) => fetchRanking(20, requestedDate, option.value)))
-      .then((rankings) => setMarketClimate(buildMarketClimate(rankings)))
+  const loadMarketClimate = (currentRanking: RankingResponse) => {
+    const otherWindow = currentRanking.window === 10 ? 20 : 10;
+    fetchRanking(otherWindow, currentRanking.as_of_date, market)
+      .then((otherRanking) => setMarketClimate(buildMarketClimate(currentRanking, otherRanking)))
       .catch(() => setMarketClimate("neutral"));
   };
 
@@ -1921,7 +1941,7 @@ function DashboardPage() {
         setAsOfDate(result.as_of_date);
         if (!result.data.some((row) => row.ticker === selectedTicker)) setSelectedTicker(result.benchmark);
         loadAlerts(alertWindow, result.as_of_date);
-        loadMarketClimate(result.as_of_date);
+        loadMarketClimate(result);
       })
       .catch((err: Error) => {
         setMarketClimate("neutral");
@@ -2108,6 +2128,7 @@ function DashboardPage() {
           ticker={selectedTicker}
           asOfDate={ranking?.as_of_date ?? asOfDate}
           market={market}
+          benchmark={ranking?.benchmark ?? marketMeta.benchmark}
           marketClimate={marketClimate}
         />
       </section>
