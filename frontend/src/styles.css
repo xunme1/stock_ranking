@@ -750,25 +750,43 @@ tbody td {
   gap: 7px;
 }
 
-.dualWindowSignal {
+.marketClimateTag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: 74px;
+  height: 26px;
   border-radius: 5px;
   font-size: 12px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
-.dualWindowSignal.bullish {
+.marketClimateTag.compact {
+  min-width: 22px;
+  height: 22px;
+}
+
+.marketClimateTag.bullish {
   background: #ddf3e8;
   color: #08764f;
 }
 
-.dualWindowSignal.bearish {
+.marketClimateTag.bearish {
   background: #fde7e5;
   color: #b42318;
+}
+
+.marketClimateTag.neutral {
+  background: #eef2f7;
+  color: #57606a;
+}
+
+.chartHeaderMeta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .rankFlat {

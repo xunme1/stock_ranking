@@ -62,7 +62,7 @@ const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
 const ALL_SECTORS = "全部";
-type DualWindowSignal = "bullish" | "bearish";
+type MarketClimate = "bullish" | "bearish" | "neutral";
 const SECTOR_ORDER = [
   "科技",
   "通信传媒",
@@ -216,22 +216,30 @@ function addDays(date: string, days: number) {
   return result.toISOString().slice(0, 10);
 }
 
-function buildDualWindowSignals(current: RankingResponse, otherWindow: RankingResponse): Record<string, DualWindowSignal> {
-  const otherScores = new Map(otherWindow.data.map((row) => [row.ticker, row.excess_atr_vs_benchmark]));
-  const signals: Record<string, DualWindowSignal> = {};
+function buildMarketClimate(rankings: RankingResponse[]): MarketClimate {
+  const benchmarkRows = rankings.map((ranking) => ranking.data.find((row) => row.ticker === ranking.benchmark));
+  if (benchmarkRows.some((row) => !row || row.latest_ma === null)) return "neutral";
 
-  current.data.forEach((row) => {
-    if (row.ticker === current.benchmark) return;
-    const otherScore = otherScores.get(row.ticker);
-    if (otherScore === undefined) return;
-    if (row.excess_atr_vs_benchmark > 0 && otherScore > 0) {
-      signals[row.ticker] = "bullish";
-    } else if (row.excess_atr_vs_benchmark < 0 && otherScore < 0) {
-      signals[row.ticker] = "bearish";
-    }
-  });
+  const rows = benchmarkRows as RankingRow[];
+  if (rows.every((row) => row.close > (row.latest_ma ?? Number.POSITIVE_INFINITY))) return "bullish";
+  if (rows.every((row) => row.close < (row.latest_ma ?? Number.NEGATIVE_INFINITY))) return "bearish";
+  return "neutral";
+}
 
-  return signals;
+function MarketClimateTag({ climate, compact = false }: { climate: MarketClimate; compact?: boolean }) {
+  const label = climate === "bullish" ? "多" : climate === "bearish" ? "空" : "无";
+  const title =
+    climate === "bullish"
+      ? "QQQ、中证500、恒生科技均在20日均线上方：大氛围多头"
+      : climate === "bearish"
+        ? "QQQ、中证500、恒生科技均在20日均线下方：大氛围空头"
+        : "三个基准未同时位于20日均线同一侧：大氛围无"
+
+  return (
+    <span className={`marketClimateTag ${climate} ${compact ? "compact" : ""}`} title={title}>
+      {compact ? label : `大氛围 ${label}`}
+    </span>
+  );
 }
 
 function flowText(value: number | null | undefined) {
@@ -701,7 +709,17 @@ function TradingCalendar({
   );
 }
 
-function MiniChartPanel({ ticker, asOfDate, market }: { ticker: string; asOfDate: string; market: Market }) {
+function MiniChartPanel({
+  ticker,
+  asOfDate,
+  market,
+  marketClimate
+}: {
+  ticker: string;
+  asOfDate: string;
+  market: Market;
+  marketClimate: MarketClimate;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [bars, setBars] = useState<DailyBar[]>([]);
@@ -755,7 +773,10 @@ function MiniChartPanel({ ticker, asOfDate, market }: { ticker: string; asOfDate
           <p className="eyebrow">Ticker Detail</p>
           <h2>{ticker} 详情预览</h2>
         </div>
-        <span className="statusText">默认显示最近 20 日</span>
+        <div className="chartHeaderMeta">
+          <MarketClimateTag climate={marketClimate} />
+          <span className="statusText">默认显示最近 20 日</span>
+        </div>
       </div>
       <div className="legendLine">
         <span className="legendDot candle" /> K线
@@ -929,7 +950,7 @@ function RankingTable({
   rows,
   benchmark,
   market,
-  dualWindowSignals,
+  marketClimate,
   selectedTicker,
   onPreview,
   onOpen
@@ -937,7 +958,7 @@ function RankingTable({
   rows: RankingRow[];
   benchmark: string;
   market: Market;
-  dualWindowSignals: Record<string, DualWindowSignal>;
+  marketClimate: MarketClimate;
   selectedTicker: string;
   onPreview: (ticker: string) => void;
   onOpen: (ticker: string) => void;
@@ -1015,7 +1036,6 @@ function RankingTable({
             const isBenchmark = row.ticker === benchmark;
             const isSelected = row.ticker === selectedTicker;
             const trend = rankTrend(row);
-            const dualWindowSignal = dualWindowSignals[row.ticker];
             return (
               <tr
                 key={row.ticker}
@@ -1046,14 +1066,7 @@ function RankingTable({
                       <BarChart3 size={14} aria-hidden="true" />
                       {row.ticker}
                     </button>
-                    {dualWindowSignal ? (
-                      <span
-                        className={`dualWindowSignal ${dualWindowSignal}`}
-                        title={dualWindowSignal === "bullish" ? "10日、20日均跑赢基准：大氛围多头" : "10日、20日均跑输基准：大氛围空头"}
-                      >
-                        {dualWindowSignal === "bullish" ? "多" : "空"}
-                      </span>
-                    ) : null}
+                    {isBenchmark ? <MarketClimateTag climate={marketClimate} compact /> : null}
                   </div>
                 </td>
                 {showName ? <td>{row.name || "--"}</td> : null}
@@ -1873,7 +1886,7 @@ function DashboardPage() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL_SECTORS);
   const [showEarningsCalendar, setShowEarningsCalendar] = useState(false);
-  const [dualWindowSignals, setDualWindowSignals] = useState<Record<string, DualWindowSignal>>({});
+  const [marketClimate, setMarketClimate] = useState<MarketClimate>("neutral");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [alerts, setAlerts] = useState<RankingAlerts | null>(null);
@@ -1893,6 +1906,12 @@ function DashboardPage() {
       .finally(() => setAlertLoading(false));
   };
 
+  const loadMarketClimate = (requestedDate: string) => {
+    Promise.all(MARKET_OPTIONS.map((option) => fetchRanking(20, requestedDate, option.value)))
+      .then((rankings) => setMarketClimate(buildMarketClimate(rankings)))
+      .catch(() => setMarketClimate("neutral"));
+  };
+
   const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
     setError("");
@@ -1902,13 +1921,10 @@ function DashboardPage() {
         setAsOfDate(result.as_of_date);
         if (!result.data.some((row) => row.ticker === selectedTicker)) setSelectedTicker(result.benchmark);
         loadAlerts(alertWindow, result.as_of_date);
-        const otherWindow = result.window === 10 ? 20 : 10;
-        fetchRanking(otherWindow, result.as_of_date, market)
-          .then((otherResult) => setDualWindowSignals(buildDualWindowSignals(result, otherResult)))
-          .catch(() => setDualWindowSignals({}));
+        loadMarketClimate(result.as_of_date);
       })
       .catch((err: Error) => {
-        setDualWindowSignals({});
+        setMarketClimate("neutral");
         setError(err.message);
       })
       .finally(() => setLoading(false));
@@ -1972,7 +1988,7 @@ function DashboardPage() {
                   setAsOfDate("");
                   setRanking(null);
                   setAlerts(null);
-                  setDualWindowSignals({});
+                  setMarketClimate("neutral");
                   setShowEarningsCalendar(false);
                   setSelectedTicker(option.benchmark);
                   setTypeFilter(ALL_SECTORS);
@@ -2082,13 +2098,18 @@ function DashboardPage() {
             rows={filteredRows}
             benchmark={ranking?.benchmark ?? marketMeta.benchmark}
             market={market}
-            dualWindowSignals={dualWindowSignals}
+            marketClimate={marketClimate}
             selectedTicker={selectedTicker}
             onPreview={setSelectedTicker}
             onOpen={openStock}
           />
         </section>
-        <MiniChartPanel ticker={selectedTicker} asOfDate={ranking?.as_of_date ?? asOfDate} market={market} />
+        <MiniChartPanel
+          ticker={selectedTicker}
+          asOfDate={ranking?.as_of_date ?? asOfDate}
+          market={market}
+          marketClimate={marketClimate}
+        />
       </section>
       {showEarningsCalendar && ranking ? (
         <EarningsCalendarModal
