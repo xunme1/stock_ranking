@@ -782,6 +782,32 @@ tbody td {
   color: #57606a;
 }
 
+.stockTrendTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stockTrendTag.bullish {
+  background: #ddf3e8;
+  color: #08764f;
+}
+
+.stockTrendTag.bearish {
+  background: #fde7e5;
+  color: #b42318;
+}
+
+.stockTrendTag.neutral {
+  background: #eef2f7;
+  color: #57606a;
+}
+
 .chartHeaderMeta {
   display: inline-flex;
   align-items: center;

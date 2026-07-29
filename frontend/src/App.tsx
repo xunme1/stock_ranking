@@ -236,6 +236,28 @@ function buildMarketClimate(current: RankingResponse, otherWindow: RankingRespon
   return "neutral";
 }
 
+function buildStockTrendSignals(current: RankingResponse, otherWindow: RankingResponse): Record<string, MarketClimate> {
+  const ranking10 = current.window === 10 ? current : otherWindow;
+  const ranking20 = current.window === 20 ? current : otherWindow;
+  const rows20ByTicker = new Map(ranking20.data.map((row) => [row.ticker, row]));
+  const signals: Record<string, MarketClimate> = {};
+
+  ranking10.data.forEach((row10) => {
+    const row20 = rows20ByTicker.get(row10.ticker);
+    if (!row20 || row10.latest_ma === null || row20.latest_ma === null) {
+      signals[row10.ticker] = "neutral";
+    } else if (row10.close > row10.latest_ma && row20.close > row20.latest_ma) {
+      signals[row10.ticker] = "bullish";
+    } else if (row10.close < row10.latest_ma && row20.close < row20.latest_ma) {
+      signals[row10.ticker] = "bearish";
+    } else {
+      signals[row10.ticker] = "neutral";
+    }
+  });
+
+  return signals;
+}
+
 function MarketClimateTag({
   climate,
   benchmark,
@@ -259,6 +281,18 @@ function MarketClimateTag({
       {compact ? label : `大氛围 ${label}`}
     </span>
   );
+}
+
+function StockTrendTag({ signal }: { signal: MarketClimate }) {
+  const label = signal === "bullish" ? "多" : signal === "bearish" ? "空" : "无";
+  const title =
+    signal === "bullish"
+      ? "收盘价同时在MA10、MA20上方：个股多头"
+      : signal === "bearish"
+        ? "收盘价同时在MA10、MA20下方：个股空头"
+        : "收盘价位于MA10、MA20之间：个股无"
+
+  return <span className={`stockTrendTag ${signal}`} title={title}>{label}</span>;
 }
 
 function flowText(value: number | null | undefined) {
@@ -974,7 +1008,7 @@ function RankingTable({
   rows,
   benchmark,
   market,
-  marketClimate,
+  stockTrendSignals,
   selectedTicker,
   onPreview,
   onOpen
@@ -982,7 +1016,7 @@ function RankingTable({
   rows: RankingRow[];
   benchmark: string;
   market: Market;
-  marketClimate: MarketClimate;
+  stockTrendSignals: Record<string, MarketClimate>;
   selectedTicker: string;
   onPreview: (ticker: string) => void;
   onOpen: (ticker: string) => void;
@@ -1060,6 +1094,7 @@ function RankingTable({
             const isBenchmark = row.ticker === benchmark;
             const isSelected = row.ticker === selectedTicker;
             const trend = rankTrend(row);
+            const stockTrendSignal = stockTrendSignals[row.ticker] ?? "neutral";
             return (
               <tr
                 key={row.ticker}
@@ -1090,7 +1125,7 @@ function RankingTable({
                       <BarChart3 size={14} aria-hidden="true" />
                       {row.ticker}
                     </button>
-                    {isBenchmark ? <MarketClimateTag climate={marketClimate} benchmark={benchmark} compact /> : null}
+                    <StockTrendTag signal={stockTrendSignal} />
                   </div>
                 </td>
                 {showName ? <td>{row.name || "--"}</td> : null}
@@ -1911,6 +1946,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
   const [typeFilter, setTypeFilter] = useState(ALL_SECTORS);
   const [showEarningsCalendar, setShowEarningsCalendar] = useState(false);
   const [marketClimate, setMarketClimate] = useState<MarketClimate>("neutral");
+  const [stockTrendSignals, setStockTrendSignals] = useState<Record<string, MarketClimate>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [alerts, setAlerts] = useState<RankingAlerts | null>(null);
@@ -1933,13 +1969,20 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
   const loadMarketClimate = (currentRanking: RankingResponse) => {
     const otherWindow = currentRanking.window === 10 ? 20 : 10;
     fetchRanking(otherWindow, currentRanking.as_of_date, market)
-      .then((otherRanking) => setMarketClimate(buildMarketClimate(currentRanking, otherRanking)))
-      .catch(() => setMarketClimate("neutral"));
+      .then((otherRanking) => {
+        setMarketClimate(buildMarketClimate(currentRanking, otherRanking));
+        setStockTrendSignals(buildStockTrendSignals(currentRanking, otherRanking));
+      })
+      .catch(() => {
+        setMarketClimate("neutral");
+        setStockTrendSignals({});
+      });
   };
 
   const loadRanking = (requestedDate = asOfDate, requestedWindow = windowSize) => {
     setLoading(true);
     setError("");
+    setStockTrendSignals({});
     fetchRanking(requestedWindow, requestedDate, market)
       .then((result) => {
         setRanking(result);
@@ -1950,6 +1993,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
       })
       .catch((err: Error) => {
         setMarketClimate("neutral");
+        setStockTrendSignals({});
         setError(err.message);
       })
       .finally(() => setLoading(false));
@@ -2014,6 +2058,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
                   setRanking(null);
                   setAlerts(null);
                   setMarketClimate("neutral");
+                  setStockTrendSignals({});
                   setShowEarningsCalendar(false);
                   setSelectedTicker(option.benchmark);
                   setTypeFilter(ALL_SECTORS);
@@ -2127,7 +2172,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
             rows={filteredRows}
             benchmark={ranking?.benchmark ?? marketMeta.benchmark}
             market={market}
-            marketClimate={marketClimate}
+            stockTrendSignals={stockTrendSignals}
             selectedTicker={selectedTicker}
             onPreview={setSelectedTicker}
             onOpen={openStock}
