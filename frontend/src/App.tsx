@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FileText,
   HelpCircle,
+  Newspaper,
   RefreshCw,
   Search,
   X
@@ -50,6 +51,7 @@ import {
   type RankingRow,
   type StockPeers
 } from "./api";
+import CorporateActionNewsPage from "./CorporateActionNewsPage";
 
 const DEFAULT_WINDOW = 10;
 const WINDOW_OPTIONS = [10, 20];
@@ -181,7 +183,7 @@ const A_SHARE_FILTER_GROUPS: Record<string, string> = {
 };
 
 type RouteState = {
-  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs";
+  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs" | "corporateActions";
   ticker?: string;
   industryName?: string;
   date?: string;
@@ -539,8 +541,11 @@ function parseRoute(): RouteState {
   if (window.location.pathname === "/daily-briefs") {
     return { page: "dailyBriefs" };
   }
+  if (window.location.pathname === "/corporate-actions") {
+    return { page: "corporateActions", market };
+  }
   const match = window.location.pathname.match(/^\/stocks\/([A-Za-z0-9.-]+)$/);
-  if (!match) return { page: "dashboard" };
+  if (!match) return { page: "dashboard", market };
   return {
     page: "stock",
     ticker: match[1].toUpperCase(),
@@ -1895,8 +1900,8 @@ function DailyBriefsPage() {
   );
 }
 
-function DashboardPage() {
-  const [market, setMarket] = useState<Market>("us");
+function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
+  const [market, setMarket] = useState<Market>(initialMarket);
   const [windowSize, setWindowSize] = useState(DEFAULT_WINDOW);
   const [asOfDate, setAsOfDate] = useState("");
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -2097,6 +2102,10 @@ function DashboardPage() {
             财报日历
           </button>
         ) : null}
+        <button className="earningsCalendarButton" type="button" onClick={() => navigateTo(`/corporate-actions?market=${market}`)}>
+          <Newspaper size={16} aria-hidden="true" />
+          回购与减持
+        </button>
       </section>
 
       {error ? <div className="errorLine">{error}</div> : null}
@@ -2765,5 +2774,18 @@ export default function App() {
   if (route.page === "dailyBriefs") {
     return <DailyBriefsPage />;
   }
-  return <DashboardPage />;
+  if (route.page === "corporateActions") {
+    const market = route.market ?? "us";
+    return (
+      <CorporateActionNewsPage
+        market={market}
+        onBack={() => navigateTo(`/?market=${market}`)}
+        onMarketChange={(nextMarket) => navigateTo(`/corporate-actions?market=${nextMarket}`)}
+        onOpenStock={(ticker, stockMarket) =>
+          navigateTo(`/stocks/${encodeURIComponent(ticker)}?market=${stockMarket}`)
+        }
+      />
+    );
+  }
+  return <DashboardPage initialMarket={route.market ?? "us"} />;
 }

@@ -180,6 +180,55 @@ export type DailyBriefList = {
   data: DailyBriefReport[];
 };
 
+export type CorporateActionEventType = "buyback" | "reduction";
+export type CorporateActionAttention = "high" | "normal";
+export type CorporateActionStatus = "ok" | "stale" | "empty" | "unavailable";
+
+export type CorporateActionNewsItem = {
+  event_id: string;
+  market: Market;
+  ticker: string | null;
+  company_name: string;
+  company_identity: string;
+  event_type: CorporateActionEventType;
+  event_stage: "announced" | "authorized" | "in_progress" | "executed" | "completed";
+  actor_name: string;
+  actor_type: string;
+  headline: string;
+  headline_zh: string;
+  summary_zh: string;
+  quantity_text: string;
+  amount_text: string;
+  ownership_change_text: string;
+  published_at: string;
+  event_date: string;
+  source_url: string;
+  source_domain: string;
+  source_quality: "primary" | "mainstream" | "other";
+  confidence: number;
+  in_stock_pool: boolean | number;
+  attention_level: CorporateActionAttention;
+  pool_match_method: string;
+  pool_match_confidence: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CorporateActionNewsResponse = {
+  market: Market;
+  as_of_date: string;
+  window_start: string;
+  lookback_days: number;
+  status: CorporateActionStatus;
+  stale: boolean;
+  last_successful_refresh_at: string;
+  refresh_through_date: string;
+  count: number;
+  in_stock_pool_count: number;
+  outside_stock_pool_count: number;
+  data: CorporateActionNewsItem[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 export type Market = "us" | "cn" | "hk";
 
@@ -285,4 +334,19 @@ export function fetchIndustryStockFlows(market: Market, industryName: string, tr
 
 export function fetchDailyBriefs() {
   return requestJson<DailyBriefList>("/api/daily-briefs");
+}
+
+export function fetchCorporateActionNews(
+  market: Market,
+  eventType: "all" | CorporateActionEventType = "all",
+  lookbackDays = 30,
+  limit = 200
+) {
+  const params = new URLSearchParams({
+    market,
+    event_type: eventType,
+    lookback_days: String(lookbackDays),
+    limit: String(limit)
+  });
+  return requestJson<CorporateActionNewsResponse>(`/api/corporate-actions/news?${params}`);
 }

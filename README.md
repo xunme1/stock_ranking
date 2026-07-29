@@ -129,6 +129,34 @@ Build ranking caches:
 .\.venv\Scripts\python.exe -B scripts\build_ranking_cache.py --market hk --windows 10,20 --days 20
 ```
 
+## Corporate-Action News Monitoring
+
+The backend includes a first-stage event-centric news collector for buybacks and shareholder reductions in the US, A-share, and Hong Kong markets. It searches broadly first, stores both pool and non-pool companies, then marks matching pool tickers as `high` attention. It does not change daily-brief output yet.
+
+Tavily keys are read from `TAVILY_API_KEY1`, `TAVILY_API_KEY2`, and so on (with legacy `TAVILY_API_KEYS` / `TAVILY_API_KEY` support) and are used in round-robin order. A request that receives an authentication or rate-limit error falls through to the remaining keys.
+
+Run a non-writing quality check:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_corporate_action_news.py --markets us,cn,hk --lookback-days 30 --dry-run
+```
+
+Write collected events to `data/processed/corporate_action_news.db`:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_corporate_action_news.py --markets us,cn,hk --lookback-days 30
+```
+
+Each market is executed as an isolated task: a failed market is recorded without stopping the other two. Storage first canonicalizes the source link (removing common tracking parameters) and de-duplicates the same market/company/event/link combination; one article that names several companies remains as separate company events. The command prints compact per-market summaries by default; add `--include-events` to print every structured event.
+
+Reapply stock-pool flags without new searches:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\update_corporate_action_news.py --rematch-only
+```
+
+Read cached data through `GET /api/corporate-actions/news?market=us` and inspect market freshness through `GET /api/corporate-actions/status`.
+The web UI is available at `/corporate-actions?market=us|cn|hk`; the dashboard entry follows the currently selected market.
 ## Local Web App
 
 Backend:

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.daily_briefs import router as daily_briefs_router
+from app.api.corporate_actions import router as corporate_actions_router
 from app.api.industry_flows import router as industry_flows_router
 from app.api.rankings import router as rankings_router
 from app.api.stocks import router as stocks_router
@@ -25,6 +26,7 @@ app.include_router(rankings_router)
 app.include_router(stocks_router)
 app.include_router(industry_flows_router)
 app.include_router(daily_briefs_router)
+app.include_router(corporate_actions_router)
 DAILY_BRIEF_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/daily-briefs/files", StaticFiles(directory=DAILY_BRIEF_OUTPUT_DIR, html=True), name="daily-brief-files")
 
