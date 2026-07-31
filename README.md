@@ -135,6 +135,8 @@ The backend includes a first-stage event-centric news collector for buybacks and
 
 Tavily keys are read from `TAVILY_API_KEY1`, `TAVILY_API_KEY2`, and so on (with legacy `TAVILY_API_KEYS` / `TAVILY_API_KEY` support) and are used in round-robin order. A request that receives an authentication or rate-limit error falls through to the remaining keys.
 
+For A-share and Hong Kong tasks, the collector also searches the public Tiger Community feed for `回购` and `减持`. Its `gmtCreate` timestamp is used as the publication date, then the same DeepSeek extraction, stock-pool matching, and canonical-link de-duplication pipeline is applied. Structured extraction defaults to `deepseek-v4-flash` in non-thinking JSON mode; set `DEEPSEEK_MODEL` only when an intentional override is required.
+
 Run a non-writing quality check:
 
 ```powershell
@@ -157,6 +159,7 @@ Reapply stock-pool flags without new searches:
 
 Read cached data through `GET /api/corporate-actions/news?market=us` and inspect market freshness through `GET /api/corporate-actions/status`.
 The web UI is available at `/corporate-actions?market=us|cn|hk`; the dashboard entry follows the currently selected market.
+
 ## Local Web App
 
 Backend:

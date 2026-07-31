@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT_DIR / "backend"))
 
 from app.services.corporate_action_news_service import (  # noqa: E402
     MARKETS,
-    build_search_tasks,
+    build_collection_tasks,
     collect_market,
     record_run,
     rematch_events,
@@ -38,7 +38,7 @@ def run_market_task(market: str, as_of: date, args: argparse.Namespace) -> tuple
         if not args.dry_run:
             record_run(
                 market, as_of, as_of - timedelta(days=args.lookback_days), "failed",
-                len(build_search_tasks(market)), 0, 0, [error],
+                len(build_collection_tasks(market)), 0, 0, [error],
             )
         return {"task": task_name, "market": market, "status": "failed", "error": error}, True
 

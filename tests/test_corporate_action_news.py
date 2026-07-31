@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -108,6 +109,62 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(len(tasks), 4)
         self.assertTrue(all("ticker" not in task["query"].lower() for task in tasks))
         self.assertEqual({task["event_type"] for task in tasks}, {"buyback", "reduction"})
+
+    def test_collection_tasks_add_laohu_only_for_cn_and_hk(self) -> None:
+        self.assertEqual(len(service.build_collection_tasks("us")), 4)
+        cn_tasks = service.build_collection_tasks("cn")
+        self.assertEqual(len(cn_tasks), 6)
+        self.assertEqual({task["provider"] for task in cn_tasks}, {"tavily", "laohu8"})
+        laohu_tasks = [task for task in cn_tasks if task["provider"] == "laohu8"]
+        self.assertEqual({task["query"] for task in laohu_tasks}, {"回购", "减持"})
+
+    def test_laohu_candidate_uses_source_timestamp_and_cleans_title(self) -> None:
+        task = {"market": "cn", "event_type": "buyback", "query": "回购", "provider": "laohu8"}
+        candidate = service._candidate_from_laohu_result(
+            {
+                "newsId": "123456",
+                "title": "甲公司<font color='#f8cc00'>回购</font>股份",
+                "listText": "累计回购 100 万股",
+                "gmtCreate": 1785448531635,
+            },
+            task,
+        )
+        self.assertEqual(candidate["published_at"], "2026-07-31")
+        self.assertEqual(candidate["headline"], "甲公司回购股份")
+        self.assertEqual(candidate["source_url"], "https://www.laohu8.com/news/123456")
+
+    @patch.object(service, "_load_deepseek_key", return_value="test-key")
+    @patch("app.services.corporate_action_news_service.requests.post")
+    @patch.dict(service.os.environ, {"DEEPSEEK_MODEL": "deepseek-v4-flash"})
+    def test_structuring_uses_deepseek_v4_flash_non_thinking(self, post, _load_key) -> None:
+        post.return_value.raise_for_status.return_value = None
+        post.return_value.json.return_value = {"choices": [{"message": {"content": json.dumps({"events": [{
+            "source_url": "https://example.com/apple-buyback",
+            "ticker": "AAPL",
+            "company_name": "Apple Inc.",
+            "event_type": "buyback",
+            "event_stage": "authorized",
+            "confidence": 0.95,
+        }]})}}]}
+        result = service.classify_candidates([{**event(), "snippet": "Apple announced a share repurchase."}], "us")
+        self.assertEqual(result[0]["ticker"], "AAPL")
+        request_body = post.call_args.kwargs["json"]
+        self.assertEqual(request_body["model"], "deepseek-v4-flash")
+        self.assertEqual(request_body["thinking"], {"type": "disabled"})
+
+    @patch.object(service, "_load_deepseek_key", return_value="test-key")
+    @patch("app.services.corporate_action_news_service.requests.post")
+    def test_structuring_splits_large_candidate_sets_for_five_workers(self, post, _load_key) -> None:
+        post.return_value.raise_for_status.return_value = None
+        post.return_value.json.return_value = {"choices": [{"message": {"content": '{"events": []}'}}]}
+        candidates = [
+            {**event(source_url=f"https://example.com/news/{index}"), "snippet": "Share repurchase announcement."}
+            for index in range(41)
+        ]
+        result = service.classify_candidates(candidates, "us")
+        self.assertEqual(len(result), 41)
+        self.assertEqual(post.call_count, 3)
+        self.assertEqual(service.DEEPSEEK_STRUCTURING_WORKERS, 5)
 
     def test_tavily_key_pool_uses_round_robin_order(self) -> None:
         pool = ["load-balance-a", "load-balance-b", "load-balance-c"]

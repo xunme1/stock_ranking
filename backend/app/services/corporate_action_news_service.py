@@ -6,9 +6,10 @@ import os
 import re
 import sqlite3
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
@@ -29,6 +30,7 @@ from app.services.data_loader import (
 
 TAVILY_SEARCH_URL = "https://api.tavily.com/search"
 DEEPSEEK_COMPAT_URL = "https://api.deepseek.com/chat/completions"
+LAOHU_SEARCH_URL = "https://frontend-community.laohu8.com/search/v1/news"
 MARKETS = ("us", "cn", "hk")
 EVENT_TYPES = ("buyback", "reduction")
 EVENT_STAGES = ("announced", "authorized", "in_progress", "executed", "completed")
@@ -36,6 +38,14 @@ ATTENTION_LEVELS = ("high", "normal")
 MIN_CONFIDENCE = 0.70
 TRACKING_QUERY_KEYS = {"fbclid", "gclid", "dclid", "msclkid", "mc_cid", "mc_eid", "ref", "referrer"}
 EVENT_STAGE_PRIORITY = {stage: index for index, stage in enumerate(EVENT_STAGES)}
+LAOHU_SEARCH_WORDS = {"buyback": "回购", "reduction": "减持"}
+MAX_LAOHU_RESULTS_PER_EVENT = 30
+MAX_STRUCTURING_CANDIDATES = 20
+DEEPSEEK_STRUCTURING_WORKERS = 5
+LAOHU_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; StockRankingNewsBot/1.0)",
+    "Referer": "https://www.laohu8.com/search",
+}
 
 _TAVILY_KEY_LOCK = threading.Lock()
 _TAVILY_KEY_CURSORS: dict[tuple[str, ...], int] = {}
@@ -239,6 +249,24 @@ def build_search_tasks(market: str) -> list[dict[str, str]]:
     ]
 
 
+def build_laohu_tasks(market: str) -> list[dict[str, str]]:
+    """Supplement Chinese-market coverage with the public Tiger Community news search."""
+    market = normalize_market(market)
+    if market not in {"cn", "hk"}:
+        return []
+    return [
+        {"market": market, "event_type": event_type, "query": query, "provider": "laohu8"}
+        for event_type, query in LAOHU_SEARCH_WORDS.items()
+    ]
+
+
+def build_collection_tasks(market: str) -> list[dict[str, str]]:
+    return [
+        *[{**task, "provider": "tavily"} for task in build_search_tasks(market)],
+        *build_laohu_tasks(market),
+    ]
+
+
 def load_tavily_keys() -> list[str]:
     load_dotenv(PROJECT_ROOT / ".env")
     numbered = sorted(
@@ -293,6 +321,27 @@ def tavily_search(query: str, start: date, end: date, max_results: int = 10, tim
         except requests.RequestException as exc:
             errors.append(type(exc).__name__)
     raise RuntimeError(f"Tavily search failed: {', '.join(errors) or 'no usable key'}")
+
+
+def laohu_search(query: str, page: int, timeout: int = 20) -> list[dict[str, Any]]:
+    """Fetch one Tiger Community search page and fail loudly on invalid/empty API responses."""
+    response = requests.get(
+        LAOHU_SEARCH_URL,
+        params={"word": query, "pageCount": page},
+        headers=LAOHU_HEADERS,
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Tiger Community response is not a JSON object")
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise ValueError("Tiger Community response has no data object")
+    items = data.get("newsList") or []
+    if not isinstance(items, list):
+        raise ValueError("Tiger Community response has invalid newsList")
+    return [item for item in items if isinstance(item, dict)]
 
 
 def _parse_date(value: object) -> date | None:
@@ -378,6 +427,41 @@ def _candidate_from_result(result: dict[str, Any], task: dict[str, str], resolve
     }
 
 
+def _laohu_published_date(timestamp: object) -> date | None:
+    try:
+        value = float(timestamp)
+    except (TypeError, ValueError):
+        return None
+    if value <= 0:
+        return None
+    return datetime.fromtimestamp(value / 1000, tz=timezone(timedelta(hours=8))).date()
+
+
+def _candidate_from_laohu_result(result: dict[str, Any], task: dict[str, str]) -> dict[str, Any] | None:
+    news_id = str(result.get("newsId") or "").strip()
+    title = re.sub(r"</?font[^>]*>", "", str(result.get("title") or "")).strip()
+    snippet = re.sub(r"</?font[^>]*>", "", str(result.get("listText") or "")).strip()
+    snippet = re.sub(r"\s+", " ", snippet)
+    published = _laohu_published_date(result.get("gmtCreate"))
+    text = f"{title} {snippet}"
+    event_type = _event_type(text)
+    if not news_id or not title or not event_type or EXCLUDED_RE.search(text) or not published:
+        return None
+    url = f"https://www.laohu8.com/news/{news_id}"
+    return {
+        "market": task["market"],
+        "event_type": event_type,
+        "headline": title[:500],
+        "snippet": snippet[:2000],
+        "published_at": published.isoformat(),
+        "source_url": url,
+        "normalized_url": normalize_source_url(url),
+        "source_domain": "laohu8.com",
+        "source_quality": "other",
+        "event_stage": _event_stage(text),
+    }
+
+
 def _fallback_extract(candidate: dict[str, Any]) -> dict[str, Any]:
     text = f"{candidate['headline']} {candidate['snippet']}"
     ticker_match = re.search(r"\((?:NASDAQ|NYSE|HKEX|SEHK|SZSE|SSE)\s*[:：]?\s*([A-Z0-9.]+)\)", text, re.IGNORECASE)
@@ -405,6 +489,11 @@ def _load_deepseek_key() -> str:
 
 def classify_candidates(candidates: list[dict[str, Any]], market: str, timeout: int = 90) -> list[dict[str, Any]]:
     """Use DeepSeek when available; retain deterministic, source-bound fallback records otherwise."""
+    if len(candidates) > MAX_STRUCTURING_CANDIDATES:
+        batches = [candidates[start:start + MAX_STRUCTURING_CANDIDATES] for start in range(0, len(candidates), MAX_STRUCTURING_CANDIDATES)]
+        with ThreadPoolExecutor(max_workers=min(DEEPSEEK_STRUCTURING_WORKERS, len(batches))) as executor:
+            classified_batches = executor.map(lambda batch: classify_candidates(batch, market, timeout), batches)
+            return [event for batch in classified_batches for event in batch]
     key = _load_deepseek_key()
     if not candidates or not key:
         return [_fallback_extract(item) for item in candidates]
@@ -419,13 +508,14 @@ def classify_candidates(candidates: list[dict[str, Any]], market: str, timeout: 
         "amount_text、ownership_change_text、event_date、confidence。event_type 只能 buyback/reduction，"
         "event_stage 只能 announced/authorized/in_progress/executed/completed。headline_zh 和 summary_zh 使用简体中文，"
         "保留公司名、代码、金额和数量的原始精度。无法确认的字符串填空，confidence 0 到 1。\n"
+        + f"\nOnly extract events for the requested market '{market}'; omit companies listed in other markets.\n"
         + json.dumps({"market": market, "news": compact}, ensure_ascii=False)
     )
     try:
         response = requests.post(
             DEEPSEEK_COMPAT_URL,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"), "messages": [{"role": "user", "content": prompt}], "temperature": 0, "response_format": {"type": "json_object"}},
+            json={"model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"), "messages": [{"role": "user", "content": prompt}], "temperature": 0, "thinking": {"type": "disabled"}, "response_format": {"type": "json_object"}},
             timeout=timeout,
         )
         response.raise_for_status()
@@ -637,18 +727,32 @@ def record_run(
 def collect_market(market: str, as_of: date, lookback_days: int = 30, max_results: int = 10, dry_run: bool = False) -> dict[str, Any]:
     market = normalize_market(market)
     start = as_of - timedelta(days=lookback_days)
-    tasks = build_search_tasks(market)
+    tasks = build_collection_tasks(market)
     candidates: list[dict[str, Any]] = []
     errors: list[str] = []
     seen_urls: set[str] = set()
     for task in tasks:
+        provider = task["provider"]
         try:
-            results = tavily_search(task["query"], start, as_of, max_results=max_results)
+            if provider == "tavily":
+                results = tavily_search(task["query"], start, as_of, max_results=max_results)
+                candidate_factory = lambda item: _candidate_from_result(item, task, resolve_date=True)
+            else:
+                results = []
+                for page in range(1, 4):
+                    page_results = laohu_search(task["query"], page)
+                    if not page_results:
+                        break
+                    results.extend(page_results)
+                    if len(results) >= MAX_LAOHU_RESULTS_PER_EVENT:
+                        break
+                results = results[:MAX_LAOHU_RESULTS_PER_EVENT]
+                candidate_factory = lambda item: _candidate_from_laohu_result(item, task)
         except Exception as exc:
-            errors.append(f"{task['event_type']}: {exc}")
+            errors.append(f"{provider}:{task['event_type']}: {exc}")
             continue
         for result in results:
-            candidate = _candidate_from_result(result, task, resolve_date=True)
+            candidate = candidate_factory(result)
             if not candidate:
                 continue
             normalized_url = normalize_source_url(candidate["source_url"])
