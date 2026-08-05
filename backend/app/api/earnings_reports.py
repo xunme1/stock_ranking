@@ -1,15 +1,74 @@
 from __future__ import annotations
 
 import re
+import csv
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
-from app.core.config import EARNINGS_SENTIMENT_REPORT_DIR
+from app.core.config import (
+    EARNINGS_CALENDAR_FILE,
+    EARNINGS_CALENDAR_HISTORY_FILE,
+    EARNINGS_SENTIMENT_REPORT_DIR,
+)
 
 
 router = APIRouter(prefix="/api/earnings-reports", tags=["earnings-reports"])
 REPORT_RE = re.compile(r"^earnings_sentiment_(?P<date>\d{4}-\d{2}-\d{2})\.html$")
+
+
+def _parse_date(value: str) -> date | None:
+    try:
+        return date.fromisoformat(value[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _read_calendar_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists() or path.stat().st_size == 0:
+        return []
+    with path.open("r", newline="", encoding="utf-8-sig") as handle:
+        return [
+            {key: str(value or "").strip() for key, value in row.items()}
+            for row in csv.DictReader(handle)
+        ]
+
+
+def recent_earnings_candidates(as_of_date: date, days: int) -> list[dict[str, str]]:
+    """Return the server's de-duplicated candidate list for a report window."""
+    start = as_of_date - timedelta(days=days - 1)
+    selected: dict[tuple[str, str], dict[str, str]] = {}
+    # History keeps candidate dates after Alpha Vantage rolls to the next quarter.
+    for row in _read_calendar_rows(EARNINGS_CALENDAR_HISTORY_FILE) + _read_calendar_rows(EARNINGS_CALENDAR_FILE):
+        ticker = row.get("ticker", "").upper()
+        earnings_date = row.get("earnings_date", "")
+        candidate_date = _parse_date(earnings_date)
+        if ticker and candidate_date and start <= candidate_date <= as_of_date:
+            selected[(ticker, earnings_date)] = {
+                "ticker": ticker,
+                "company_name": row.get("company_name", ""),
+                "calendar_date": earnings_date,
+                "announcement_time": row.get("announcement_time", ""),
+            }
+    return sorted(selected.values(), key=lambda item: (item["calendar_date"], item["ticker"]), reverse=True)
+
+
+@router.get("/context")
+def get_earnings_report_context(
+    as_of_date: date | None = None,
+    days: int = Query(default=3, ge=1, le=7),
+) -> dict[str, object]:
+    """Public, read-only candidate context consumed by the Codex research task."""
+    report_date = as_of_date or datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    candidates = recent_earnings_candidates(report_date, days)
+    return {
+        "report_date": report_date.isoformat(),
+        "window_start": (report_date - timedelta(days=days - 1)).isoformat(),
+        "days": days,
+        "candidates": candidates,
+    }
 
 
 @router.get("")

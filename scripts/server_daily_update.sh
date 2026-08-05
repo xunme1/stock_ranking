@@ -49,10 +49,7 @@ cd "$PROJECT_ROOT"
       echo "WARNING: earnings calendar update failed. The API will use the previous earnings calendar if available."
     }
 
-  echo "Generating three-day earnings sentiment report..."
-  "$PYTHON_BIN" -B scripts/generate_earnings_sentiment_report.py --as-of-date "$END_DATE" || {
-    echo "WARNING: earnings sentiment report generation failed. Previously archived reports remain available."
-  }
+  echo "Earnings sentiment reports are researched and published by the Codex automation."
 
   echo "Updating A-share market cap and industry cache..."
   "$PYTHON_BIN" -B scripts/update_a_share_universe.py --source hybrid --retries 2 --retry-wait-seconds 10 || {
