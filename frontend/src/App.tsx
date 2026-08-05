@@ -27,6 +27,7 @@ import {
 import {
   fetchDailyBars,
   fetchDailyBriefs,
+  fetchEarningsSentimentReports,
   fetchIndustryFlowDates,
   fetchIndustryFlowRanking,
   fetchIndustryFlowTrend,
@@ -40,6 +41,7 @@ import {
   type CompanyProfile,
   type DailyBar,
   type DailyBriefReport,
+  type EarningsSentimentReport,
   type IndustryFlowRanking,
   type IndustryFlowTrend,
   type IndustryFlowTrendSeries,
@@ -183,7 +185,7 @@ const A_SHARE_FILTER_GROUPS: Record<string, string> = {
 };
 
 type RouteState = {
-  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs" | "corporateActions";
+  page: "dashboard" | "stock" | "industryFlows" | "industryFlowDetail" | "dailyBriefs" | "earningsReports" | "corporateActions";
   ticker?: string;
   industryName?: string;
   date?: string;
@@ -574,6 +576,9 @@ function parseRoute(): RouteState {
   }
   if (window.location.pathname === "/daily-briefs") {
     return { page: "dailyBriefs" };
+  }
+  if (window.location.pathname === "/earnings-reports") {
+    return { page: "earningsReports" };
   }
   if (window.location.pathname === "/corporate-actions") {
     return { page: "corporateActions", market };
@@ -1160,12 +1165,14 @@ function EarningsCalendarModal({
   rows,
   asOfDate,
   onClose,
-  onOpen
+  onOpen,
+  onOpenReports
 }: {
   rows: RankingRow[];
   asOfDate: string;
   onClose: () => void;
   onOpen: (ticker: string) => void;
+  onOpenReports: () => void;
 }) {
   const endDate = addDays(asOfDate, 6);
   const earningsRows = useMemo(
@@ -1202,6 +1209,10 @@ function EarningsCalendarModal({
             <X size={16} aria-hidden="true" />
           </button>
         </div>
+        <button className="earningsReportLink" type="button" onClick={onOpenReports}>
+          <FileText size={15} aria-hidden="true" />
+          近三日财报舆情日报
+        </button>
         <div className="earningsModalTableWrap">
           <table className="earningsModalTable">
             <thead>
@@ -1935,6 +1946,60 @@ function DailyBriefsPage() {
   );
 }
 
+function EarningsReportsPage() {
+  const [reports, setReports] = useState<EarningsSentimentReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const loadReports = () => {
+    setLoading(true);
+    setError("");
+    fetchEarningsSentimentReports()
+      .then((result) => setReports(result.data))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { loadReports(); }, []);
+  return (
+    <main className="app dailyBriefsPage">
+      <header className="topbar">
+        <div>
+          <button className="ghostButton" type="button" onClick={() => navigateTo("/?market=us")}>
+            <ArrowLeft size={16} aria-hidden="true" /> 返回主页
+          </button>
+          <p className="eyebrow">Earnings Sentiment Archive</p>
+          <h1>美股财报舆情日报</h1>
+        </div>
+        <div className="summaryStrip">
+          <span>{reports.length} 份报告</span>
+          <button className="monitorButton" type="button" onClick={loadReports} disabled={loading}>
+            <RefreshCw size={16} aria-hidden="true" /> {loading ? "加载中" : "刷新列表"}
+          </button>
+        </div>
+      </header>
+      <section className="dailyBriefHero">
+        <div>
+          <p className="eyebrow">Recent Three Days</p>
+          <h2>基于财报日历与公开媒体检索的舆情总结</h2>
+          <p>每个交易日归档一份网页报告；报告会标示公开资料是否已确认公司实际发布财报，并列出用于总结的来源链接。</p>
+        </div>
+      </section>
+      {error ? <div className="errorLine">{error}</div> : null}
+      {loading ? <div className="dailyBriefEmpty">正在加载财报舆情日报...</div> : null}
+      {!loading && !reports.length ? <div className="dailyBriefEmpty">还没有生成财报舆情日报。</div> : null}
+      <section className="dailyBriefGrid">
+        {reports.map((report) => (
+          <a className="dailyBriefCard earningsReportCard" key={report.filename} href={report.url} target="_blank" rel="noreferrer">
+            <span>财报舆情</span>
+            <strong>{report.date}</strong>
+            <em>近三日财报与媒体风向</em>
+            <small>{fileSizeText(report.size_bytes)}</small>
+          </a>
+        ))}
+      </section>
+    </main>
+  );
+}
+
 function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
   const [market, setMarket] = useState<Market>(initialMarket);
   const [windowSize, setWindowSize] = useState(DEFAULT_WINDOW);
@@ -2194,6 +2259,10 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
           onOpen={(ticker) => {
             setShowEarningsCalendar(false);
             openStock(ticker);
+          }}
+          onOpenReports={() => {
+            setShowEarningsCalendar(false);
+            navigateTo("/earnings-reports");
           }}
         />
       ) : null}
@@ -2818,6 +2887,9 @@ export default function App() {
   }
   if (route.page === "dailyBriefs") {
     return <DailyBriefsPage />;
+  }
+  if (route.page === "earningsReports") {
+    return <EarningsReportsPage />;
   }
   if (route.page === "corporateActions") {
     const market = route.market ?? "us";

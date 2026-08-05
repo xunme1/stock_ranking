@@ -203,7 +203,9 @@ cd /root/stock_ranking
 bash scripts/server_daily_update.sh
 ```
 
-The script updates US daily bars through iFinD, refreshes option/A-share peer helper caches where possible, rebuilds ranking caches, updates CN/HK daily bars and caches through iFinD, restarts `stock-ranking-api`, and checks `/api/health`.
+The script updates US daily bars through iFinD, refreshes option status and the Alpha Vantage earnings calendar (for the full Nasdaq-100 pool), refreshes A-share peer helper caches where possible, rebuilds ranking caches, updates CN/HK daily bars and caches through iFinD, restarts `stock-ranking-api`, and checks `/api/health`. A failure to refresh option status, the earnings calendar, or A-share helper caches leaves the previous cache in place and does not block the daily market-data update.
+
+After the US calendar refresh, the server also archives a three-day earnings-sentiment HTML report. It keeps calendar-date snapshots so that a ticker is still eligible after Alpha Vantage advances to the next quarter, searches public sources through Tavily, and asks the configured DeepSeek/DashScope model to distinguish confirmed results from an unverified calendar date. Reports are available in the earnings-calendar modal and at `/earnings-reports`.
 
 ## Verification
 

@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT_DIR / "backend"
 OUTPUT_FILE = ROOT_DIR / "data" / "fundamental" / "earnings_calendar.csv"
+HISTORY_FILE = ROOT_DIR / "data" / "fundamental" / "earnings_calendar_history.csv"
 ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query"
 
 if str(BACKEND_DIR) not in sys.path:
@@ -105,6 +106,46 @@ def build_output_rows(calendar_df: pd.DataFrame, tickers: list[str]) -> list[dic
     return output_rows
 
 
+def save_history(rows: list[dict[str, str]], path: Path = HISTORY_FILE) -> None:
+    fieldnames = [
+        "ticker", "earnings_date", "earnings_estimate", "earnings_currency",
+        "fiscal_date_ending", "company_name", "source", "first_seen_at", "last_seen_at",
+    ]
+    history: dict[tuple[str, str], dict[str, str]] = {}
+    if path.exists() and path.stat().st_size > 0:
+        with path.open("r", newline="", encoding="utf-8-sig") as f:
+            for row in csv.DictReader(f):
+                ticker = str(row.get("ticker", "")).strip().upper()
+                earnings_date = str(row.get("earnings_date", "")).strip()
+                if ticker and earnings_date:
+                    history[(ticker, earnings_date)] = {field: str(row.get(field, "")) for field in fieldnames}
+
+    observed_at = datetime.now().isoformat(timespec="seconds")
+    for row in rows:
+        ticker = str(row.get("ticker", "")).strip().upper()
+        earnings_date = str(row.get("earnings_date", "")).strip()
+        if not ticker or not earnings_date:
+            continue
+        key = (ticker, earnings_date)
+        previous = history.get(key, {})
+        history[key] = {
+            "ticker": ticker,
+            "earnings_date": earnings_date,
+            "earnings_estimate": str(row.get("earnings_estimate", "")),
+            "earnings_currency": str(row.get("earnings_currency", "")),
+            "fiscal_date_ending": str(row.get("fiscal_date_ending", "")),
+            "company_name": str(row.get("company_name", "")),
+            "source": str(row.get("source", "Alpha Vantage")),
+            "first_seen_at": previous.get("first_seen_at") or observed_at,
+            "last_seen_at": observed_at,
+        }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(sorted(history.values(), key=lambda item: (item["earnings_date"], item["ticker"])))
+
+
 def save_rows(rows: list[dict[str, str]], path: Path = OUTPUT_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
@@ -126,6 +167,7 @@ def save_rows(rows: list[dict[str, str]], path: Path = OUTPUT_FILE) -> None:
                 if ticker:
                     merged[ticker] = {field: str(row.get(field, "")) for field in fieldnames}
 
+    previous_rows = list(merged.values())
     for row in rows:
         ticker = str(row.get("ticker", "")).strip().upper()
         if not ticker:
@@ -136,6 +178,10 @@ def save_rows(rows: list[dict[str, str]], path: Path = OUTPUT_FILE) -> None:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows([merged[ticker] for ticker in sorted(merged)])
+    # Keep date snapshots before and after replacement. Alpha Vantage switches a
+    # ticker to its next quarter after results, while the sentiment report needs
+    # the just-finished event date for its three-day lookback window.
+    save_history(previous_rows + rows)
 
 
 def parse_args() -> argparse.Namespace:

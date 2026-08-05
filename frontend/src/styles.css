@@ -344,6 +344,27 @@ h2 {
   opacity: 0.55;
 }
 
+.earningsReportLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px 12px;
+  height: 32px;
+  border: 1px solid #9fc5ff;
+  border-radius: 6px;
+  background: #edf4ff;
+  color: #1f5fbf;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+}
+
+.earningsReportLink:hover {
+  border-color: #1f6feb;
+  background: #e1eeff;
+}
+
 .primaryButton,
 .tickerButton,
 .ghostButton,
@@ -1092,6 +1113,14 @@ tbody td {
   font-size: 13px;
   font-style: normal;
   font-weight: 800;
+}
+
+.earningsReportCard {
+  max-width: 310px;
+}
+
+.earningsReportCard span {
+  background: #7c3aed;
 }
 
 .dailyBriefEmpty {

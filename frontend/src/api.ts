@@ -180,6 +180,19 @@ export type DailyBriefList = {
   data: DailyBriefReport[];
 };
 
+export type EarningsSentimentReport = {
+  date: string;
+  filename: string;
+  url: string;
+  size_bytes: number;
+  updated_at: number;
+};
+
+export type EarningsSentimentReportList = {
+  count: number;
+  data: EarningsSentimentReport[];
+};
+
 export type CorporateActionEventType = "buyback" | "reduction";
 export type CorporateActionAttention = "high" | "normal";
 export type CorporateActionStatus = "ok" | "stale" | "empty" | "unavailable";
@@ -334,6 +347,10 @@ export function fetchIndustryStockFlows(market: Market, industryName: string, tr
 
 export function fetchDailyBriefs() {
   return requestJson<DailyBriefList>("/api/daily-briefs");
+}
+
+export function fetchEarningsSentimentReports() {
+  return requestJson<EarningsSentimentReportList>("/api/earnings-reports");
 }
 
 export function fetchCorporateActionNews(
