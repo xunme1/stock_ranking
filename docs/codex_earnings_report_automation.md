@@ -1,10 +1,10 @@
 # Codex 财报日报自动化
 
-日报不再由服务器调用 DeepSeek 或 Tavily。Codex heartbeat 在工作日北京时间 10:00 联网研究，使用服务器提供的只读候选接口，并通过 Git 分支将已校验的报告交给服务器展示。
+日报不再由服务器调用 DeepSeek 或 Tavily。Codex heartbeat 在工作日北京时间 10:00 先在本地刷新 Alpha Vantage 财报日历和历史快照，再联网研究，并通过 Git 分支将已校验的报告交给服务器展示。日报生成不依赖服务器的公开接口。
 
 ## 一次性部署
 
-1. 将 `main` 部署到服务器，重启 `stock-ranking-api`，确认 `GET /api/earnings-reports/context` 可从 Codex 所在环境访问。将完整 URL 作为自动化中的 `EARNINGS_REPORT_CONTEXT_URL`。
+1. Codex 本地项目 `.env` 配置 `ALPHA_VANTAGE_API_KEY`；不要把该 key 写入任务提示词或 Git。
 2. 创建并推送空的 `earnings-reports` 分支；它只保存 `reports/` 下的归档 JSON/HTML。
 3. 在服务器安装同步 cron（服务器时区为 Asia/Shanghai）：
 
@@ -21,16 +21,17 @@
 ```text
 生成并发布今日美股财报舆情日报。
 
-1. 从 EARNINGS_REPORT_CONTEXT_URL 获取 /api/earnings-reports/context 的 JSON，并保存为 .tmp/earnings-context.json。
-2. 对每个候选公司先检索 SEC 披露或公司 IR 新闻稿，确认是否已发布财报；再检索少量主流财经媒体补充市场解读。不得把广泛网络观点作为事实。
-3. 为全部候选输出严格 JSON：report_date、overall_sentiment、summary、companies、risk_notes。每个 company 必须带 ticker、calendar_date、reported、actual_release_date（仅 reported=true）、sentiment、evidence_level、summary、media_view、key_points、sources。source 的 kind 只能为 official 或 media，并带 title、url、publisher、excerpt。
-4. 未确认发布的公司，evidence_level 必须为 limited，summary 和 media_view 均以“有限证据”开头；确认发布的公司至少提供一个 official 来源。
-5. 将研究 JSON 保存为 .tmp/earnings-research.json，运行：
+1. 在项目根目录读取 `config/nasdaq100_tickers.txt` 的所有 ticker 并加上 QQQ，运行 `scripts/update_earnings_calendar.py --tickers <全部ticker> --horizon 3month`。若刷新失败，停止并通知，不使用陈旧日历。
+2. 运行 `scripts/build_earnings_report_context.py --output .tmp/earnings-context.json`，以本地当前日历与历史快照生成近三日候选。
+3. 对每个候选公司先检索 SEC 披露或公司 IR 新闻稿，确认是否已发布财报；再检索少量主流财经媒体补充市场解读。不得把广泛网络观点作为事实。
+4. 为全部候选输出严格 JSON：report_date、overall_sentiment、summary、companies、risk_notes。每个 company 必须带 ticker、calendar_date、reported、actual_release_date（仅 reported=true）、sentiment、evidence_level、summary、media_view、key_points、sources。source 的 kind 只能为 official 或 media，并带 title、url、publisher、excerpt。
+5. 未确认发布的公司，evidence_level 必须为 limited，summary 和 media_view 均以“有限证据”开头；确认发布的公司至少提供一个 official 来源。
+6. 将研究 JSON 保存为 .tmp/earnings-research.json，运行：
    ./.venv/Scripts/python.exe -B scripts/render_earnings_sentiment_report.py --input .tmp/earnings-research.json --context .tmp/earnings-context.json --output-dir .tmp/earnings-rendered
    （Linux 环境使用 ./.venv/bin/python。）
-6. 仅在渲染校验成功后运行：
+7. 仅在渲染校验成功后运行：
    ./.venv/Scripts/python.exe -B scripts/publish_earnings_report.py --report-dir .tmp/earnings-rendered --report-date <context.report_date>
-7. 若任一步失败，停止，不发布、不覆盖旧日报，并保留错误信息供失败通知使用。
+8. 若任一步失败，停止，不发布、不覆盖旧日报，并保留错误信息供失败通知使用。
 ```
 
 ## 手工验证

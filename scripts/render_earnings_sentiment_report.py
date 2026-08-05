@@ -71,7 +71,7 @@ def validate_sources(value: object, ticker: str) -> list[dict[str, str]]:
 
 def validate_context(value: object) -> tuple[str, dict[tuple[str, str], dict[str, str]]]:
     if not isinstance(value, dict):
-        raise ReportValidationError("context must be an object returned by /api/earnings-reports/context")
+        raise ReportValidationError("context must be a locally generated earnings candidate object")
     report_date = parse_date(value.get("report_date"), "context.report_date")
     candidates = value.get("candidates")
     if not isinstance(candidates, list):
@@ -209,7 +209,7 @@ def render_html(report: dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Validate and render a Codex-researched earnings report.")
     parser.add_argument("--input", required=True, help="Research report JSON path")
-    parser.add_argument("--context", required=True, help="Saved /api/earnings-reports/context JSON path")
+    parser.add_argument("--context", required=True, help="Saved local earnings-candidate JSON path")
     parser.add_argument("--output-dir", required=True, help="Directory for normalized JSON and HTML")
     args = parser.parse_args()
     payload = json.loads(Path(args.input).read_text(encoding="utf-8"))

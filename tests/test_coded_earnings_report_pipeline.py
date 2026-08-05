@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT_DIR / "backend"))
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
 from app.api import earnings_reports  # noqa: E402
+from build_earnings_report_context import build_context  # noqa: E402
 from render_earnings_sentiment_report import (  # noqa: E402
     ReportValidationError,
     render_html,
@@ -41,6 +42,13 @@ class EarningsContextTests(unittest.TestCase):
             context = earnings_reports.get_earnings_report_context(date(2026, 8, 5), 3)
         self.assertEqual(context["report_date"], "2026-08-05")
         self.assertEqual([item["ticker"] for item in context["candidates"]], ["NVDA", "AMD"])
+
+    def test_local_context_export_uses_the_same_candidate_source(self) -> None:
+        candidates = [{"ticker": "AMD", "company_name": "AMD", "calendar_date": "2026-08-04", "announcement_time": "bmo"}]
+        with patch("build_earnings_report_context.recent_earnings_candidates", return_value=candidates):
+            context = build_context(date(2026, 8, 5), 3)
+        self.assertEqual(context["window_start"], "2026-08-03")
+        self.assertEqual(context["candidates"], candidates)
 
 
 class EarningsRendererTests(unittest.TestCase):
