@@ -36,23 +36,24 @@ def _read_calendar_rows(path: Path) -> list[dict[str, str]]:
         ]
 
 
-def recent_earnings_candidates(as_of_date: date, days: int) -> list[dict[str, str]]:
-    """Return the server's de-duplicated candidate list for a report window."""
-    start = as_of_date - timedelta(days=days - 1)
+def upcoming_earnings_candidates(as_of_date: date, days: int) -> list[dict[str, str]]:
+    """Return de-duplicated earnings candidates from today through the next days."""
+    end = as_of_date + timedelta(days=days - 1)
     selected: dict[tuple[str, str], dict[str, str]] = {}
-    # History keeps candidate dates after Alpha Vantage rolls to the next quarter.
+    # History can contain a date that has since rolled out of the latest calendar;
+    # retain it so an intraday refresh cannot make a still-upcoming candidate vanish.
     for row in _read_calendar_rows(EARNINGS_CALENDAR_HISTORY_FILE) + _read_calendar_rows(EARNINGS_CALENDAR_FILE):
         ticker = row.get("ticker", "").upper()
         earnings_date = row.get("earnings_date", "")
         candidate_date = _parse_date(earnings_date)
-        if ticker and candidate_date and start <= candidate_date <= as_of_date:
+        if ticker and candidate_date and as_of_date <= candidate_date <= end:
             selected[(ticker, earnings_date)] = {
                 "ticker": ticker,
                 "company_name": row.get("company_name", ""),
                 "calendar_date": earnings_date,
                 "announcement_time": row.get("announcement_time", ""),
             }
-    return sorted(selected.values(), key=lambda item: (item["calendar_date"], item["ticker"]), reverse=True)
+    return sorted(selected.values(), key=lambda item: (item["calendar_date"], item["ticker"]))
 
 
 @router.get("/context")
@@ -60,12 +61,14 @@ def get_earnings_report_context(
     as_of_date: date | None = None,
     days: int = Query(default=3, ge=1, le=7),
 ) -> dict[str, object]:
-    """Public, read-only candidate context consumed by the Codex research task."""
+    """Public, read-only upcoming earnings context for the next report window."""
     report_date = as_of_date or datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    candidates = recent_earnings_candidates(report_date, days)
+    window_end = report_date + timedelta(days=days - 1)
+    candidates = upcoming_earnings_candidates(report_date, days)
     return {
         "report_date": report_date.isoformat(),
-        "window_start": (report_date - timedelta(days=days - 1)).isoformat(),
+        "window_start": report_date.isoformat(),
+        "window_end": window_end.isoformat(),
         "days": days,
         "candidates": candidates,
     }

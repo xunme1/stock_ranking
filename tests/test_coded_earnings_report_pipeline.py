@@ -20,20 +20,28 @@ from render_earnings_sentiment_report import ReportValidationError, render_html,
 
 
 class EarningsContextTests(unittest.TestCase):
-    def test_context_combines_current_and_history_without_duplicates(self) -> None:
+    def test_context_returns_the_upcoming_window_without_duplicates(self) -> None:
         rows = [
-            [{"ticker": "NVDA", "company_name": "NVIDIA", "earnings_date": "2026-08-04", "announcement_time": "amc"}],
-            [{"ticker": "NVDA", "company_name": "NVIDIA", "earnings_date": "2026-08-04", "announcement_time": "amc"}, {"ticker": "AMD", "company_name": "AMD", "earnings_date": "2026-08-03", "announcement_time": "bmo"}],
+            [{"ticker": "NVDA", "company_name": "NVIDIA", "earnings_date": "2026-08-05", "announcement_time": "amc"}],
+            [
+                {"ticker": "NVDA", "company_name": "NVIDIA", "earnings_date": "2026-08-05", "announcement_time": "amc"},
+                {"ticker": "AMD", "company_name": "AMD", "earnings_date": "2026-08-06", "announcement_time": "bmo"},
+                {"ticker": "AVGO", "company_name": "Broadcom", "earnings_date": "2026-08-07", "announcement_time": "amc"},
+                {"ticker": "OLD", "company_name": "Old", "earnings_date": "2026-08-04", "announcement_time": "bmo"},
+            ],
         ]
         with patch.object(earnings_reports, "_read_calendar_rows", side_effect=rows):
             context = earnings_reports.get_earnings_report_context(date(2026, 8, 5), 3)
-        self.assertEqual([item["ticker"] for item in context["candidates"]], ["NVDA", "AMD"])
+        self.assertEqual(context["window_start"], "2026-08-05")
+        self.assertEqual(context["window_end"], "2026-08-07")
+        self.assertEqual([item["ticker"] for item in context["candidates"]], ["NVDA", "AMD", "AVGO"])
 
     def test_local_context_export_uses_the_same_candidate_source(self) -> None:
         candidates = [{"ticker": "AMD", "company_name": "AMD", "calendar_date": "2026-08-04", "announcement_time": "bmo"}]
-        with patch("build_earnings_report_context.recent_earnings_candidates", return_value=candidates):
+        with patch("build_earnings_report_context.upcoming_earnings_candidates", return_value=candidates):
             context = build_context(date(2026, 8, 5), 3)
-        self.assertEqual(context["window_start"], "2026-08-03")
+        self.assertEqual(context["window_start"], "2026-08-05")
+        self.assertEqual(context["window_end"], "2026-08-07")
         self.assertEqual(context["candidates"], candidates)
 
 

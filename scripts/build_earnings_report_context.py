@@ -15,7 +15,7 @@ BACKEND_DIR = ROOT_DIR / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.api.earnings_reports import recent_earnings_candidates  # noqa: E402
+from app.api.earnings_reports import upcoming_earnings_candidates  # noqa: E402
 
 
 def parse_date(value: str) -> date:
@@ -26,16 +26,18 @@ def parse_date(value: str) -> date:
 
 
 def build_context(report_date: date, days: int) -> dict[str, object]:
+    window_end = report_date + timedelta(days=days - 1)
     return {
         "report_date": report_date.isoformat(),
-        "window_start": (report_date - timedelta(days=days - 1)).isoformat(),
+        "window_start": report_date.isoformat(),
+        "window_end": window_end.isoformat(),
         "days": days,
-        "candidates": recent_earnings_candidates(report_date, days),
+        "candidates": upcoming_earnings_candidates(report_date, days),
     }
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export local earnings candidates for the Codex research workflow.")
+    parser = argparse.ArgumentParser(description="Export upcoming earnings candidates for the next report window.")
     parser.add_argument("--as-of-date", type=parse_date, default=None, help="YYYY-MM-DD; defaults to today in Asia/Shanghai")
     parser.add_argument("--days", type=int, choices=range(1, 8), default=3)
     parser.add_argument("--output", default=None, help="Optional UTF-8 JSON output path; otherwise prints JSON")
