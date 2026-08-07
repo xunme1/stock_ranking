@@ -1,0 +1,885 @@
+{
+  "report_date": "2026-08-07",
+  "generated_at": "2026-08-07T03:09:17.409223+00:00",
+  "overall_sentiment": "neutral",
+  "summary": "本期候选覆盖 2026-08-05 至 2026-08-07。Airbnb 已取得官方结果页确认；WBD 与 AppLovin 有主流媒体业绩背景但未取得可直接核验的官方结果页，其余公司同样降级为有限证据。",
+  "companies": [
+    {
+      "ticker": "TTWO",
+      "company_name": "TAKE-TWO INTERACTIVE SOFTWARE INCORPORATED",
+      "calendar_date": "2026-08-07",
+      "announcement_time": "",
+      "report_status": "pre_earnings",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历预计日期为今日；截至本次核验，尚未在公司 IR 或 SEC 页面确认本期业绩发布。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Take-Two Interactive Investor Relations",
+          "url": "https://ir.take2games.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 0.92,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -0.84,
+        "three_day_stock_pct": -0.52,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -6.31
+      }
+    },
+    {
+      "ticker": "BRK.B",
+      "company_name": "BERKSHIRE HATHAWAY INCORPORATED",
+      "calendar_date": "2026-08-07",
+      "announcement_time": "",
+      "report_status": "pre_earnings",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历预计日期为今日；截至本次核验，尚未在公司 IR 或 SEC 页面确认本期业绩发布。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Berkshire Hathaway Home",
+          "url": "https://www.berkshirehathaway.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 0.31,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -1.45,
+        "three_day_stock_pct": 0.78,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -5.01
+      }
+    },
+    {
+      "ticker": "WBD",
+      "company_name": "WARNER BROS. DISCOVERY INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：存在媒体层面的业绩或股价背景，但在未取得官方结果页前不将其用作发布确认。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Warner Bros. Discovery Investor Relations",
+          "url": "https://ir.wbd.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        },
+        {
+          "kind": "media",
+          "phase": "context",
+          "published_date": "2026-08-06",
+          "title": "US stocks edge lower as oil prices rise and more earnings reports roll in",
+          "url": "https://apnews.com/article/2f4f2638cb8430bb7c8e5d59a7b50731",
+          "publisher": "Associated Press",
+          "excerpt": "报道提到 Warner Bros. Discovery 公布的业绩高于市场预期。由于尚未取得可直接核验的官方结果页，本报告不据此确认披露状态。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -0.8,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -2.56,
+        "three_day_stock_pct": 1.76,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -4.03
+      }
+    },
+    {
+      "ticker": "NET",
+      "company_name": "CLOUDFLARE INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-14",
+          "title": "Cloudflare Announces Date of Second Quarter 2026 Financial Results",
+          "url": "https://www.cloudflare.net/news/news-details/2026/Cloudflare-Announces-Date-of-Second-Quarter-2026-Financial-Results/default.aspx",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 1.35,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -0.41,
+        "three_day_stock_pct": 4.57,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -1.22
+      }
+    },
+    {
+      "ticker": "MNST",
+      "company_name": "MONSTER BEVERAGE CORPORATION",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Monster Beverage Investor Relations",
+          "url": "https://investors.monsterbevcorp.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -2.94,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -4.7,
+        "three_day_stock_pct": -3.78,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -9.57
+      }
+    },
+    {
+      "ticker": "MCHP",
+      "company_name": "MICROCHIP TECHNOLOGY INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Microchip Technology Investor Relations",
+          "url": "https://www.microchip.com/en-us/about/investor-relations",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 1.25,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -0.51,
+        "three_day_stock_pct": 5.39,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -0.4
+      }
+    },
+    {
+      "ticker": "KDP",
+      "company_name": "KEURIG DR PEPPER INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Keurig Dr Pepper Investor Relations",
+          "url": "https://www.keurigdrpepper.com/en/investors",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -0.67,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -2.43,
+        "three_day_stock_pct": -1.72,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -7.51
+      }
+    },
+    {
+      "ticker": "DDOG",
+      "company_name": "DATADOG INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Datadog Investor Relations",
+          "url": "https://investors.datadoghq.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 2.1,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 0.34,
+        "three_day_stock_pct": 3.56,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -2.23
+      }
+    },
+    {
+      "ticker": "CEG",
+      "company_name": "CONSTELLATION ENERGY CORPORATION",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-07",
+          "title": "Constellation Energy Investor Relations",
+          "url": "https://investors.constellationenergy.com/",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 4.17,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 2.41,
+        "three_day_stock_pct": 6.11,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": 0.32
+      }
+    },
+    {
+      "ticker": "ABNB",
+      "company_name": "AIRBNB INCORPORATED",
+      "calendar_date": "2026-08-06",
+      "announcement_time": "",
+      "report_status": "post_earnings",
+      "reported": true,
+      "actual_release_date": "2026-08-06",
+      "release_time": "after_market",
+      "official_confirmation_url": "https://investors.airbnb.com/press-releases/news-details/2026/Airbnb-Announces-Second-Quarter-2026-Results/default.aspx",
+      "sentiment": "neutral",
+      "evidence_level": "confirmed",
+      "summary": "Airbnb 已由公司投资者关系页面确认发布第二季度业绩。当前报告不填报任何未经本地行情模块计算的价格或成交量数据。",
+      "media_view": "有限证据：尚未找到带明确发布时间的合格财报后媒体解读。",
+      "media_market_alignment": "not_yet_verifiable",
+      "key_points": [
+        "官方披露状态已核验。",
+        "行情验证由本地日线与 QQQ 独立计算。",
+        "结论不构成投资建议。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-06",
+          "title": "Airbnb Announces Second Quarter 2026 Results",
+          "url": "https://investors.airbnb.com/press-releases/news-details/2026/Airbnb-Announces-Second-Quarter-2026-Results/default.aspx",
+          "publisher": "公司投资者关系",
+          "excerpt": "公司官方结果页面已发布本期财务结果。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "post_earnings",
+        "status": "pending",
+        "reason": "等待财报发布后的首个完整常规交易时段数据。"
+      }
+    },
+    {
+      "ticker": "WDC",
+      "company_name": "WESTERN DIGITAL CORPORATION",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-13",
+          "title": "WD to Announce Fourth Quarter and Fiscal Year 2026 Financial Results",
+          "url": "https://www.westerndigital.com/company/newsroom/press-releases/2026/2026-07-13-wd-to-announce-fourth-quarter-and-fiscal-year-2026-financial-results",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -3.23,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -4.99,
+        "three_day_stock_pct": 14.11,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": 8.32
+      }
+    },
+    {
+      "ticker": "TRI",
+      "company_name": "THOMSON REUTERS CORPORATION",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-08",
+          "title": "Thomson Reuters Second Quarter 2026 Earnings Announcement and Webcast",
+          "url": "https://www.thomsonreuters.com/en/press-releases/2026/july/thomson-reuters-second-quarter-2026-earnings-announcement-and-webcast",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 3.55,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 1.79,
+        "three_day_stock_pct": -4.45,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -10.24
+      }
+    },
+    {
+      "ticker": "SNDK",
+      "company_name": "SANDISK CORPORATION",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-09",
+          "title": "Sandisk to Report Fiscal Fourth Quarter and Fiscal Year 2026 Results",
+          "url": "https://www.sandisk.com/company/newsroom/press-releases/2026/2026-07-09-sandisk-report-fiscal-fourth-quarter-fiscal-year-2026-results-august-5",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 6.03,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 4.27,
+        "three_day_stock_pct": 26.79,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": 21.0
+      }
+    },
+    {
+      "ticker": "SHOP",
+      "company_name": "SHOPIFY INCORPORATED",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-08",
+          "title": "Shopify to Announce Second-Quarter 2026 Financial Results",
+          "url": "https://www.shopify.com/news/shopify-q2-2026-financial-advisory",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -0.12,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -1.88,
+        "three_day_stock_pct": -9.41,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -15.2
+      }
+    },
+    {
+      "ticker": "MELI",
+      "company_name": "MERCADOLIBRE INCORPORATED",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-05",
+          "title": "MercadoLibre Investor Relations Events",
+          "url": "https://investor.mercadolibre.com/news-and-events",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 1.11,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -0.65,
+        "three_day_stock_pct": 1.9,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -3.89
+      }
+    },
+    {
+      "ticker": "LLY",
+      "company_name": "ELI LILLY AND COMPANY",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-22",
+          "title": "Lilly confirms date and conference call for second-quarter 2026 financial results announcement",
+          "url": "https://investor.lilly.com/news-releases/news-release-details/lilly-confirms-date-and-conference-call-second-quarter-2026",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": -2.39,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": -4.15,
+        "three_day_stock_pct": -7.33,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -13.12
+      }
+    },
+    {
+      "ticker": "KHC",
+      "company_name": "THE KRAFT HEINZ COMPANY",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-08-05",
+          "title": "Kraft Heinz Press Releases",
+          "url": "https://ir.kraftheinzcompany.com/press-releases",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 2.21,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 0.45,
+        "three_day_stock_pct": -4.34,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -10.13
+      }
+    },
+    {
+      "ticker": "DASH",
+      "company_name": "DOORDASH INCORPORATED",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-01",
+          "title": "DoorDash to Announce Second Quarter 2026 Results",
+          "url": "https://ir.doordash.com/news/news-details/2026/DoorDash-to-Announce-Second-Quarter-2026-Results-on-August-5-2026/default.aspx",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 2.21,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 0.45,
+        "three_day_stock_pct": 3.6,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -2.19
+      }
+    },
+    {
+      "ticker": "AXON",
+      "company_name": "AXON ENTERPRISE INCORPORATED",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：未找到可按当前状态归类、且带明确发布时间的合格媒体解读。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-22",
+          "title": "Axon to Release Second Quarter 2026 Earnings",
+          "url": "https://investor.axon.com/2026-07-22-Axon-to-Release-Second-Quarter-2026-Earnings-on-August-5%2C-2026",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 9.12,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 7.36,
+        "three_day_stock_pct": 8.41,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": 2.62
+      }
+    },
+    {
+      "ticker": "APP",
+      "company_name": "APPLOVIN CORPORATION",
+      "calendar_date": "2026-08-05",
+      "announcement_time": "",
+      "report_status": "unconfirmed",
+      "reported": false,
+      "actual_release_date": "",
+      "release_time": "unknown",
+      "official_confirmation_url": "",
+      "sentiment": "neutral",
+      "evidence_level": "limited",
+      "summary": "有限证据：日历日期已到，但本次未能在公司 IR 或 SEC 页面确认本期业绩发布；可能存在披露延迟、时区或日历日期偏差。",
+      "media_view": "有限证据：存在媒体层面的业绩或股价背景，但在未取得官方结果页前不将其用作发布确认。",
+      "media_market_alignment": "not_applicable",
+      "key_points": [
+        "日历候选来自当日 Alpha Vantage 刷新。",
+        "尚无可用官方结果页确认已发布。",
+        "下一轮任务应复核 IR 新闻稿与 SEC 8-K。"
+      ],
+      "sources": [
+        {
+          "kind": "official",
+          "phase": "context",
+          "published_date": "2026-07-01",
+          "title": "AppLovin to Announce Second Quarter 2026 Results",
+          "url": "https://investors.applovin.com/news/news-details/2026/AppLovin-to-Announce-Second-Quarter-2026-Results/default.aspx",
+          "publisher": "公司投资者关系",
+          "excerpt": "该官方页面用于核验披露安排或投资者关系信息；本次未据此确认已发布财报。"
+        },
+        {
+          "kind": "media",
+          "phase": "context",
+          "published_date": "2026-08-06",
+          "title": "US stocks edge lower as oil prices rise and more earnings reports roll in",
+          "url": "https://apnews.com/article/2f4f2638cb8430bb7c8e5d59a7b50731",
+          "publisher": "Associated Press",
+          "excerpt": "报道提到 AppLovin 在混合业绩后下跌；这只是媒体背景，不能取代公司 IR 或 SEC 的发布确认。"
+        }
+      ],
+      "market_metrics": {
+        "kind": "pre_earnings",
+        "status": "available",
+        "session_date": "2026-08-03",
+        "one_day_stock_pct": 2.59,
+        "one_day_qqq_pct": 1.76,
+        "one_day_relative_pct": 0.83,
+        "three_day_stock_pct": 1.68,
+        "three_day_qqq_pct": 5.79,
+        "three_day_relative_pct": -4.11
+      }
+    }
+  ],
+  "risk_notes": [
+    "财报日历可能受时区、盘前盘后安排和数据源修订影响。",
+    "媒体报道不等同于官方披露，也不等同于因果关系。",
+    "本报告不构成投资建议。"
+  ]
+}
