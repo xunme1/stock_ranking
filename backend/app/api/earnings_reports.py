@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.core.config import (
     EARNINGS_CALENDAR_FILE,
@@ -17,6 +17,8 @@ from app.core.config import (
 
 router = APIRouter(prefix="/api/earnings-reports", tags=["earnings-reports"])
 REPORT_RE = re.compile(r"^earnings_sentiment_(?P<date>\d{4}-\d{2}-\d{2})\.html$")
+EARNINGS_PREVIEW_BASE_URL = "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/"
+EARNINGS_PREVIEW_INDEX_URL = f"{EARNINGS_PREVIEW_BASE_URL}index.json"
 
 
 def _parse_date(value: str) -> date | None:
@@ -34,6 +36,64 @@ def _read_calendar_rows(path: Path) -> list[dict[str, str]]:
             {key: str(value or "").strip() for key, value in row.items()}
             for row in csv.DictReader(handle)
         ]
+
+
+def _normalise_preview_entry(value: object) -> dict[str, str] | None:
+    if not isinstance(value, dict):
+        return None
+    report_date = str(value.get("report_date", "")).strip()
+    url = str(value.get("url", "")).strip()
+    if _parse_date(report_date) is None:
+        return None
+    # Only return public PDF files from the configured OSS report prefix.  The
+    # frontend can safely use this payload without accepting arbitrary links.
+    if not (url.startswith(EARNINGS_PREVIEW_BASE_URL) and url.lower().endswith(".pdf")):
+        return None
+    return {
+        "report_date": report_date,
+        "generated_at": str(value.get("generated_at", "")).strip(),
+        "url": url,
+    }
+
+
+def _download_preview_index() -> object:
+    try:
+        # This OSS endpoint intermittently closes the TLS handshake used by
+        # Python's standard HTTP stack.  curl_cffi uses libcurl and has proven
+        # reliable for the same public object while keeping certificate checks.
+        from curl_cffi import requests as curl_requests  # type: ignore
+        response = curl_requests.get(
+            EARNINGS_PREVIEW_INDEX_URL,
+            headers={"Accept": "application/json", "User-Agent": "stock-ranking-api/1.0"},
+            timeout=10,
+            impersonate="chrome",
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="财报前瞻报告索引暂时不可用") from exc
+
+
+def _normalise_preview_index(payload: object) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=502, detail="财报前瞻报告索引格式无效")
+    latest = _normalise_preview_entry(payload.get("latest"))
+    archives_by_key: dict[tuple[str, str], dict[str, str]] = {}
+    archives = payload.get("archives", [])
+    if isinstance(archives, list):
+        for item in archives:
+            entry = _normalise_preview_entry(item)
+            if entry is not None:
+                archives_by_key[(entry["report_date"], entry["url"])] = entry
+    return {
+        "updated_at": str(payload.get("updated_at", "")).strip(),
+        "latest": latest,
+        "archives": sorted(
+            archives_by_key.values(),
+            key=lambda item: (item["report_date"], item["generated_at"], item["url"]),
+            reverse=True,
+        ),
+    }
 
 
 def upcoming_earnings_candidates(as_of_date: date, days: int) -> list[dict[str, str]]:
@@ -72,6 +132,18 @@ def get_earnings_report_context(
         "days": days,
         "candidates": candidates,
     }
+
+
+@router.get("/previews")
+def get_earnings_preview_reports(response: Response) -> dict[str, object]:
+    """Return the current OSS report index through the same-origin API.
+
+    OSS intentionally serves the index without browser CORS headers.  Keeping
+    this small, fixed upstream proxy on the API lets the website refresh its
+    archive list without exposing OSS credentials or accepting arbitrary URLs.
+    """
+    response.headers["Cache-Control"] = "no-store"
+    return _normalise_preview_index(_download_preview_index())
 
 
 @router.get("")

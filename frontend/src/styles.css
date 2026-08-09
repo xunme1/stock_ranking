@@ -383,6 +383,12 @@ h2 {
   background: #edf1f6;
 }
 
+.earningsReportStatus {
+  align-self: center;
+  color: #6b7b90;
+  font-size: 12px;
+}
+
 .primaryButton,
 .tickerButton,
 .ghostButton,

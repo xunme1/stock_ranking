@@ -193,6 +193,18 @@ export type EarningsSentimentReportList = {
   data: EarningsSentimentReport[];
 };
 
+export type EarningsPreviewReport = {
+  report_date: string;
+  generated_at: string;
+  url: string;
+};
+
+export type EarningsPreviewReportIndex = {
+  updated_at: string;
+  latest: EarningsPreviewReport | null;
+  archives: EarningsPreviewReport[];
+};
+
 export type CorporateActionEventType = "buyback" | "reduction";
 export type CorporateActionAttention = "high" | "normal";
 export type CorporateActionStatus = "ok" | "stale" | "empty" | "unavailable";
@@ -351,6 +363,10 @@ export function fetchDailyBriefs() {
 
 export function fetchEarningsSentimentReports() {
   return requestJson<EarningsSentimentReportList>("/api/earnings-reports");
+}
+
+export function fetchEarningsPreviewReports() {
+  return requestJson<EarningsPreviewReportIndex>("/api/earnings-reports/previews");
 }
 
 export function fetchCorporateActionNews(

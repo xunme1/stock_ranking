@@ -438,6 +438,22 @@ Query 参数：
 
 ## 每日报告接口
 
+### GET `/api/earnings-reports/previews`
+
+作用：读取 OSS 上的财报前瞻报告索引，并以同源接口返回。OSS 的 `index.json` 没有开放浏览器跨域读取，因此前端通过此接口动态展示“最新报告”和按日期归档的 PDF 链接。
+
+参数：无。
+
+返回值：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `updated_at` | string | OSS 索引更新时间 |
+| `latest` | object/null | 最新报告，包含 `report_date`、`generated_at`、`url` |
+| `archives` | object[] | 所有合法的按日期归档 PDF，按日期倒序 |
+
+上游不可用或索引格式错误时返回 `502`；不会返回或使用任何 OSS 写入凭据。该接口使用 `curl_cffi` 读取 OSS，因此服务器部署时需执行 `pip install -r requirements.txt`。
+
 ### GET `/api/daily-briefs`
 
 作用：列出已生成的每日 HTML 报告。只收集文件名匹配 `daily_brief_{market}_{date}_w10.html` 的报告。

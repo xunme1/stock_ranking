@@ -27,6 +27,7 @@ import {
 import {
   fetchDailyBars,
   fetchDailyBriefs,
+  fetchEarningsPreviewReports,
   fetchEarningsSentimentReports,
   fetchIndustryFlowDates,
   fetchIndustryFlowRanking,
@@ -42,6 +43,7 @@ import {
   type DailyBar,
   type DailyBriefReport,
   type EarningsSentimentReport,
+  type EarningsPreviewReportIndex,
   type IndustryFlowRanking,
   type IndustryFlowTrend,
   type IndustryFlowTrendSeries,
@@ -66,7 +68,6 @@ const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
 const EARNINGS_PREVIEW_LATEST_URL = "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_latest.pdf";
-const EARNINGS_PREVIEW_ARCHIVE_URL = "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_20260809.pdf";
 const ALL_SECTORS = "全部";
 type MarketClimate = "bullish" | "bearish" | "neutral";
 const SECTOR_ORDER = [
@@ -1175,6 +1176,9 @@ function EarningsCalendarModal({
   onOpen: (ticker: string) => void;
 }) {
   const endDate = addDays(asOfDate, 6);
+  const [previewIndex, setPreviewIndex] = useState<EarningsPreviewReportIndex | null>(null);
+  const [previewsLoading, setPreviewsLoading] = useState(true);
+  const [previewsUnavailable, setPreviewsUnavailable] = useState(false);
   const earningsRows = useMemo(
     () =>
       rows
@@ -1190,6 +1194,26 @@ function EarningsCalendarModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    setPreviewsLoading(true);
+    setPreviewsUnavailable(false);
+    fetchEarningsPreviewReports()
+      .then((result) => {
+        if (isCurrent) setPreviewIndex(result);
+      })
+      .catch(() => {
+        if (isCurrent) setPreviewsUnavailable(true);
+      })
+      .finally(() => {
+        if (isCurrent) setPreviewsLoading(false);
+      });
+    return () => { isCurrent = false; };
+  }, []);
+
+  const latestPreview = previewIndex?.latest;
+  const archivePreviews = previewIndex?.archives ?? [];
 
   return (
     <div className="modalBackdrop" role="presentation" onMouseDown={onClose}>
@@ -1210,14 +1234,18 @@ function EarningsCalendarModal({
           </button>
         </div>
         <div className="earningsReportLinks" aria-label="财报前瞻分析报告">
-          <a className="earningsReportLink" href={EARNINGS_PREVIEW_LATEST_URL} target="_blank" rel="noreferrer">
+          <a className="earningsReportLink" href={latestPreview?.url ?? EARNINGS_PREVIEW_LATEST_URL} target="_blank" rel="noreferrer">
             <FileText size={15} aria-hidden="true" />
-            查看最新财报前瞻分析
+            {latestPreview ? `查看最新报告（${latestPreview.report_date}）` : "查看最新财报前瞻分析"}
           </a>
-          <a className="earningsReportLink earningsReportArchiveLink" href={EARNINGS_PREVIEW_ARCHIVE_URL} target="_blank" rel="noreferrer">
-            <FileText size={15} aria-hidden="true" />
-            查看 2026-08-09 归档
-          </a>
+          {archivePreviews.map((report) => (
+            <a className="earningsReportLink earningsReportArchiveLink" href={report.url} target="_blank" rel="noreferrer" key={`${report.report_date}-${report.url}`}>
+              <FileText size={15} aria-hidden="true" />
+              查看 {report.report_date} 归档
+            </a>
+          ))}
+          {previewsLoading ? <span className="earningsReportStatus">正在同步归档列表…</span> : null}
+          {previewsUnavailable ? <span className="earningsReportStatus">归档列表暂不可用</span> : null}
         </div>
         <div className="earningsModalTableWrap">
           <table className="earningsModalTable">

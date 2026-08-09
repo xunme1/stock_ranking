@@ -44,6 +44,28 @@ class EarningsContextTests(unittest.TestCase):
         self.assertEqual(context["window_end"], "2026-08-07")
         self.assertEqual(context["candidates"], candidates)
 
+    def test_preview_index_only_returns_valid_oss_pdf_entries(self) -> None:
+        payload = {
+            "updated_at": "2026-08-09T22:54:22+08:00",
+            "latest": {
+                "report_date": "2026-08-09",
+                "url": "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_latest.pdf",
+            },
+            "archives": [
+                {
+                    "report_date": "2026-08-09",
+                    "generated_at": "2026-08-09T21:44:00+08:00",
+                    "url": "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_20260809.pdf",
+                },
+                {"report_date": "not-a-date", "url": "https://example.com/nope.pdf"},
+                {"report_date": "2026-08-08", "url": "javascript:alert(1)"},
+            ],
+        }
+        index = earnings_reports._normalise_preview_index(payload)
+        self.assertEqual(index["latest"]["report_date"], "2026-08-09")
+        self.assertEqual(len(index["archives"]), 1)
+        self.assertEqual(index["archives"][0]["report_date"], "2026-08-09")
+
 
 class EarningsMarketMetricsTests(unittest.TestCase):
     def _frame(self, closes: list[float], volumes: list[float]) -> pd.DataFrame:

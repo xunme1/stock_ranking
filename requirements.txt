@@ -1,5 +1,6 @@
 pandas
 requests
+curl_cffi
 tqdm
 pyarrow
 python-dotenv
