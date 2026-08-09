@@ -65,6 +65,8 @@ const MARKET_OPTIONS: Array<{ value: Market; label: string; benchmark: string; t
 const CHART_VISIBLE_DAYS = 20;
 const PRICE_CHART_HEIGHT = 460;
 const DETAIL_SUB_CHART_HEIGHT = 260;
+const EARNINGS_PREVIEW_LATEST_URL = "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_latest.pdf";
+const EARNINGS_PREVIEW_ARCHIVE_URL = "https://adc-lab-e6rvm8rq-frul696z.oss-cn-hangzhou.aliyuncs.com/earnings_preview/earnings_preview_report_20260809.pdf";
 const ALL_SECTORS = "全部";
 type MarketClimate = "bullish" | "bearish" | "neutral";
 const SECTOR_ORDER = [
@@ -1165,14 +1167,12 @@ function EarningsCalendarModal({
   rows,
   asOfDate,
   onClose,
-  onOpen,
-  onOpenReports
+  onOpen
 }: {
   rows: RankingRow[];
   asOfDate: string;
   onClose: () => void;
   onOpen: (ticker: string) => void;
-  onOpenReports: () => void;
 }) {
   const endDate = addDays(asOfDate, 6);
   const earningsRows = useMemo(
@@ -1209,10 +1209,16 @@ function EarningsCalendarModal({
             <X size={16} aria-hidden="true" />
           </button>
         </div>
-        <button className="earningsReportLink" type="button" onClick={onOpenReports}>
-          <FileText size={15} aria-hidden="true" />
-          近三日财报舆情日报
-        </button>
+        <div className="earningsReportLinks" aria-label="财报前瞻分析报告">
+          <a className="earningsReportLink" href={EARNINGS_PREVIEW_LATEST_URL} target="_blank" rel="noreferrer">
+            <FileText size={15} aria-hidden="true" />
+            查看最新财报前瞻分析
+          </a>
+          <a className="earningsReportLink earningsReportArchiveLink" href={EARNINGS_PREVIEW_ARCHIVE_URL} target="_blank" rel="noreferrer">
+            <FileText size={15} aria-hidden="true" />
+            查看 2026-08-09 归档
+          </a>
+        </div>
         <div className="earningsModalTableWrap">
           <table className="earningsModalTable">
             <thead>
@@ -2259,10 +2265,6 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
           onOpen={(ticker) => {
             setShowEarningsCalendar(false);
             openStock(ticker);
-          }}
-          onOpenReports={() => {
-            setShowEarningsCalendar(false);
-            navigateTo("/earnings-reports");
           }}
         />
       ) : null}

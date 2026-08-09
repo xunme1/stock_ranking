@@ -344,11 +344,17 @@ h2 {
   opacity: 0.55;
 }
 
+.earningsReportLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px 12px;
+}
+
 .earningsReportLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 12px 12px;
   height: 32px;
   border: 1px solid #9fc5ff;
   border-radius: 6px;
@@ -358,11 +364,23 @@ h2 {
   font-size: 12px;
   font-weight: 800;
   padding: 0 10px;
+  text-decoration: none;
 }
 
 .earningsReportLink:hover {
   border-color: #1f6feb;
   background: #e1eeff;
+}
+
+.earningsReportArchiveLink {
+  border-color: #c8d3df;
+  background: #f7f9fc;
+  color: #526174;
+}
+
+.earningsReportArchiveLink:hover {
+  border-color: #8fa5bd;
+  background: #edf1f6;
 }
 
 .primaryButton,
