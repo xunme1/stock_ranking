@@ -438,6 +438,19 @@ Query 参数：
 
 ## 每日报告接口
 
+### GET `/api/earnings-reports/context`
+
+作用：返回最新本地美股收盘数据之后连续三天的财报候选。默认从 `data/raw/daily/QQQ.csv` 读取最新交易日，确保日线数据因时差延迟时，财报日历仍展示真正的后续预期日期。
+
+参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `as_of_date` | date | 本地 QQQ 最新交易日 | 指定最新美股数据日，格式 `YYYY-MM-DD`；窗口从其下一天开始 |
+| `days` | int | `3` | 候选窗口天数，`1`–`7` |
+
+返回值包含 `data_as_of_date`、`window_start`、`window_end`、`days` 与 `candidates`。其中 `report_date` 为兼容保留字段，等于 `window_start`。
+
 ### GET `/api/earnings-reports/previews`
 
 作用：读取 OSS 上的财报前瞻报告索引，并以同源接口返回。OSS 的 `index.json` 没有开放浏览器跨域读取，因此前端通过此接口动态展示“最新报告”和按日期归档的 PDF 链接。
