@@ -442,9 +442,31 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
 
         self.assertEqual(result, {"ok": True})
 
+    @patch("llm_analysis.load_deepseek_key", return_value="test-key")
+    @patch("llm_analysis.post_llm_request")
+    def test_deepseek_v4_flash_disables_thinking(self, post_llm_request, _load_key) -> None:
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        post_llm_request.return_value = response
+
+        text, provider, model_name = llm_analysis.call_chat_model(
+            [{"role": "user", "content": "hello"}],
+            llm_analysis.DEFAULT_DEEPSEEK_MODEL,
+            timeout=10,
+            max_tokens=100,
+            use_env_model=False,
+        )
+
+        payload = post_llm_request.call_args.args[2]
+        self.assertEqual(text, "ok")
+        self.assertEqual(provider, "deepseek")
+        self.assertEqual(model_name, "deepseek-v4-flash")
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
+
     @patch("llm_analysis.call_chat_model")
     def test_parse_or_repair_json_uses_chat_repair(self, call_chat_model) -> None:
-        call_chat_model.return_value = ('{"fixed": true}', "deepseek", "deepseek-chat")
+        call_chat_model.return_value = ('{"fixed": true}', "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL)
 
         result, repaired = llm_analysis.parse_or_repair_json_text('{"fixed": tru', timeout=10)
 
@@ -478,11 +500,11 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
     @patch("llm_analysis.call_chat_model")
     def test_generate_model_interpretation_returns_full_schema(self, call_chat_model, tavily_search) -> None:
         call_chat_model.side_effect = [
-            (json.dumps({"research_questions": ["why APP"], "search_tasks": [{"query": f"APP stock news {i}", "target": "APP", "reason": "mover", "priority": 1} for i in range(12)]}), "deepseek", "deepseek-v4-pro"),
-            (json.dumps({"evidence": [{"id": "1", "title": "APP update", "title_zh": "APP 股价异动更新", "summary_zh": "该来源用于解释 APP 当日异动。", "url": "https://www.reuters.com/app", "source": "reuters.com", "published_at": "2026-07-01", "snippet": "APP news", "relevance": "解释异动", "used_by": ["APP"]}]}), "deepseek", "deepseek-chat"),
-            (json.dumps({"summary": "摘要：APP 异动值得关注 [1]", "full_report": complete_markdown_report()}), "deepseek", "deepseek-v4-pro"),
-            (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", "deepseek-chat"),
-            (json.dumps({"executive_points": [{"text": "APP 异动是今日最重要观察。", "rationale": "研报把 APP 列为关键对象。", "evidence_ids": ["1"], "priority": 1}]}), "deepseek", "deepseek-chat"),
+            (json.dumps({"research_questions": ["why APP"], "search_tasks": [{"query": f"APP stock news {i}", "target": "APP", "reason": "mover", "priority": 1} for i in range(12)]}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"evidence": [{"id": "1", "title": "APP update", "title_zh": "APP 股价异动更新", "summary_zh": "该来源用于解释 APP 当日异动。", "url": "https://www.reuters.com/app", "source": "reuters.com", "published_at": "2026-07-01", "snippet": "APP news", "relevance": "解释异动", "used_by": ["APP"]}]}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"summary": "摘要：APP 异动值得关注 [1]", "full_report": complete_markdown_report()}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"executive_points": [{"text": "APP 异动是今日最重要观察。", "rationale": "研报把 APP 列为关键对象。", "evidence_ids": ["1"], "priority": 1}]}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
         ]
         tavily_search.return_value = [
             {"title": "APP update", "url": "https://www.reuters.com/app", "published_date": "2026-07-01", "content": "APP news", "score": 0.9}
@@ -504,20 +526,18 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
         self.assertEqual(result["executive_points"][0]["text"], "APP 异动是今日最重要观察。")
         self.assertEqual(result["executive_points"][0]["evidence_ids"], ["1"])
         self.assertTrue(result["pipeline"]["stages"])
-        self.assertEqual(call_chat_model.call_args_list[0].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
-        self.assertEqual(call_chat_model.call_args_list[1].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
-        self.assertEqual(call_chat_model.call_args_list[2].args[1], llm_analysis.DEFAULT_DEEPSEEK_PRO_MODEL)
-        self.assertEqual(call_chat_model.call_args_list[3].args[1], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
-        self.assertEqual(call_chat_model.call_args_list[4].args[1], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
+        self.assertEqual(result["model"], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
+        for item in call_chat_model.call_args_list:
+            self.assertEqual(item.args[1], llm_analysis.DEFAULT_DEEPSEEK_MODEL)
 
     @patch("llm_analysis.tavily_search", side_effect=RuntimeError("network blocked"))
     @patch("llm_analysis.call_chat_model")
     def test_generate_model_interpretation_partial_when_search_fails(self, call_chat_model, _tavily_search) -> None:
         call_chat_model.side_effect = [
-            (json.dumps({"research_questions": [], "search_tasks": [{"query": "APP stock news", "target": "APP"}]}), "deepseek", "deepseek-chat"),
-            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", "deepseek-chat"),
-            (json.dumps({"status": "warning", "issues": [{"type": "source_quality", "severity": "medium", "message": "缺少联网证据"}], "final_notes": "需人工复核"}), "deepseek", "deepseek-chat"),
-            (json.dumps({"executive_points": [{"text": "缺少联网证据，结论仅供观察。", "rationale": "搜索失败。", "priority": 1}]}), "deepseek", "deepseek-chat"),
+            (json.dumps({"research_questions": [], "search_tasks": [{"query": "APP stock news", "target": "APP"}]}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"status": "warning", "issues": [{"type": "source_quality", "severity": "medium", "message": "缺少联网证据"}], "final_notes": "需人工复核"}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"executive_points": [{"text": "缺少联网证据，结论仅供观察。", "rationale": "搜索失败。", "priority": 1}]}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
         ]
 
         result = llm_analysis.generate_model_interpretation(sample_brief(), timeout=10)
@@ -531,9 +551,9 @@ class DailyBriefLlmAnalysisTests(unittest.TestCase):
     @patch("llm_analysis.call_chat_model")
     def test_generate_model_interpretation_falls_back_when_executive_points_fail(self, call_chat_model, tavily_search) -> None:
         call_chat_model.side_effect = [
-            (json.dumps({"research_questions": [], "search_tasks": []}), "deepseek", "deepseek-v4-pro"),
-            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", "deepseek-v4-pro"),
-            (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", "deepseek-chat"),
+            (json.dumps({"research_questions": [], "search_tasks": []}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"summary": "量化摘要", "full_report": complete_markdown_report()}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
+            (json.dumps({"status": "ok", "issues": [], "final_notes": "审计通过"}), "deepseek", llm_analysis.DEFAULT_DEEPSEEK_MODEL),
             RuntimeError("executive unavailable"),
         ]
         tavily_search.return_value = []

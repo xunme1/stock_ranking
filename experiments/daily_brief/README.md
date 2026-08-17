@@ -18,7 +18,7 @@ LLM analysis is optional. If you want the model to fill the first-page analysis,
 
 ```env
 DEEPSEEK_API_KEY=your_api_key
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_MODEL=deepseek-v4-flash
 # Recommended key pool, read in numeric order.
 TAVILY_API_KEY1=first_tavily_key
 TAVILY_API_KEY2=second_tavily_key
@@ -35,9 +35,9 @@ TAVILY_USAGE_FILE=experiments/daily_brief/output/tavily_usage.json
 DAILY_BRIEF_PUBLIC_BASE_URL=https://your-domain.example/daily-briefs/files
 ```
 
-`DEEPSEEK_MODEL` is optional and defaults to `deepseek-chat`. `DEEPSEEK_BASE_URL` can override the default compatible API endpoint if needed.
+`DEEPSEEK_MODEL` is optional and defaults to `deepseek-v4-flash`. `DEEPSEEK_BASE_URL` can override the default compatible API endpoint if needed.
 
-Qwen/DashScope remains available as a fallback when `--llm-model` starts with `qwen` or `dashscope:`. In that case, set `DASHSCOPE_API_KEY` or `BAILIAN_API_KEY`.
+The standard daily brief writing flow uses DeepSeek v4 Flash for every model stage. Use `DEEPSEEK_MODEL` or `--llm-model` only when an intentional override is required.
 
 Tavily is used for the deep research pipeline when `--use-llm` is enabled. Use `TAVILY_API_KEY1`, `TAVILY_API_KEY2`, and so on for the preferred key pool; numeric suffixes are read in order. `TAVILY_API_KEYS` and `TAVILY_API_KEY` remain supported for old deployments. The local usage file keeps an anonymous per-key monthly credit ledger (key hashes only), selects the least-consumed eligible key for each search task, and skips a key once the configured monthly cap would be exceeded.
 
@@ -87,13 +87,13 @@ MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh
 
 ## Prompt Design
 
-`llm_analysis.py` builds a compact `research_context` from the daily JSON, plans up to 8 targeted search tasks with `deepseek-v4-pro`, prefilters search results into core/background/watchlist/rejected evidence tiers, extracts up to 24 evidence items with `deepseek-v4-pro`, writes a Markdown Chinese research report with `deepseek-v4-pro`, audits unsupported facts, overstated causality, date mismatches, source quality, evidence-tier misuse, number consistency, and investment-advice risk with `deepseek-chat`, then asks `deepseek-chat` to distill 4-6 first-page `executive_points` from the final audited report.
+`llm_analysis.py` builds a compact `research_context` from the daily JSON, resolves the configured model once, and runs the whole writing pipeline with `deepseek-v4-flash` by default: it plans up to 8 targeted search tasks, prefilters search results into core/background/watchlist/rejected evidence tiers, extracts up to 24 evidence items, writes a Markdown Chinese research report, audits unsupported facts, overstated causality, date mismatches, source quality, evidence-tier misuse, number consistency, and investment-advice risk, then distills 4-6 first-page `executive_points` from the final audited report.
 
 The writer returns a short `summary` for the daily box and a Markdown `full_report` with required sections: 核心结论, 市场结构, 驱动因素与证据, 驱动因素源头拆解, 趋势判断, 关键观察对象, 风险情景, 下一交易日观察, and 免责声明. `text` and a compatibility `report` object are still emitted for backward compatibility.
 
 `executive_points` has the shape `[{text, rationale, evidence_ids, audit_note, priority}]`. It is a presentation layer summary only; generation failure falls back to existing `summary_points` and does not abort the daily brief.
 
-The prompt forbids invented news, fundamentals, earnings explanations, or external facts that are not present in the evidence list. Only `core_evidence` with `can_support_core_driver=true` can support core drivers; background/watchlist evidence may only be used for context or uncertainty. Later-dated evidence can only be used as follow-up observation, not as a same-day market cause. All `deepseek-v4-pro` outputs are cleaned for `<think>` blocks, reasoning prefixes, draft leakage, and Markdown fences before parsing or rendering; malformed JSON is repaired by `deepseek-chat`.
+The prompt forbids invented news, fundamentals, earnings explanations, or external facts that are not present in the evidence list. Only `core_evidence` with `can_support_core_driver=true` can support core drivers; background/watchlist evidence may only be used for context or uncertainty. Later-dated evidence can only be used as follow-up observation, not as a same-day market cause. DeepSeek v4 requests disable thinking output at the API layer, and all model outputs are still cleaned for `<think>` blocks, reasoning prefixes, draft leakage, and Markdown fences before parsing or rendering; malformed JSON is repaired by `deepseek-v4-flash`.
 
 ## Notes
 

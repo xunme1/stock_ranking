@@ -22,7 +22,7 @@ if str(EXPERIMENT_DIR) not in sys.path:
 from app.core.config import COMPANY_PROFILES_FILE  # noqa: E402
 from app.services.data_loader import normalize_market, normalize_ticker_for_market  # noqa: E402
 from app.services.ranking_service import default_benchmark_for_market, ranking_cache_path  # noqa: E402
-from llm_analysis import generate_model_interpretation  # noqa: E402
+from llm_analysis import DEFAULT_DEEPSEEK_MODEL, generate_model_interpretation  # noqa: E402
 
 
 OUTPUT_DIR = EXPERIMENT_DIR / "output"
@@ -514,7 +514,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-n", type=int, default=20, help="Top N threshold.")
     parser.add_argument("--move-threshold", type=int, default=10, help="Rank move threshold.")
     parser.add_argument("--use-llm", action="store_true", help="Call the configured LLM to fill model_interpretation.")
-    parser.add_argument("--llm-model", default="deepseek-chat", help="LLM model name. Defaults to DeepSeek; qwen* uses DashScope.")
+    parser.add_argument("--llm-model", default=DEFAULT_DEEPSEEK_MODEL, help=f"LLM model name. Defaults to {DEFAULT_DEEPSEEK_MODEL}.")
     parser.add_argument("--llm-timeout", type=int, default=60, help="LLM request timeout seconds.")
     parser.add_argument("--llm-max-tokens", type=int, default=1500, help="LLM max output tokens.")
     parser.add_argument("--llm-research-depth", choices=["full", "quant"], default="full", help="Research pipeline depth. full uses web search; quant skips it.")

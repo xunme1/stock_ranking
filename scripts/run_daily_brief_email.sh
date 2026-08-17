@@ -23,7 +23,7 @@ if [[ -z "${MARKETS:-}" ]]; then
   esac
 fi
 USE_LLM="${USE_LLM:-1}"
-LLM_MODEL="${LLM_MODEL:-${DEEPSEEK_MODEL:-deepseek-chat}}"
+LLM_MODEL="${LLM_MODEL:-${DEEPSEEK_MODEL:-deepseek-v4-flash}}"
 LLM_TIMEOUT="${LLM_TIMEOUT:-180}"
 LLM_MAX_TOKENS="${LLM_MAX_TOKENS:-1500}"
 LLM_RESEARCH_DEPTH="${LLM_RESEARCH_DEPTH:-full}"

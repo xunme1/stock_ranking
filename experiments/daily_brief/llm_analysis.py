@@ -19,8 +19,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 DASHSCOPE_COMPAT_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 DEEPSEEK_COMPAT_URL = "https://api.deepseek.com/chat/completions"
 TAVILY_SEARCH_URL = "https://api.tavily.com/search"
-DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
-DEFAULT_DEEPSEEK_PRO_MODEL = "deepseek-v4-pro"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
+# Compatibility alias for older imports; the daily brief pipeline now uses Flash for every stage.
+DEFAULT_DEEPSEEK_PRO_MODEL = DEFAULT_DEEPSEEK_MODEL
 MAX_RESEARCH_TASKS = 8
 MAX_EVIDENCE_ITEMS = 24
 MIN_FULL_REPORT_CHARS = 1800
@@ -1479,6 +1480,8 @@ def call_chat_model(
         "top_p": 0.8,
         "max_tokens": max_tokens,
     }
+    if provider == "deepseek" and request_model.startswith("deepseek-v4"):
+        payload["thinking"] = {"type": "disabled"}
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
 
@@ -1535,7 +1538,7 @@ def generate_research_plan(
     started = time.perf_counter()
     text, provider, model_name = call_chat_model(
         build_research_plan_messages(brief, validation, features, research_context),
-        DEFAULT_DEEPSEEK_PRO_MODEL,
+        model,
         timeout,
         max(max_tokens, 4000),
         json_mode=True,
@@ -1936,7 +1939,7 @@ def extract_evidence(
         return [], {"stage": "evidence_extract", "status": "skipped", "duration_ms": _elapsed(started), "evidence_count": 0}
     text, provider, model_name = call_chat_model(
         build_evidence_messages(brief, features, research_context, research_plan, search_results),
-        DEFAULT_DEEPSEEK_PRO_MODEL,
+        model,
         timeout,
         max(max_tokens, 12000),
         json_mode=True,
@@ -1969,7 +1972,7 @@ def write_research_report(
     started = time.perf_counter()
     text, provider, model_name = call_chat_model(
         build_writer_messages(brief, validation, features, research_context, research_plan, evidence),
-        DEFAULT_DEEPSEEK_PRO_MODEL,
+        model,
         timeout,
         max_report_tokens,
         temperature=0.25,
@@ -2001,7 +2004,7 @@ def audit_research_report(
     started = time.perf_counter()
     text, provider, model_name = call_chat_model(
         build_audit_messages(brief, features, research_context, evidence, report),
-        DEFAULT_DEEPSEEK_MODEL,
+        model,
         timeout,
         max(max_tokens, 4000),
         temperature=0.1,
@@ -2089,7 +2092,7 @@ def revise_research_report(
     started = time.perf_counter()
     text, provider, model_name = call_chat_model(
         build_revision_messages(brief, validation, features, research_context, evidence, report, audit),
-        DEFAULT_DEEPSEEK_MODEL,
+        model,
         timeout,
         max_report_tokens,
         temperature=0.15,
@@ -2113,13 +2116,14 @@ def generate_executive_points(
     report: dict[str, Any],
     evidence: list[dict[str, Any]],
     audit: dict[str, Any],
+    model: str,
     timeout: int,
     max_tokens: int,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     started = time.perf_counter()
     text, provider, model_name = call_chat_model(
         build_executive_points_messages(brief, report, evidence, audit),
-        DEFAULT_DEEPSEEK_MODEL,
+        model,
         timeout,
         max(max_tokens, 2500),
         temperature=0.18,
@@ -2171,8 +2175,8 @@ def generate_model_interpretation(
     started_all = time.perf_counter()
     stages: list[dict[str, Any]] = []
     errors: list[str] = []
-    provider = "deepseek"
-    resolved_model = DEFAULT_DEEPSEEK_PRO_MODEL
+    resolved_model = deepseek_model_name(model or DEFAULT_DEEPSEEK_MODEL)
+    provider = "dashscope" if should_use_dashscope(resolved_model) else "deepseek"
 
     validation_started = time.perf_counter()
     validation = validate_brief_data(brief)
@@ -2192,7 +2196,7 @@ def generate_model_interpretation(
         "fallback": True,
     }
     try:
-        research_plan, stage = generate_research_plan(brief, validation, features, research_context, model, timeout, max_tokens)
+        research_plan, stage = generate_research_plan(brief, validation, features, research_context, resolved_model, timeout, max_tokens)
         stages.append(stage)
     except Exception as exc:
         errors.append(f"research_plan: {exc}")
@@ -2230,7 +2234,7 @@ def generate_model_interpretation(
 
     evidence: list[dict[str, Any]] = []
     try:
-        evidence, stage = extract_evidence(brief, features, research_context, research_plan, candidate_search_results, model, timeout, max_tokens)
+        evidence, stage = extract_evidence(brief, features, research_context, research_plan, candidate_search_results, resolved_model, timeout, max_tokens)
         stages.append(stage)
     except Exception as exc:
         errors.append(f"evidence_extract: {exc}")
@@ -2246,7 +2250,7 @@ def generate_model_interpretation(
             research_context,
             research_plan,
             evidence,
-            model,
+            resolved_model,
             timeout,
             max_report_tokens,
         )
@@ -2267,7 +2271,7 @@ def generate_model_interpretation(
 
     audit = {"status": "warning" if errors else "ok", "issues": [], "final_notes": "未执行模型审计。"}
     try:
-        audit, stage = audit_research_report(brief, features, research_context, evidence, report, model, timeout, max_tokens)
+        audit, stage = audit_research_report(brief, features, research_context, evidence, report, resolved_model, timeout, max_tokens)
         stages.append(stage)
     except Exception as exc:
         errors.append(f"audit: {exc}")
@@ -2304,7 +2308,7 @@ def generate_model_interpretation(
                 evidence,
                 report,
                 revision_audit,
-                model,
+                resolved_model,
                 timeout,
                 max_report_tokens,
             )
@@ -2315,7 +2319,7 @@ def generate_model_interpretation(
                 stage["quality_issues"] = quality_issues
             stages.append(stage)
             try:
-                audit, stage = audit_research_report(brief, features, research_context, evidence, report, model, timeout, max_tokens)
+                audit, stage = audit_research_report(brief, features, research_context, evidence, report, resolved_model, timeout, max_tokens)
                 stage["stage"] = "audit_after_revision"
                 stages.append(stage)
             except Exception as exc:
@@ -2327,7 +2331,7 @@ def generate_model_interpretation(
 
     executive_points = normalize_executive_points([], brief)
     try:
-        executive_points, stage = generate_executive_points(brief, report, evidence, audit, timeout, max_tokens)
+        executive_points, stage = generate_executive_points(brief, report, evidence, audit, resolved_model, timeout, max_tokens)
         stages.append(stage)
     except Exception as exc:
         errors.append(f"executive_points: {exc}")
