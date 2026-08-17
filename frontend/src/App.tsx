@@ -1175,11 +1175,10 @@ function EarningsCalendarModal({
   onClose: () => void;
   onOpen: (ticker: string) => void;
 }) {
-  // US daily bars are normally available one calendar day behind Beijing time.
-  // Show the three calendar days *after* the latest available US close so the
-  // calendar remains an earnings preview rather than mixing in a stale day.
-  const startDate = addDays(asOfDate, 1);
-  const endDate = addDays(asOfDate, 3);
+  // The calendar mirrors the date selected on the homepage and keeps the
+  // original seven-day view for browsing upcoming company announcements.
+  const startDate = asOfDate;
+  const endDate = addDays(asOfDate, 6);
   const [previewIndex, setPreviewIndex] = useState<EarningsPreviewReportIndex | null>(null);
   const [previewsLoading, setPreviewsLoading] = useState(true);
   const [previewsUnavailable, setPreviewsUnavailable] = useState(false);
@@ -1230,8 +1229,8 @@ function EarningsCalendarModal({
       >
         <div className="modalHeader">
           <div>
-            <p className="eyebrow">最新美股收盘数据：{asOfDate} · {startDate} - {endDate}</p>
-            <h2 id="earnings-modal-title">收盘数据后 3 天预计发布财报</h2>
+            <p className="eyebrow">{startDate} - {endDate}</p>
+            <h2 id="earnings-modal-title">未来 7 天预计发布财报</h2>
           </div>
           <button className="iconButton" type="button" onClick={onClose} aria-label="关闭财报日历" title="关闭">
             <X size={16} aria-hidden="true" />

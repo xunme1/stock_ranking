@@ -440,16 +440,16 @@ Query 参数：
 
 ### GET `/api/earnings-reports/context`
 
-作用：返回最新本地美股收盘数据之后连续三天的财报候选。默认从 `data/raw/daily/QQQ.csv` 读取最新交易日，确保日线数据因时差延迟时，财报日历仍展示真正的后续预期日期。
+作用：返回服务器系统日期起连续三天的财报候选，不依赖本地美股日线是否更新。
 
 参数：
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `as_of_date` | date | 本地 QQQ 最新交易日 | 指定最新美股数据日，格式 `YYYY-MM-DD`；窗口从其下一天开始 |
+| `as_of_date` | date | 服务器系统日期 | 指定服务器日期，格式 `YYYY-MM-DD`；用于可复现查询 |
 | `days` | int | `3` | 候选窗口天数，`1`–`7` |
 
-返回值包含 `data_as_of_date`、`window_start`、`window_end`、`days` 与 `candidates`。其中 `report_date` 为兼容保留字段，等于 `window_start`。
+返回值包含 `server_date`、`window_start`、`window_end`、`days` 与 `candidates`。其中 `report_date` 为兼容保留字段，等于 `window_start`。
 
 ### GET `/api/earnings-reports/previews`
 
