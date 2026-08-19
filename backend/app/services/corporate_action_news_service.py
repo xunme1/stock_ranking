@@ -219,6 +219,21 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
                 PRIMARY KEY (event_id, ticker),
                 FOREIGN KEY (event_id) REFERENCES corporate_action_news(event_id)
             );
+            CREATE TABLE IF NOT EXISTS corporate_action_imported_objects (
+                bucket TEXT NOT NULL,
+                object_key TEXT NOT NULL,
+                etag TEXT NOT NULL,
+                source_agent TEXT NOT NULL DEFAULT '',
+                imported_at TEXT NOT NULL,
+                status TEXT NOT NULL,
+                total_rows INTEGER NOT NULL DEFAULT 0,
+                accepted_rows INTEGER NOT NULL DEFAULT 0,
+                rejected_rows INTEGER NOT NULL DEFAULT 0,
+                error_summary TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (bucket, object_key, etag)
+            );
+            CREATE INDEX IF NOT EXISTS idx_corporate_action_imported_objects_status
+            ON corporate_action_imported_objects (status, imported_at DESC);
             """
         )
         columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(corporate_action_news)").fetchall()}
@@ -675,6 +690,62 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
             )
     rematch_events(db_path=db_path)
     return len(rows)
+
+
+def archive_candidates(candidates: list[dict[str, Any]], market: str, db_path: Path = CORPORATE_ACTION_NEWS_DB, write: bool = True) -> list[dict[str, Any]]:
+    """Structure externally supplied candidates and archive only valid company events."""
+    market = normalize_market(market)
+    events = classify_candidates(candidates, market)
+    events = [
+        event
+        for event in events
+        if float(event.get("confidence") or 0) >= MIN_CONFIDENCE
+        and (str(event.get("ticker") or "").strip() or str(event.get("company_name") or "").strip())
+    ]
+    events = deduplicate_events(events)
+    if write and events:
+        save_events(events, db_path)
+    return events
+
+
+def imported_object_exists(bucket: str, object_key: str, etag: str, db_path: Path = CORPORATE_ACTION_NEWS_DB) -> bool:
+    ensure_db(db_path)
+    with db_connection(db_path) as conn:
+        row = conn.execute(
+            """SELECT 1 FROM corporate_action_imported_objects
+            WHERE bucket=? AND object_key=? AND etag=? AND status IN ('ok', 'partial')""",
+            (bucket, object_key, etag),
+        ).fetchone()
+    return row is not None
+
+
+def record_imported_object(
+    bucket: str,
+    object_key: str,
+    etag: str,
+    status: str,
+    total_rows: int,
+    accepted_rows: int,
+    rejected_rows: int,
+    source_agent: str = "",
+    errors: list[str] | None = None,
+    db_path: Path = CORPORATE_ACTION_NEWS_DB,
+) -> None:
+    ensure_db(db_path)
+    with db_connection(db_path) as conn:
+        conn.execute(
+            """INSERT INTO corporate_action_imported_objects
+            (bucket, object_key, etag, source_agent, imported_at, status, total_rows, accepted_rows, rejected_rows, error_summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(bucket, object_key, etag) DO UPDATE SET
+              source_agent=excluded.source_agent, imported_at=excluded.imported_at, status=excluded.status,
+              total_rows=excluded.total_rows, accepted_rows=excluded.accepted_rows,
+              rejected_rows=excluded.rejected_rows, error_summary=excluded.error_summary""",
+            (
+                bucket, object_key, etag, source_agent, _now(), status, total_rows, accepted_rows, rejected_rows,
+                " | ".join(errors or [])[:4000],
+            ),
+        )
 
 
 def rematch_events(markets: Iterable[str] = MARKETS, db_path: Path = CORPORATE_ACTION_NEWS_DB) -> int:

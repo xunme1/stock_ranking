@@ -160,6 +160,32 @@ Reapply stock-pool flags without new searches:
 Read cached data through `GET /api/corporate-actions/news?market=us` and inspect market freshness through `GET /api/corporate-actions/status`.
 The web UI is available at `/corporate-actions?market=us|cn|hk`; the dashboard entry follows the currently selected market.
 
+### OSS agent-batch import
+
+External agents can upload immutable UTF-8 JSONL files below `corporate-actions/v1/incoming/`, for example `corporate-actions/v1/incoming/cn/dt=2026-08-19/agent-a/batch.jsonl`. Each non-empty line must use `schema_version: "corporate-action-candidate/v1"` and include `market`, `event_type` (`buyback` or `reduction`), `headline`, `published_at` (`YYYY-MM-DD`), and an absolute `source_url`; `snippet`, `event_stage`, `source_quality`, `source_domain`, and `source_agent` are optional.
+
+The importer reads the generic OSS variables already supported by the deployment: `END_POINT`, `BUCKET`, `ACCESS_KEY_ID`, and `ACCESS_KEY_SECRET`. To isolate this service from other OSS uses, the equivalent `CORPORATE_ACTION_OSS_ENDPOINT`, `CORPORATE_ACTION_OSS_BUCKET`, `CORPORATE_ACTION_OSS_ACCESS_KEY_ID`, and `CORPORATE_ACTION_OSS_ACCESS_KEY_SECRET` take precedence. Optional `CORPORATE_ACTION_OSS_PREFIX` defaults to `corporate-actions/v1/incoming/` and `CORPORATE_ACTION_OSS_MAX_OBJECT_BYTES` defaults to 5 MiB.
+
+Preview a batch import without SQLite writes:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py --dry-run
+```
+
+Import new OSS object versions into SQLite:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py
+```
+
+The importer tracks `bucket + object_key + ETag` in `corporate_action_imported_objects`; successfully imported and partial objects are skipped on later runs, while an overwritten OSS object has a new ETag and is imported again.
+
+The scheduled prefix scan requires the OSS RAM policy action `oss:ListObjects` for the incoming prefix plus `oss:GetObject` for its objects. If deployment credentials only have object-read permission, import a known batch key without `ListObjects`:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py --object-key corporate-actions/v1/incoming/cn/dt=2026-08-19/agent-a/batch.jsonl
+```
+
 ## Local Web App
 
 Backend:

@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT_DIR / "backend"))
 from app.services import corporate_action_news_service as service  # noqa: E402
 from app.api import corporate_actions as corporate_actions_api  # noqa: E402
 import scripts.update_corporate_action_news as collector_script  # noqa: E402
+import scripts.import_corporate_action_oss as oss_import_script  # noqa: E402
 
 
 def event(**overrides: object) -> dict[str, object]:
@@ -165,6 +166,79 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(len(result), 41)
         self.assertEqual(post.call_count, 3)
         self.assertEqual(service.DEEPSEEK_STRUCTURING_WORKERS, 5)
+
+    def test_oss_candidate_validation_normalizes_optional_fields(self) -> None:
+        candidate, source_agent = oss_import_script.validate_candidate(
+            {
+                "schema_version": "corporate-action-candidate/v1",
+                "source_agent": "cn-agent-1",
+                "market": "cn",
+                "event_type": "buyback",
+                "headline": "Example buyback",
+                "published_at": "2026-08-19",
+                "source_url": "https://Example.com/news/1",
+            },
+            "corporate-actions/v1/incoming/cn/sample.jsonl",
+            1,
+        )
+        self.assertEqual(candidate["event_stage"], "announced")
+        self.assertEqual(candidate["source_domain"], "example.com")
+        self.assertEqual(source_agent, "cn-agent-1")
+
+    def test_oss_parser_keeps_valid_rows_and_reports_invalid_rows(self) -> None:
+        valid = json.dumps({
+            "schema_version": "corporate-action-candidate/v1", "market": "hk", "event_type": "reduction",
+            "headline": "Example stake sale", "published_at": "2026-08-19", "source_url": "https://example.com/news/2",
+        })
+        candidates, errors, source_agent = oss_import_script.parse_jsonl(
+            (valid + "\nnot-json\n").encode(), "batch.jsonl"
+        )
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(source_agent, "")
+
+    def test_oss_explicit_object_mode_uses_head_without_listing(self) -> None:
+        class Metadata:
+            etag = "etag-a"
+            content_length = 123
+
+        class FakeBucket:
+            def head_object(self, key: str) -> Metadata:
+                self.key = key
+                return Metadata()
+
+        bucket = FakeBucket()
+        objects = oss_import_script.explicit_objects(bucket, ["/incoming/cn/batch.jsonl", "incoming/cn/batch.jsonl"])
+        self.assertEqual(objects, [oss_import_script.OssObjectRef("incoming/cn/batch.jsonl", "etag-a", 123)])
+        self.assertEqual(bucket.key, "incoming/cn/batch.jsonl")
+
+    @patch.object(oss_import_script, "archive_candidates")
+    def test_oss_object_import_is_idempotent_per_etag(self, archive_candidates) -> None:
+        class FakeResponse:
+            def __init__(self, body: bytes) -> None:
+                self.body = body
+
+            def read(self) -> bytes:
+                return self.body
+
+        class FakeBucket:
+            def __init__(self, body: bytes) -> None:
+                self.body = body
+
+            def get_object(self, _key: str) -> FakeResponse:
+                return FakeResponse(self.body)
+
+        body = (json.dumps({
+            "schema_version": "corporate-action-candidate/v1", "market": "us", "event_type": "buyback",
+            "headline": "Apple buyback", "published_at": "2026-08-19", "source_url": "https://example.com/news/3",
+        }) + "\n").encode()
+        archive_candidates.side_effect = lambda candidates, *_args, **_kwargs: [event()] if candidates else []
+        bucket = FakeBucket(body)
+        first = oss_import_script.import_object(bucket, "test-bucket", "incoming/us/batch.jsonl", "etag-a", len(body), 1024, db_path=self.db_path)
+        second = oss_import_script.import_object(bucket, "test-bucket", "incoming/us/batch.jsonl", "etag-a", len(body), 1024, db_path=self.db_path)
+        self.assertEqual(first["status"], "ok")
+        self.assertEqual(second["status"], "skipped")
+        self.assertEqual(archive_candidates.call_count, 3)
 
     def test_tavily_key_pool_uses_round_robin_order(self) -> None:
         pool = ["load-balance-a", "load-balance-b", "load-balance-c"]

@@ -4,6 +4,7 @@ curl_cffi
 tqdm
 pyarrow
 python-dotenv
+oss2
 lxml
 fastapi
 uvicorn[standard]
