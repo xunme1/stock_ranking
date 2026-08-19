@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
+  Download,
+  ExternalLink,
   FileText,
   HelpCircle,
   Menu,
@@ -1917,13 +1919,26 @@ function fileSizeText(value: number) {
 }
 
 function DailyBriefCard({ report }: { report: DailyBriefReport }) {
+  const reportTitle = `${report.market_label} ${report.date} ${report.window} 日窗口`;
   return (
-    <a className="dailyBriefCard" href={report.url} target="_blank" rel="noreferrer">
-      <span>{report.market_label}</span>
-      <strong>{report.date}</strong>
-      <em>{report.window} 日窗口</em>
-      <small>{fileSizeText(report.size_bytes)}</small>
-    </a>
+    <article className="dailyBriefCard">
+      <div className="dailyBriefCardMain">
+        <span>{report.market_label}</span>
+        <strong>{report.date}</strong>
+        <em>{report.window} 日窗口</em>
+        <small>{fileSizeText(report.size_bytes)}</small>
+      </div>
+      <div className="dailyBriefCardActions" aria-label={`${reportTitle} 操作`}>
+        <a className="dailyBriefAction primary" href={report.url} target="_blank" rel="noreferrer" aria-label={`查看 ${reportTitle}`}>
+          <ExternalLink size={15} aria-hidden="true" />
+          查看
+        </a>
+        <a className="dailyBriefAction" href={report.url} download={report.filename} aria-label={`下载 ${reportTitle} HTML`}>
+          <Download size={15} aria-hidden="true" />
+          下载
+        </a>
+      </div>
+    </article>
   );
 }
 
@@ -1987,7 +2002,7 @@ function DailyBriefsPage() {
         <div>
           <p className="eyebrow">HTML Reports</p>
           <h2>按日期归档的日报 HTML</h2>
-          <p>点击任意市场卡片会在新窗口打开对应日报。列表只展示已经生成的正式日报文件。</p>
+          <p>每份日报可直接打开查看，也可以下载对应 HTML 文件。列表只展示已经生成的正式日报文件。</p>
         </div>
       </section>
 

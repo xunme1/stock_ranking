@@ -1294,6 +1294,7 @@ tbody td {
 .dailyBriefCard {
   display: grid;
   gap: 6px;
+  align-content: space-between;
   min-height: 118px;
   border: 1px solid #d8e0eb;
   border-radius: 8px;
@@ -1308,7 +1309,13 @@ tbody td {
   background: #edf4ff;
 }
 
-.dailyBriefCard span {
+.dailyBriefCardMain {
+  display: grid;
+  gap: 6px;
+}
+
+.dailyBriefCard > span,
+.dailyBriefCardMain > span {
   width: fit-content;
   border-radius: 999px;
   background: #1f6feb;
@@ -1318,23 +1325,72 @@ tbody td {
   padding: 3px 8px;
 }
 
-.dailyBriefCard strong {
+.dailyBriefCard > strong,
+.dailyBriefCardMain > strong {
   font-size: 17px;
 }
 
-.dailyBriefCard em,
-.dailyBriefCard small {
+.dailyBriefCard > em,
+.dailyBriefCard > small,
+.dailyBriefCardMain > em,
+.dailyBriefCardMain > small {
   color: #607086;
   font-size: 13px;
   font-style: normal;
   font-weight: 800;
 }
 
+.dailyBriefCardActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dailyBriefAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #cbd7e8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #415168;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 7px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.dailyBriefAction:hover {
+  border-color: #9fc5ff;
+  background: #edf4ff;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.dailyBriefAction.primary {
+  border-color: #1f6feb;
+  background: #1f6feb;
+  color: #ffffff;
+}
+
+.dailyBriefAction.primary:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
 .earningsReportCard {
   max-width: 310px;
 }
 
-.earningsReportCard span {
+.earningsReportCard > span {
   background: #7c3aed;
 }
 
