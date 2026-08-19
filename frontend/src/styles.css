@@ -318,6 +318,25 @@ h2 {
   color: #18212f;
 }
 
+.featureMenuTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #1f6feb;
+  border-radius: 7px;
+  background: #1f6feb;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 7px 11px;
+  white-space: nowrap;
+}
+
+.featureMenuTrigger:hover {
+  background: #1858bd;
+}
+
 .earningsCalendarButton {
   display: inline-flex;
   align-items: center;
@@ -344,11 +363,13 @@ h2 {
   opacity: 0.55;
 }
 
-.earningsReportLinks {
+.earningsReportActions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 12px 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #edf1f5;
+  background: #fbfcfe;
 }
 
 .earningsReportLink {
@@ -372,21 +393,190 @@ h2 {
   background: #e1eeff;
 }
 
-.earningsReportArchiveLink {
-  border-color: #c8d3df;
-  background: #f7f9fc;
+.earningsArchiveButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  border: 1px solid #c8d3df;
+  border-radius: 6px;
+  background: #ffffff;
   color: #526174;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
 }
 
-.earningsReportArchiveLink:hover {
+.earningsArchiveButton:hover:not(:disabled) {
   border-color: #8fa5bd;
   background: #edf1f6;
+}
+
+.earningsArchiveButton:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.earningsArchiveButton > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #e7edf5;
+  color: #415168;
+  font-size: 11px;
+  padding: 0 5px;
 }
 
 .earningsReportStatus {
   align-self: center;
   color: #6b7b90;
   font-size: 12px;
+}
+
+.featureDrawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(24, 33, 47, 0.36);
+  backdrop-filter: blur(2px);
+}
+
+.featureDrawer,
+.earningsArchiveDrawer {
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 92vw);
+  height: 100%;
+  border-left: 1px solid #cbd6e4;
+  background: #ffffff;
+  box-shadow: -18px 0 44px rgba(24, 33, 47, 0.2);
+  animation: drawerSlideIn 180ms ease-out;
+}
+
+@keyframes drawerSlideIn {
+  from { transform: translateX(22px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 22px 17px;
+  border-bottom: 1px solid #e2e7ef;
+}
+
+.drawerHeader h2,
+.drawerHeader h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.drawerIntro {
+  margin: 0;
+  padding: 15px 22px;
+  color: #607086;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.featureDrawerSection {
+  display: grid;
+  gap: 8px;
+  padding: 6px 14px 12px;
+}
+
+.featureDrawerLabel {
+  color: #7b8899;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 8px 8px 2px;
+  text-transform: uppercase;
+}
+
+.featureDrawerItem,
+.earningsArchiveItem {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #233044;
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.featureDrawerItem:hover,
+.earningsArchiveItem:hover {
+  border-color: #cbdcf4;
+  background: #f3f7fd;
+}
+
+.featureDrawerItem:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.featureDrawerItem > span:nth-child(2),
+.earningsArchiveItem > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.featureDrawerItem strong,
+.earningsArchiveItem strong {
+  font-size: 14px;
+}
+
+.featureDrawerItem small,
+.earningsArchiveItem small {
+  color: #718096;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.drawerItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #eaf2ff;
+  color: #1f6feb;
+}
+
+.earningsArchiveBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(24, 33, 47, 0.28);
+}
+
+.earningsArchiveDrawer {
+  width: min(370px, 90%);
+}
+
+.earningsArchiveList {
+  display: grid;
+  gap: 6px;
+  overflow: auto;
+  padding: 4px 12px 18px;
 }
 
 .primaryButton,
@@ -912,6 +1102,7 @@ tbody td {
 }
 
 .earningsModal {
+  position: relative;
   width: min(720px, 100%);
   max-height: min(720px, calc(100vh - 48px));
   overflow: hidden;
@@ -937,7 +1128,7 @@ tbody td {
 
 .earningsModalTableWrap {
   overflow: auto;
-  max-height: calc(min(720px, 100vh - 48px) - 92px);
+  max-height: calc(min(720px, 100vh - 48px) - 144px);
 }
 
 .earningsModalTable {
@@ -2436,7 +2627,18 @@ tbody td {
   .selectBox,
   .searchBox,
   .primaryButton,
-  .earningsCalendarButton {
+  .earningsCalendarButton,
+  .featureMenuTrigger {
+    width: 100%;
+  }
+
+  .earningsReportLink,
+  .earningsArchiveButton {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .featureDrawer {
     width: 100%;
   }
 

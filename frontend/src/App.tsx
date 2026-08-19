@@ -6,8 +6,10 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  Archive,
   FileText,
   HelpCircle,
+  Menu,
   Newspaper,
   RefreshCw,
   Search,
@@ -1182,6 +1184,7 @@ function EarningsCalendarModal({
   const [previewIndex, setPreviewIndex] = useState<EarningsPreviewReportIndex | null>(null);
   const [previewsLoading, setPreviewsLoading] = useState(true);
   const [previewsUnavailable, setPreviewsUnavailable] = useState(false);
+  const [showPreviewArchive, setShowPreviewArchive] = useState(false);
   const earningsRows = useMemo(
     () =>
       rows
@@ -1192,11 +1195,13 @@ function EarningsCalendarModal({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      if (showPreviewArchive) setShowPreviewArchive(false);
+      else onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, showPreviewArchive]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -1236,17 +1241,16 @@ function EarningsCalendarModal({
             <X size={16} aria-hidden="true" />
           </button>
         </div>
-        <div className="earningsReportLinks" aria-label="财报前瞻分析报告">
+        <div className="earningsReportActions" aria-label="财报前瞻分析报告">
           <a className="earningsReportLink" href={latestPreview?.url ?? EARNINGS_PREVIEW_LATEST_URL} target="_blank" rel="noreferrer">
             <FileText size={15} aria-hidden="true" />
             {latestPreview ? `查看最新报告（${latestPreview.report_date}）` : "查看最新财报前瞻分析"}
           </a>
-          {archivePreviews.map((report) => (
-            <a className="earningsReportLink earningsReportArchiveLink" href={report.url} target="_blank" rel="noreferrer" key={`${report.report_date}-${report.url}`}>
-              <FileText size={15} aria-hidden="true" />
-              查看 {report.report_date} 归档
-            </a>
-          ))}
+          <button className="earningsArchiveButton" type="button" onClick={() => setShowPreviewArchive(true)} disabled={previewsLoading || !archivePreviews.length}>
+            <Archive size={15} aria-hidden="true" />
+            历史报告
+            {archivePreviews.length ? <span>{archivePreviews.length}</span> : null}
+          </button>
           {previewsLoading ? <span className="earningsReportStatus">正在同步归档列表…</span> : null}
           {previewsUnavailable ? <span className="earningsReportStatus">归档列表暂不可用</span> : null}
         </div>
@@ -1282,6 +1286,34 @@ function EarningsCalendarModal({
             </tbody>
           </table>
         </div>
+        {showPreviewArchive ? (
+          <div className="earningsArchiveBackdrop" role="presentation" onMouseDown={() => setShowPreviewArchive(false)}>
+            <aside className="earningsArchiveDrawer" role="dialog" aria-modal="true" aria-labelledby="earnings-archive-title" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="drawerHeader">
+                <div>
+                  <p className="eyebrow">Earnings Preview Archive</p>
+                  <h3 id="earnings-archive-title">历史财报前瞻</h3>
+                </div>
+                <button className="iconButton" type="button" onClick={() => setShowPreviewArchive(false)} aria-label="关闭历史财报抽屉">
+                  <X size={16} aria-hidden="true" />
+                </button>
+              </div>
+              <p className="drawerIntro">共 {archivePreviews.length} 份报告，按归档日期从新到旧排列。</p>
+              <div className="earningsArchiveList">
+                {archivePreviews.map((report) => (
+                  <a className="earningsArchiveItem" href={report.url} target="_blank" rel="noreferrer" key={`${report.report_date}-${report.url}`}>
+                    <span className="drawerItemIcon"><FileText size={17} aria-hidden="true" /></span>
+                    <span>
+                      <strong>{report.report_date}</strong>
+                      <small>{report.generated_at ? `生成于 ${report.generated_at.replace("T", " ").slice(0, 16)}` : "财报前瞻归档"}</small>
+                    </span>
+                    <ChevronRight size={17} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            </aside>
+          </div>
+        ) : null}
       </section>
     </div>
   );
@@ -2055,6 +2087,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [alertWindow, setAlertWindow] = useState(DEFAULT_WINDOW);
   const [alertLoading, setAlertLoading] = useState(false);
+  const [showFeatureDrawer, setShowFeatureDrawer] = useState(false);
   const marketMeta = MARKET_OPTIONS.find((item) => item.value === market) ?? MARKET_OPTIONS[0];
 
   const loadAlerts = (requestedWindow = alertWindow, requestedDate = ranking?.as_of_date ?? asOfDate) => {
@@ -2118,6 +2151,15 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
     loadRanking("");
   }, [market]);
 
+  useEffect(() => {
+    if (!showFeatureDrawer) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowFeatureDrawer(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showFeatureDrawer]);
+
   const filteredRows = useMemo(() => {
     const rows = ranking?.data ?? [];
     const term = query.trim().toUpperCase();
@@ -2162,6 +2204,7 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
                   setMarketClimate("neutral");
                   setStockTrendSignals({});
                   setShowEarningsCalendar(false);
+                  setShowFeatureDrawer(false);
                   setSelectedTicker(option.benchmark);
                   setTypeFilter(ALL_SECTORS);
                 }}
@@ -2181,20 +2224,62 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
           ) : (
             <span>前复权日线 / 恒生科技基准</span>
           )}
-          <button className="monitorButton" type="button" onClick={() => navigateTo(`/industry-flows?market=${market}`)}>
-            <BarChart3 size={16} aria-hidden="true" />
-            行业资金流向
-          </button>
-          <button className="monitorButton" type="button" onClick={() => navigateTo("/daily-briefs")}>
-            <FileText size={16} aria-hidden="true" />
-            历史日报
-          </button>
-          <button className="monitorButton" type="button" onClick={openAlerts}>
-            <Activity size={16} aria-hidden="true" />
-            排名监测
+          <button className="featureMenuTrigger" type="button" onClick={() => setShowFeatureDrawer(true)} aria-expanded={showFeatureDrawer} aria-controls="homepage-feature-drawer">
+            <Menu size={16} aria-hidden="true" />
+            功能菜单
           </button>
         </div>
       </header>
+
+      {showFeatureDrawer ? (
+        <div className="featureDrawerBackdrop" role="presentation" onMouseDown={() => setShowFeatureDrawer(false)}>
+          <aside id="homepage-feature-drawer" className="featureDrawer" role="dialog" aria-modal="true" aria-labelledby="feature-drawer-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="drawerHeader">
+              <div>
+                <p className="eyebrow">Workspace</p>
+                <h2 id="feature-drawer-title">功能菜单</h2>
+              </div>
+              <button className="iconButton" type="button" onClick={() => setShowFeatureDrawer(false)} aria-label="关闭功能菜单">
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="drawerIntro">数据筛选留在主页，低频分析和报告入口集中在这里。</p>
+            <div className="featureDrawerSection">
+              <span className="featureDrawerLabel">分析工具</span>
+              <button className="featureDrawerItem" type="button" onClick={() => navigateTo(`/industry-flows?market=${market}`)}>
+                <span className="drawerItemIcon"><BarChart3 size={18} aria-hidden="true" /></span>
+                <span><strong>行业资金流向</strong><small>查看行业强弱和资金趋势</small></span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+              <button className="featureDrawerItem" type="button" onClick={() => { setShowFeatureDrawer(false); openAlerts(); }}>
+                <span className="drawerItemIcon"><Activity size={18} aria-hidden="true" /></span>
+                <span><strong>排名监测</strong><small>追踪排名稳定性与异常变化</small></span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+              <button className="featureDrawerItem" type="button" onClick={() => navigateTo(`/corporate-actions?market=${market}`)}>
+                <span className="drawerItemIcon"><Newspaper size={18} aria-hidden="true" /></span>
+                <span><strong>回购与减持</strong><small>聚合公司资本动作与公告</small></span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="featureDrawerSection">
+              <span className="featureDrawerLabel">报告与事件</span>
+              <button className="featureDrawerItem" type="button" onClick={() => navigateTo("/daily-briefs")}>
+                <span className="drawerItemIcon"><FileText size={18} aria-hidden="true" /></span>
+                <span><strong>历史日报</strong><small>浏览每日市场分析归档</small></span>
+                <ChevronRight size={17} aria-hidden="true" />
+              </button>
+              {market === "us" ? (
+                <button className="featureDrawerItem" type="button" onClick={() => { setShowFeatureDrawer(false); setShowEarningsCalendar(true); }} disabled={!ranking}>
+                  <span className="drawerItemIcon"><CalendarDays size={18} aria-hidden="true" /></span>
+                  <span><strong>财报日历</strong><small>未来 7 天财报与前瞻报告</small></span>
+                  <ChevronRight size={17} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+          </aside>
+        </div>
+      ) : null}
 
       {alerts && !alertDismissed ? (
         <RankingAlertCard
@@ -2242,16 +2327,6 @@ function DashboardPage({ initialMarket = "us" }: { initialMarket?: Market }) {
         <button className="primaryButton" type="button" onClick={() => loadRanking()} disabled={loading}>
           <RefreshCw size={16} aria-hidden="true" />
           {loading ? "计算中" : "刷新"}
-        </button>
-        {market === "us" ? (
-          <button className="earningsCalendarButton" type="button" onClick={() => setShowEarningsCalendar(true)} disabled={!ranking}>
-            <CalendarDays size={16} aria-hidden="true" />
-            财报日历
-          </button>
-        ) : null}
-        <button className="earningsCalendarButton" type="button" onClick={() => navigateTo(`/corporate-actions?market=${market}`)}>
-          <Newspaper size={16} aria-hidden="true" />
-          回购与减持
         </button>
       </section>
 
