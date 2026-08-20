@@ -127,6 +127,11 @@ def normalize_source_url(url: str) -> str:
     return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), path, "", urlencode(sorted(query)), ""))
 
 
+def is_absolute_http_url(url: object) -> bool:
+    parsed = urlparse(str(url or "").strip())
+    return parsed.scheme.lower() in {"http", "https"} and bool(parsed.netloc)
+
+
 def source_quality(url: str) -> str:
     domain = _domain(url)
     primary = ("sec.gov", "hkexnews.hk", "hkex.com.hk", "cninfo.com.cn", "sse.com.cn", "szse.cn", "nasdaq.com", "nyse.com")
@@ -182,6 +187,11 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
                 source_domain TEXT NOT NULL,
                 source_quality TEXT NOT NULL,
                 confidence REAL NOT NULL,
+                exchange TEXT NOT NULL DEFAULT '',
+                source_schema TEXT NOT NULL DEFAULT '',
+                agent_record_id TEXT NOT NULL DEFAULT '',
+                source_agent TEXT NOT NULL DEFAULT '',
+                evidence_text TEXT NOT NULL DEFAULT '',
                 in_stock_pool INTEGER NOT NULL DEFAULT 0,
                 attention_level TEXT NOT NULL DEFAULT 'normal',
                 pool_match_method TEXT NOT NULL DEFAULT '',
@@ -234,6 +244,25 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_corporate_action_imported_objects_status
             ON corporate_action_imported_objects (status, imported_at DESC);
+            CREATE TABLE IF NOT EXISTS corporate_action_import_rejections (
+                rejection_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                bucket TEXT NOT NULL,
+                object_key TEXT NOT NULL,
+                etag TEXT NOT NULL,
+                line_number INTEGER NOT NULL,
+                market TEXT NOT NULL DEFAULT '',
+                schema_version TEXT NOT NULL DEFAULT '',
+                source_agent TEXT NOT NULL DEFAULT '',
+                raw_payload TEXT NOT NULL,
+                error_code TEXT NOT NULL,
+                error_summary TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE (bucket, object_key, etag, line_number)
+            );
+            CREATE INDEX IF NOT EXISTS idx_corporate_action_import_rejections_market_status
+            ON corporate_action_import_rejections (market, status, created_at DESC);
             """
         )
         columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(corporate_action_news)").fetchall()}
@@ -241,6 +270,9 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
             conn.execute("ALTER TABLE corporate_action_news ADD COLUMN headline_zh TEXT NOT NULL DEFAULT ''")
         if "normalized_url" not in columns:
             conn.execute("ALTER TABLE corporate_action_news ADD COLUMN normalized_url TEXT NOT NULL DEFAULT ''")
+        for column in ("exchange", "source_schema", "agent_record_id", "source_agent", "evidence_text"):
+            if column not in columns:
+                conn.execute(f"ALTER TABLE corporate_action_news ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
         legacy_urls = conn.execute(
             "SELECT event_id, source_url FROM corporate_action_news WHERE normalized_url = ''"
         ).fetchall()
@@ -381,7 +413,7 @@ def resolve_published_date(result: dict[str, Any], timeout: int = 12) -> date | 
         if match and (parsed := _parse_date(match.group(1))):
             return parsed
     url = str(result.get("url") or "").strip()
-    if not url:
+    if not is_absolute_http_url(url):
         return None
     try:
         response = requests.get(
@@ -426,7 +458,7 @@ def _candidate_from_result(result: dict[str, Any], task: dict[str, str], resolve
     text = f"{title} {snippet}"
     event_type = _event_type(text)
     published = resolve_published_date(result) if resolve_date else _parse_date(result.get("published_date") or result.get("published_at") or result.get("date"))
-    if not url or not title or not event_type or EXCLUDED_RE.search(text) or not published:
+    if not is_absolute_http_url(url) or not title or not event_type or EXCLUDED_RE.search(text) or not published:
         return None
     return {
         "market": task["market"],
@@ -663,8 +695,9 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                 INSERT INTO corporate_action_news (
                     event_id, market, ticker, company_name, company_identity, event_type, event_stage, actor_name, actor_type,
                     headline, headline_zh, summary_zh, quantity_text, amount_text, ownership_change_text, published_at, event_date,
-                    source_url, normalized_url, source_domain, source_quality, confidence, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    source_url, normalized_url, source_domain, source_quality, confidence, exchange, source_schema, agent_record_id, source_agent, evidence_text,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(event_id) DO UPDATE SET
                     ticker=excluded.ticker, company_name=excluded.company_name, event_stage=excluded.event_stage,
                     actor_name=excluded.actor_name, actor_type=excluded.actor_type, headline=excluded.headline,
@@ -673,7 +706,9 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     ownership_change_text=excluded.ownership_change_text, published_at=excluded.published_at,
                     event_date=excluded.event_date, source_url=excluded.source_url, normalized_url=excluded.normalized_url,
                     source_domain=excluded.source_domain, source_quality=excluded.source_quality,
-                    confidence=excluded.confidence, updated_at=excluded.updated_at
+                    confidence=excluded.confidence, exchange=excluded.exchange, source_schema=excluded.source_schema,
+                    agent_record_id=excluded.agent_record_id,
+                    source_agent=excluded.source_agent, evidence_text=excluded.evidence_text, updated_at=excluded.updated_at
                 """,
                 (
                     event_id, market, normalized_ticker or None, str(event.get("company_name") or ""), identity,
@@ -685,7 +720,9 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     normalized_url,
                     str(event.get("source_domain") or _domain(str(event.get("source_url") or ""))),
                     str(event.get("source_quality") or source_quality(str(event.get("source_url") or ""))),
-                    float(event.get("confidence") or 0), now, now,
+                    float(event.get("confidence") or 0), str(event.get("exchange") or ""),
+                    str(event.get("source_schema") or ""), str(event.get("agent_record_id") or ""), str(event.get("source_agent") or ""),
+                    str(event.get("evidence_text") or ""), now, now,
                 ),
             )
     rematch_events(db_path=db_path)
@@ -708,13 +745,16 @@ def archive_candidates(candidates: list[dict[str, Any]], market: str, db_path: P
     return events
 
 
-def imported_object_exists(bucket: str, object_key: str, etag: str, db_path: Path = CORPORATE_ACTION_NEWS_DB) -> bool:
+def imported_object_exists(
+    bucket: str, object_key: str, etag: str, db_path: Path = CORPORATE_ACTION_NEWS_DB, include_partial: bool = True,
+) -> bool:
     ensure_db(db_path)
     with db_connection(db_path) as conn:
+        statuses = ("ok", "partial") if include_partial else ("ok",)
+        placeholders = ", ".join("?" for _ in statuses)
         row = conn.execute(
-            """SELECT 1 FROM corporate_action_imported_objects
-            WHERE bucket=? AND object_key=? AND etag=? AND status IN ('ok', 'partial')""",
-            (bucket, object_key, etag),
+            f"SELECT 1 FROM corporate_action_imported_objects WHERE bucket=? AND object_key=? AND etag=? AND status IN ({placeholders})",
+            (bucket, object_key, etag, *statuses),
         ).fetchone()
     return row is not None
 
@@ -744,6 +784,39 @@ def record_imported_object(
             (
                 bucket, object_key, etag, source_agent, _now(), status, total_rows, accepted_rows, rejected_rows,
                 " | ".join(errors or [])[:4000],
+            ),
+        )
+
+
+def quarantine_import_row(
+    bucket: str,
+    object_key: str,
+    etag: str,
+    line_number: int,
+    raw_payload: str,
+    error_code: str,
+    error_summary: str,
+    market: str = "",
+    schema_version: str = "",
+    source_agent: str = "",
+    db_path: Path = CORPORATE_ACTION_NEWS_DB,
+) -> None:
+    """Persist a rejected external row for review without exposing it as a news event."""
+    ensure_db(db_path)
+    now = _now()
+    with db_connection(db_path) as conn:
+        conn.execute(
+            """INSERT INTO corporate_action_import_rejections
+            (bucket, object_key, etag, line_number, market, schema_version, source_agent, raw_payload,
+             error_code, error_summary, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            ON CONFLICT(bucket, object_key, etag, line_number) DO UPDATE SET
+              market=excluded.market, schema_version=excluded.schema_version, source_agent=excluded.source_agent,
+              raw_payload=excluded.raw_payload, error_code=excluded.error_code, error_summary=excluded.error_summary,
+              status='pending', updated_at=excluded.updated_at""",
+            (
+                bucket, object_key, etag, line_number, normalize_market(market) if market else "",
+                schema_version[:100], source_agent[:200], raw_payload[:20000], error_code[:100], error_summary[:2000], now, now,
             ),
         )
 
@@ -923,11 +996,20 @@ def service_status(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> dict[str, Any]:
             counts = conn.execute(
                 "SELECT COUNT(*) AS count, COALESCE(SUM(in_stock_pool), 0) AS pool_count FROM corporate_action_news WHERE market = ?", (market,)
             ).fetchone()
+            quarantined = conn.execute(
+                "SELECT COUNT(*) AS count FROM corporate_action_import_rejections WHERE market = ? AND status = 'pending'", (market,)
+            ).fetchone()
+            latest_rejection = conn.execute(
+                """SELECT error_summary FROM corporate_action_import_rejections
+                WHERE market = ? AND status = 'pending' ORDER BY updated_at DESC LIMIT 1""", (market,)
+            ).fetchone()
         items.append({
             "market": market, "last_successful_as_of_date": str(latest.get("as_of_date", "")) if latest else "",
             "last_successful_refresh_at": str(latest.get("completed_at", "")) if latest else "",
             "last_status": str(latest.get("status", "unavailable")) if latest else "unavailable",
             "last_error": str(latest.get("error_summary", "")) if latest else "",
             "event_count": int(counts["count"]), "in_stock_pool_count": int(counts["pool_count"]),
+            "quarantined_count": int(quarantined["count"]),
+            "last_quarantine_error": str(latest_rejection["error_summary"]) if latest_rejection else "",
         })
     return {"data": items}

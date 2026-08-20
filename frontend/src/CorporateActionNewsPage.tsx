@@ -60,6 +60,15 @@ function isPoolEvent(item: CorporateActionNewsItem) {
   return item.in_stock_pool === true || item.in_stock_pool === 1 || item.attention_level === "high";
 }
 
+function safeExternalUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function groupStories(rows: CorporateActionNewsItem[]) {
   const grouped = new Map<string, CorporateActionNewsItem[]>();
   rows.forEach((row) => {
@@ -133,6 +142,7 @@ function NewsCard({
   const showOriginalTitle = Boolean(lead.headline_zh && lead.headline_zh !== lead.headline);
   const stocks = affectedStocks(story.events, market);
   const facts = storyFacts(story);
+  const sourceUrl = safeExternalUrl(lead.source_url);
 
   return (
     <article className={`corporateNewsCard ${emphasized ? "emphasized" : ""}`}>
@@ -201,10 +211,14 @@ function NewsCard({
           <Newspaper size={14} aria-hidden="true" />
           {lead.source_domain || "来源待确认"}
         </span>
-        <a href={lead.source_url} target="_blank" rel="noreferrer">
-          查看原文
-          <ExternalLink size={13} aria-hidden="true" />
-        </a>
+        {sourceUrl ? (
+          <a href={sourceUrl} target="_blank" rel="noreferrer">
+            查看原文
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        ) : (
+          <span>来源链接不可用</span>
+        )}
       </footer>
     </article>
   );

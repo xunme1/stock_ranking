@@ -61,6 +61,20 @@ TUSHARE_TOKEN=optional_tushare_token
 
 Never commit `.env`.
 
+### Website login
+
+To enable login protection, add all of the following values to `.env` (the feature stays disabled when none are configured, which is convenient for local data scripts):
+
+```env
+STOCK_RANKING_PASSWORD=use_a_long_unique_password
+STOCK_RANKING_SESSION_SECRET=at_least_32_random_characters_here
+STOCK_RANKING_SESSION_HOURS=12
+# Set to true when the deployed site is served over HTTPS.
+STOCK_RANKING_COOKIE_SECURE=true
+```
+
+Generate a session secret with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. When configured, all website data APIs and locally served report files require a signed, HttpOnly session cookie; `/api/health` remains public for deployment checks.
+
 ## Daily Data
 
 The local CSV schema consumed by the backend is:
@@ -164,9 +178,11 @@ The web UI is available at `/corporate-actions?market=us|cn|hk`; the dashboard e
 
 供外部 agent 执行的完整事件定义、字段契约、质量门槛和 OSS 路径规范见 [docs/corporate_action_data_collection_spec.md](docs/corporate_action_data_collection_spec.md)。
 
-External agents can upload immutable UTF-8 JSONL files below `corporate-actions/v1/incoming/`, for example `corporate-actions/v1/incoming/cn/dt=2026-08-19/agent-a/batch.jsonl`. Each non-empty line must use `schema_version: "corporate-action-candidate/v1"` and include `market`, `event_type` (`buyback` or `reduction`), `headline`, `published_at` (`YYYY-MM-DD`), and an absolute `source_url`; `snippet`, `event_stage`, `source_quality`, `source_domain`, and `source_agent` are optional.
+External agents can upload immutable UTF-8 JSONL files below `corporate-actions/v1/incoming/`, for example `corporate-actions/v1/incoming/cn/dt=2026-08-19/agent-a/batch.jsonl`. New agents should use `schema_version: "corporate-action-event/v2"` and supply a complete evidenced event; it is deterministically validated and written directly without a second DeepSeek call. Legacy `corporate-action-candidate/v1` lines remain supported as news candidates and continue through the DeepSeek structuring path.
 
 The importer reads the generic OSS variables already supported by the deployment: `END_POINT`, `BUCKET`, `ACCESS_KEY_ID`, and `ACCESS_KEY_SECRET`. To isolate this service from other OSS uses, the equivalent `CORPORATE_ACTION_OSS_ENDPOINT`, `CORPORATE_ACTION_OSS_BUCKET`, `CORPORATE_ACTION_OSS_ACCESS_KEY_ID`, and `CORPORATE_ACTION_OSS_ACCESS_KEY_SECRET` take precedence. Optional `CORPORATE_ACTION_OSS_PREFIX` defaults to `corporate-actions/v1/incoming/` and `CORPORATE_ACTION_OSS_MAX_OBJECT_BYTES` defaults to 5 MiB.
+
+For import safety, `CORPORATE_ACTION_OSS_MAX_OBJECT_ROWS` defaults to `1000` and `CORPORATE_ACTION_OSS_MAX_V1_CANDIDATES` defaults to `200`; excess batches are rejected before any event write or DeepSeek call.
 
 Preview a batch import without SQLite writes:
 
@@ -180,7 +196,13 @@ Import new OSS object versions into SQLite:
 .\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py
 ```
 
-The importer tracks `bucket + object_key + ETag` in `corporate_action_imported_objects`; successfully imported and partial objects are skipped on later runs, while an overwritten OSS object has a new ETag and is imported again.
+Retry an object previously marked `partial` after a transient model/service failure:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py --retry-partial
+```
+
+The importer tracks `bucket + object_key + ETag` in `corporate_action_imported_objects`; successfully imported and partial objects are skipped on later runs, while an overwritten OSS object has a new ETag and is imported again. Invalid direct-event rows are isolated in `corporate_action_import_rejections` with their original payload and validation error, rather than entering the news table; `/api/corporate-actions/status` reports pending isolation counts per market.
 
 The scheduled prefix scan requires the OSS RAM policy action `oss:ListObjects` for the incoming prefix plus `oss:GetObject` for its objects. If deployment credentials only have object-read permission, import a known batch key without `ListObjects`:
 

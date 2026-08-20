@@ -1,6 +1,6 @@
 # 回购与减持事件数据搜集与交付规范
 
-本文档是向“回购与减持”事件中心供数的统一契约，供人工研究员或其他 agent 使用。目标是搜集可核验的新闻线索并归档到 OSS；服务器随后统一完成结构化提取、链接去重、股票池匹配和 SQLite 入库。
+本文档是向“回购与减持”事件中心供数的统一契约，供人工研究员或其他 agent 使用。新 agent 应直接交付可入库的 v2 完整事件；服务器只做校验、链接去重、股票池匹配和 SQLite 入库。旧版 v1 新闻线索仍兼容，会由服务器使用 DeepSeek 结构化。
 
 ## 1. 工作边界
 
@@ -45,7 +45,40 @@
 
 文件必须是 UTF-8 编码的 `.jsonl`；每个非空行是一个独立 JSON 对象。UTF-8 BOM 可接受。不可上传 CSV、Excel、HTML、Markdown 或一个包含数组的 JSON 文件。
 
-### 必填字段
+### 首选：完整事件直入 v2
+
+新采集 agent 必须使用 `schema_version: "corporate-action-event/v2"`。每一行是一个完整公司事件；通过校验后直接入库，不会二次调用 DeepSeek。
+
+| 字段 | 要求 |
+| --- | --- |
+| `agent_record_id` | agent 在该 OSS 对象内唯一的稳定标识 |
+| `source_agent` | 固定 agent 标识，最多 200 字符 |
+| `market` | `us` / `cn` / `hk` |
+| `company_name` | 受影响上市公司名称 |
+| `event_type` | `buyback` / `reduction` |
+| `event_stage` | `announced` / `authorized` / `in_progress` / `executed` / `completed` |
+| `headline` | 原始标题或忠实标题，最多 500 字符 |
+| `headline_zh` | 中文标题，最多 500 字符 |
+| `summary_zh` | 中文事实摘要，最多 1,000 字符 |
+| `published_at` | 来源页面发布日期，`YYYY-MM-DD` |
+| `source_url` | 具体来源的绝对 HTTP(S) 链接 |
+| `source_quality` | `primary` / `mainstream` / `other` |
+| `confidence` | agent 置信度，必须在 `0.70` 到 `1.00` |
+| `evidence_text` | 支撑该事件的短原文证据，最多 1,000 字符；不得只写链接、结论或模型推理 |
+
+可选字段：`ticker`、`exchange`、`actor_name`、`actor_type`、`quantity_text`、`amount_text`、`ownership_change_text`、`event_date`、`source_domain`。日期字段一律为 `YYYY-MM-DD`。可选事实缺失时使用空字符串或省略，禁止补造。
+
+```jsonl
+{"schema_version":"corporate-action-event/v2","agent_record_id":"hk-repurchase-20260820-001","source_agent":"hk-repurchase-agent","market":"hk","ticker":"00020.HK","company_name":"示例公司","exchange":"HKEX","event_type":"buyback","event_stage":"executed","headline":"Example Company repurchased shares","headline_zh":"示例公司已回购股份","summary_zh":"公告披露公司于指定日期回购股份，数量和金额以原公告为准。","quantity_text":"1,000,000 shares","amount_text":"HK$10,000,000","ownership_change_text":"","published_at":"2026-08-20","event_date":"2026-08-19","source_url":"https://example.com/announcement/example-buyback","source_domain":"example.com","source_quality":"primary","confidence":0.95,"evidence_text":"The Company repurchased 1,000,000 shares on 19 August 2026."}
+```
+
+未通过 v2 校验的行不会进入新闻主表，而会带着原始 JSON、来源对象键和错误原因进入隔离区，等待修复。不要把无效 v2 记录改为 v1 来规避校验。
+
+### 兼容：候选线索 v1
+
+仅当 agent 无法可靠完成完整结构化时，才使用旧版 `schema_version: "corporate-action-candidate/v1"`；服务器会对 v1 再次调用结构化模型。
+
+### v1 必填字段
 
 | 字段 | 类型/可选值 | 要求 |
 | --- | --- | --- |
@@ -56,7 +89,7 @@
 | `published_at` | `YYYY-MM-DD` | 来源页面的发布日期 |
 | `source_url` | 绝对 `http`/`https` URL | 指向具体新闻、公告或申报，不得是搜索结果页或频道首页 |
 
-### 可选字段
+### v1 可选字段
 
 | 字段 | 可选值/格式 | 使用规则 |
 | --- | --- | --- |
@@ -109,6 +142,7 @@ corporate-actions/v1/incoming/hk/dt=2026-08-20/hk-repurchase-agent/20260820T0230
 
 - 上传文件必须视为不可变对象：每次交付使用新的对象键，禁止覆盖历史文件。
 - 一个文件可以包含多个市场，但推荐按市场拆分，便于失败重试和质量追踪。
+- 单个对象默认最多 `1,000` 个非空 JSONL 行；超过时整个对象会在入库前被拒绝。v1 候选行默认最多 `200` 条，避免触发过量服务器结构化调用；v2 完整事件不受该 v1 子限额影响。
 - 不要把访问密钥、Cookie、搜索 API Key、完整网页正文或内部推理过程写进 OSS 对象。
 - 上传 agent 应只被授予其专属前缀的 `PutObject` 权限；服务器导入账号需要 `GetObject`，定时前缀扫描还需要该前缀的 `ListObjects` 权限。
 
@@ -144,3 +178,5 @@ corporate-actions/v1/incoming/hk/dt=2026-08-20/hk-repurchase-agent/20260820T0230
 ```
 
 导入器会记录 `bucket + object_key + ETag`。已成功或部分成功的同一对象版本不会重复导入；替换对象会产生新的 ETag，因此不允许覆盖历史对象。导入后由服务器完成结构化提取、链接标准化去重和股票池标记；股票池内事件自动为 `high` 关注级别，其余为 `normal`。
+
+如果服务器在模型或网络暂时故障后把对象记录为 `partial`，运维人员可在故障恢复后用 `--retry-partial` 重试同一对象版本；事件和隔离记录均为幂等写入。

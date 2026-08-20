@@ -436,6 +436,16 @@ Query 参数：
 | `industry_name` | string | 行业名称 |
 | `flow_amount` | number | 资金流金额 |
 
+## 回购与减持事件接口
+
+### GET `/api/corporate-actions/news`
+
+作用：查询指定市场已归档的回购与既有股东减持事件。支持 `market`、`as_of_date`、`lookback_days`、`event_type`、`attention`、`in_stock_pool`、`ticker` 和 `limit` 筛选。返回事件来源、中文标题/摘要、股票池匹配结果，以及 v2 直入事件的 `exchange`、`source_schema`、`agent_record_id`、`source_agent` 和 `evidence_text`。
+
+### GET `/api/corporate-actions/status`
+
+作用：返回各市场的最近采集状态、事件数与股票池内事件数。每项额外包含 `quarantined_count` 和 `last_quarantine_error`，分别表示 OSS 直入批次中仍在待复核隔离区的无效行数量及最近原因；隔离行不会出现在新闻查询接口中。
+
 ## 每日报告接口
 
 ### GET `/api/earnings-reports/context`
