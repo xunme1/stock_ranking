@@ -162,6 +162,8 @@ The web UI is available at `/corporate-actions?market=us|cn|hk`; the dashboard e
 
 ### OSS agent-batch import
 
+供外部 agent 执行的完整事件定义、字段契约、质量门槛和 OSS 路径规范见 [docs/corporate_action_data_collection_spec.md](docs/corporate_action_data_collection_spec.md)。
+
 External agents can upload immutable UTF-8 JSONL files below `corporate-actions/v1/incoming/`, for example `corporate-actions/v1/incoming/cn/dt=2026-08-19/agent-a/batch.jsonl`. Each non-empty line must use `schema_version: "corporate-action-candidate/v1"` and include `market`, `event_type` (`buyback` or `reduction`), `headline`, `published_at` (`YYYY-MM-DD`), and an absolute `source_url`; `snippet`, `event_stage`, `source_quality`, `source_domain`, and `source_agent` are optional.
 
 The importer reads the generic OSS variables already supported by the deployment: `END_POINT`, `BUCKET`, `ACCESS_KEY_ID`, and `ACCESS_KEY_SECRET`. To isolate this service from other OSS uses, the equivalent `CORPORATE_ACTION_OSS_ENDPOINT`, `CORPORATE_ACTION_OSS_BUCKET`, `CORPORATE_ACTION_OSS_ACCESS_KEY_ID`, and `CORPORATE_ACTION_OSS_ACCESS_KEY_SECRET` take precedence. Optional `CORPORATE_ACTION_OSS_PREFIX` defaults to `corporate-actions/v1/incoming/` and `CORPORATE_ACTION_OSS_MAX_OBJECT_BYTES` defaults to 5 MiB.
