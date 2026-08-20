@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(PROJECT_ROOT / ".env")
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DAILY_DIR = DATA_DIR / "raw" / "daily"
 RAW_CN_DAILY_DIR = DATA_DIR / "raw" / "cn_daily"
@@ -33,3 +37,11 @@ CN_DEFAULT_BENCHMARK = "000905"
 HK_DEFAULT_BENCHMARK = "HSTECH"
 MIN_WINDOW = 2
 MAX_WINDOW = 60
+
+# Authentication is enabled only when both settings are provided. Keeping
+# this opt-in preserves local data-maintenance scripts while allowing deployed
+# instances to require a login without embedding the password in source code.
+AUTH_PASSWORD = os.getenv("STOCK_RANKING_PASSWORD", "")
+AUTH_SESSION_SECRET = os.getenv("STOCK_RANKING_SESSION_SECRET", "")
+AUTH_SESSION_HOURS = int(os.getenv("STOCK_RANKING_SESSION_HOURS", "12"))
+AUTH_COOKIE_SECURE = os.getenv("STOCK_RANKING_COOKIE_SECURE", "false").strip().lower() in {"1", "true", "yes"}

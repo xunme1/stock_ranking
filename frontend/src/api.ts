@@ -254,6 +254,11 @@ export type CorporateActionNewsResponse = {
   data: CorporateActionNewsItem[];
 };
 
+export type AuthSession = {
+  enabled: boolean;
+  authenticated: boolean;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 export type Market = "us" | "cn" | "hk";
 
@@ -264,12 +269,34 @@ function benchmarkForMarket(market: Market) {
 }
 
 async function requestJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`);
+  const response = await fetch(`${API_BASE}${path}`, { credentials: "include" });
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `HTTP ${response.status}`);
   }
   return response.json() as Promise<T>;
+}
+
+export function fetchAuthSession() {
+  return requestJson<AuthSession>("/api/auth/session");
+}
+
+export async function login(password: string) {
+  const response = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || "登录失败");
+  }
+  return response.json() as Promise<AuthSession>;
+}
+
+export async function logout() {
+  await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
 }
 
 export function fetchRanking(window: number, asOfDate: string, market: Market = "us") {

@@ -31,6 +31,7 @@ import {
 import {
   fetchDailyBars,
   fetchDailyBriefs,
+  fetchAuthSession,
   fetchEarningsPreviewReports,
   fetchEarningsSentimentReports,
   fetchIndustryFlowDates,
@@ -42,6 +43,8 @@ import {
   fetchRankingDates,
   fetchStockPeers,
   fetchStockProfile,
+  login,
+  logout,
   type AShareLeader,
   type CompanyProfile,
   type DailyBar,
@@ -60,6 +63,7 @@ import {
   type StockPeers
 } from "./api";
 import CorporateActionNewsPage from "./CorporateActionNewsPage";
+import LoginPage from "./LoginPage";
 
 const DEFAULT_WINDOW = 10;
 const WINDOW_OPTIONS = [10, 20];
@@ -2992,6 +2996,10 @@ function StockDetailPage({ ticker, initialDate, market }: { ticker: string; init
 
 export default function App() {
   const [route, setRoute] = useState<RouteState>(() => parseRoute());
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authEnabled, setAuthEnabled] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     const handleRoute = () => setRoute(parseRoute());
@@ -2999,24 +3007,46 @@ export default function App() {
     return () => window.removeEventListener("popstate", handleRoute);
   }, []);
 
+  useEffect(() => {
+    fetchAuthSession()
+      .then((session) => {
+        setAuthEnabled(session.enabled);
+        setAuthenticated(session.authenticated);
+      })
+      .catch(() => setAuthError("无法连接登录服务，请稍后重试。"))
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  const handleLogin = async (password: string) => {
+    const session = await login(password);
+    setAuthEnabled(session.enabled);
+    setAuthenticated(session.authenticated);
+    setAuthError("");
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setAuthenticated(false);
+  };
+
+  if (authLoading) return <main className="loginPage"><div className="loginLoading">正在检查登录状态…</div></main>;
+  if (authEnabled && !authenticated) return <LoginPage onLogin={handleLogin} error={authError} />;
+
+  let page: React.ReactNode;
+
   if (route.page === "stock" && route.ticker) {
-    return <StockDetailPage ticker={route.ticker} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
-  }
-  if (route.page === "industryFlowDetail" && route.industryName) {
-    return <IndustryFlowDetailPage industryName={route.industryName} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
-  }
-  if (route.page === "industryFlows") {
-    return <IndustryFlowPage initialDate={route.date ?? ""} initialMarket={route.market ?? "us"} />;
-  }
-  if (route.page === "dailyBriefs") {
-    return <DailyBriefsPage />;
-  }
-  if (route.page === "earningsReports") {
-    return <EarningsReportsPage />;
-  }
-  if (route.page === "corporateActions") {
+    page = <StockDetailPage ticker={route.ticker} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
+  } else if (route.page === "industryFlowDetail" && route.industryName) {
+    page = <IndustryFlowDetailPage industryName={route.industryName} initialDate={route.date ?? ""} market={route.market ?? "us"} />;
+  } else if (route.page === "industryFlows") {
+    page = <IndustryFlowPage initialDate={route.date ?? ""} initialMarket={route.market ?? "us"} />;
+  } else if (route.page === "dailyBriefs") {
+    page = <DailyBriefsPage />;
+  } else if (route.page === "earningsReports") {
+    page = <EarningsReportsPage />;
+  } else if (route.page === "corporateActions") {
     const market = route.market ?? "us";
-    return (
+    page = (
       <CorporateActionNewsPage
         market={market}
         onBack={() => navigateTo(`/?market=${market}`)}
@@ -3026,6 +3056,14 @@ export default function App() {
         }
       />
     );
+  } else {
+    page = <DashboardPage initialMarket={route.market ?? "us"} />;
   }
-  return <DashboardPage initialMarket={route.market ?? "us"} />;
+
+  return (
+    <>
+      {authEnabled ? <button className="logoutButton" type="button" onClick={handleLogout}>退出登录</button> : null}
+      {page}
+    </>
+  );
 }

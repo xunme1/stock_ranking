@@ -22,6 +22,123 @@ input {
   font: inherit;
 }
 
+.loginPage {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.loginCard,
+.loginLoading {
+  width: min(100%, 410px);
+  border: 1px solid #d8e0eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(28, 49, 78, 0.12);
+  padding: 32px;
+}
+
+.loginBrand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #1f6feb;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.loginCard h1 {
+  margin-top: 21px;
+  font-size: 27px;
+}
+
+.loginCard > p {
+  margin: 12px 0 23px;
+  color: #607086;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.loginCard form,
+.loginCard label {
+  display: grid;
+}
+
+.loginCard form {
+  gap: 15px;
+}
+
+.loginCard label {
+  gap: 7px;
+  color: #415168;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.loginCard input {
+  width: 100%;
+  border: 1px solid #cbd7e5;
+  border-radius: 7px;
+  color: #18212f;
+  outline: none;
+  padding: 10px 11px;
+}
+
+.loginCard input:focus {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+}
+
+.loginButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 7px;
+  background: #1f6feb;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 11px;
+}
+
+.loginButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.loginError {
+  border: 1px solid #f0c4c4;
+  border-radius: 7px;
+  background: #fff4f4;
+  color: #9d1c1c;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 9px 10px;
+}
+
+.logoutButton {
+  position: fixed;
+  z-index: 20;
+  top: 14px;
+  right: 18px;
+  border: 1px solid #cbd7e5;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #415168;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 9px;
+}
+
+.logoutButton:hover {
+  border-color: #1f6feb;
+  color: #1f5fbf;
+}
+
 .app {
   width: min(1760px, 100%);
   margin: 0 auto;
