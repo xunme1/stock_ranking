@@ -7,7 +7,7 @@ import sys
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlparse
@@ -41,6 +41,7 @@ DEFAULT_PREFIX = "corporate-actions/v1/incoming/"
 DEFAULT_MAX_OBJECT_BYTES = 5 * 1024 * 1024
 DEFAULT_MAX_OBJECT_ROWS = 1000
 DEFAULT_MAX_V1_CANDIDATES = 200
+DEFAULT_LOOKBACK_DAYS = 30
 READ_CHUNK_BYTES = 64 * 1024
 OSS_RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
 
@@ -55,6 +56,7 @@ class OssConfig:
     max_object_bytes: int
     max_object_rows: int
     max_v1_candidates: int
+    lookback_days: int
 
 
 @dataclass(frozen=True)
@@ -75,6 +77,12 @@ class RejectedRow:
     source_agent: str = ""
 
 
+class ImportValidationError(ValueError):
+    def __init__(self, error_code: str, message: str) -> None:
+        super().__init__(message)
+        self.error_code = error_code
+
+
 def _env(primary: str, legacy: str) -> str:
     return (os.getenv(primary, "").strip() or os.getenv(legacy, "").strip())
 
@@ -90,6 +98,7 @@ def load_oss_config() -> OssConfig:
         max_object_bytes=int(os.getenv("CORPORATE_ACTION_OSS_MAX_OBJECT_BYTES", str(DEFAULT_MAX_OBJECT_BYTES))),
         max_object_rows=int(os.getenv("CORPORATE_ACTION_OSS_MAX_OBJECT_ROWS", str(DEFAULT_MAX_OBJECT_ROWS))),
         max_v1_candidates=int(os.getenv("CORPORATE_ACTION_OSS_MAX_V1_CANDIDATES", str(DEFAULT_MAX_V1_CANDIDATES))),
+        lookback_days=int(os.getenv("CORPORATE_ACTION_OSS_LOOKBACK_DAYS", str(DEFAULT_LOOKBACK_DAYS))),
     )
     missing = [
         name
@@ -109,6 +118,8 @@ def load_oss_config() -> OssConfig:
         raise ValueError("CORPORATE_ACTION_OSS_MAX_OBJECT_ROWS must be positive")
     if config.max_v1_candidates < 1:
         raise ValueError("CORPORATE_ACTION_OSS_MAX_V1_CANDIDATES must be positive")
+    if not 1 <= config.lookback_days <= 365:
+        raise ValueError("CORPORATE_ACTION_OSS_LOOKBACK_DAYS must be between 1 and 365")
     return config
 
 
@@ -174,7 +185,23 @@ def read_object_payload(bucket: Any, object_key: str, max_object_bytes: int, exp
     return b"".join(chunks)
 
 
-def validate_candidate(value: object, object_key: str, line_number: int) -> tuple[dict[str, Any], str]:
+def _validate_published_window(
+    published_at: str, object_key: str, line_number: int, as_of_date: date, lookback_days: int,
+) -> None:
+    published = date.fromisoformat(published_at)
+    start = as_of_date - timedelta(days=lookback_days)
+    end = as_of_date + timedelta(days=1)
+    if not start <= published <= end:
+        raise ImportValidationError(
+            "out_of_window",
+            f"{object_key}:{line_number}: published_at must be between {start.isoformat()} and {end.isoformat()}",
+        )
+
+
+def validate_candidate(
+    value: object, object_key: str, line_number: int, as_of_date: date | None = None,
+    lookback_days: int = DEFAULT_LOOKBACK_DAYS,
+) -> tuple[dict[str, Any], str]:
     if not isinstance(value, dict):
         raise ValueError(f"{object_key}:{line_number}: each JSONL row must be an object")
     if value.get("schema_version") != SCHEMA_VERSION:
@@ -193,10 +220,8 @@ def validate_candidate(value: object, object_key: str, line_number: int) -> tupl
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         raise ValueError(f"{object_key}:{line_number}: source_url must be an absolute HTTP(S) URL")
     published_at = str(value.get("published_at") or "").strip()
-    try:
-        date.fromisoformat(published_at)
-    except ValueError as exc:
-        raise ValueError(f"{object_key}:{line_number}: published_at must use YYYY-MM-DD") from exc
+    _validate_iso_date(published_at, "published_at", object_key, line_number)
+    _validate_published_window(published_at, object_key, line_number, as_of_date or date.today(), lookback_days)
     event_stage = str(value.get("event_stage") or "announced").strip().lower()
     if event_stage not in EVENT_STAGES:
         raise ValueError(f"{object_key}:{line_number}: invalid event_stage")
@@ -238,7 +263,10 @@ def _validate_iso_date(value: str, field: str, object_key: str, line_number: int
         raise ValueError(f"{object_key}:{line_number}: {field} must use YYYY-MM-DD") from exc
 
 
-def validate_direct_event(value: object, object_key: str, line_number: int) -> tuple[dict[str, Any], str]:
+def validate_direct_event(
+    value: object, object_key: str, line_number: int, as_of_date: date | None = None,
+    lookback_days: int = DEFAULT_LOOKBACK_DAYS,
+) -> tuple[dict[str, Any], str]:
     """Validate a v2 event without invoking the LLM or making network requests."""
     if not isinstance(value, dict):
         raise ValueError(f"{object_key}:{line_number}: each JSONL row must be an object")
@@ -266,6 +294,7 @@ def validate_direct_event(value: object, object_key: str, line_number: int) -> t
         raise ValueError(f"{object_key}:{line_number}: source_url must be an absolute HTTP(S) URL")
     published_at = _required_text(value, "published_at", object_key, line_number, 10)
     _validate_iso_date(published_at, "published_at", object_key, line_number)
+    _validate_published_window(published_at, object_key, line_number, as_of_date or date.today(), lookback_days)
     quality = _required_text(value, "source_quality", object_key, line_number, 20).lower()
     if quality not in {"primary", "mainstream", "other"}:
         raise ValueError(f"{object_key}:{line_number}: invalid source_quality")
@@ -331,6 +360,7 @@ def parse_jsonl(payload: bytes, object_key: str) -> tuple[list[dict[str, Any]], 
 
 def parse_import_jsonl(
     payload: bytes, object_key: str, max_rows: int = DEFAULT_MAX_OBJECT_ROWS, max_v1_candidates: int = DEFAULT_MAX_V1_CANDIDATES,
+    as_of_date: date | None = None, lookback_days: int = DEFAULT_LOOKBACK_DAYS,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[RejectedRow], str]:
     """Parse both schemas and retain rejected rows for the import quarantine."""
     try:
@@ -362,10 +392,10 @@ def parse_import_jsonl(
                 if row_agent and not source_agent:
                     source_agent = row_agent
             if schema_version == SCHEMA_VERSION:
-                candidate, row_agent = validate_candidate(value, object_key, line_number)
+                candidate, row_agent = validate_candidate(value, object_key, line_number, as_of_date, lookback_days)
                 candidates.append(candidate)
             elif schema_version == DIRECT_EVENT_SCHEMA_VERSION:
-                event, row_agent = validate_direct_event(value, object_key, line_number)
+                event, row_agent = validate_direct_event(value, object_key, line_number, as_of_date, lookback_days)
                 if event["agent_record_id"] in direct_ids:
                     raise ValueError(f"{object_key}:{line_number}: duplicate agent_record_id in object")
                 direct_ids.add(event["agent_record_id"])
@@ -374,7 +404,7 @@ def parse_import_jsonl(
                 raise ValueError(f"{object_key}:{line_number}: unsupported schema_version")
         except (json.JSONDecodeError, ValueError) as exc:
             message = str(exc)
-            error_code = "invalid_json" if isinstance(exc, json.JSONDecodeError) else "validation_error"
+            error_code = "invalid_json" if isinstance(exc, json.JSONDecodeError) else getattr(exc, "error_code", "validation_error")
             rejected.append(RejectedRow(line_number, raw_payload, error_code, message, market, schema_version, row_agent))
     if len(candidates) > max_v1_candidates:
         raise ValueError(f"{object_key}: v1 candidate count exceeds limit {max_v1_candidates}")
@@ -385,27 +415,36 @@ def import_object(
     bucket: Any, bucket_name: str, object_key: str, etag: str, size: int, max_object_bytes: int,
     dry_run: bool = False, db_path: Path = CORPORATE_ACTION_NEWS_DB, max_rows: int = DEFAULT_MAX_OBJECT_ROWS,
     max_v1_candidates: int = DEFAULT_MAX_V1_CANDIDATES, retry_partial: bool = False,
+    as_of_date: date | None = None, lookback_days: int = DEFAULT_LOOKBACK_DAYS,
 ) -> dict[str, Any]:
     if size > max_object_bytes:
         message = f"object size {size} exceeds limit {max_object_bytes}"
         if not dry_run:
-            record_imported_object(bucket_name, object_key, etag, "failed", 0, 0, 0, errors=[message], db_path=db_path)
-        return {"object_key": object_key, "etag": etag, "status": "failed", "error": message}
+            if imported_object_exists(bucket_name, object_key, etag, db_path, include_partial=False, include_rejected_oversize=True):
+                return {"object_key": object_key, "etag": etag, "status": "skipped", "reason": "oversize_already_rejected"}
+            record_imported_object(bucket_name, object_key, etag, "rejected_oversize", 0, 0, 0, errors=[message], db_path=db_path)
+        return {"object_key": object_key, "etag": etag, "status": "rejected", "error": message}
     if not dry_run and imported_object_exists(bucket_name, object_key, etag, db_path, include_partial=not retry_partial):
         return {"object_key": object_key, "etag": etag, "status": "skipped", "reason": "already_imported"}
     try:
         payload = read_object_payload(bucket, object_key, max_object_bytes, etag)
-        candidates, direct_events, rejected_rows, source_agent = parse_import_jsonl(payload, object_key, max_rows, max_v1_candidates)
+        candidates, direct_events, rejected_rows, source_agent = parse_import_jsonl(
+            payload, object_key, max_rows, max_v1_candidates, as_of_date, lookback_days,
+        )
         v1_events = []
+        diagnostics: list[str] = []
         for market in MARKETS:
             market_candidates = [candidate for candidate in candidates if candidate["market"] == market]
             if market_candidates:
-                v1_events.extend(archive_candidates(market_candidates, market, db_path, write=not dry_run))
+                market_events = archive_candidates(market_candidates, market, db_path, write=not dry_run, diagnostics=diagnostics)
+                if not market_events:
+                    diagnostics.append(f"v1_no_valid_events: market={market}")
+                v1_events.extend(market_events)
         v2_events = deduplicate_events(direct_events)
         if not dry_run and v2_events:
             save_events(v2_events, db_path)
         events = v1_events + v2_events
-        errors = [row.error_summary for row in rejected_rows]
+        errors = [row.error_summary for row in rejected_rows] + diagnostics
         if not dry_run:
             for row in rejected_rows:
                 quarantine_import_row(
@@ -413,14 +452,15 @@ def import_object(
                     row.market, row.schema_version, row.source_agent, db_path,
                 )
         total_rows = len([line for line in payload.decode("utf-8-sig").splitlines() if line.strip()])
-        accepted = len(events)
-        rejected = total_rows - accepted
-        if accepted == 0 and total_rows:
-            errors.append("no rows passed structural validation and event extraction")
-        status = "ok" if rejected == 0 else "partial"
+        rejected = len(rejected_rows)
+        accepted = total_rows - rejected
+        stored_event_count = len(events)
+        deduplicated_v2_rows = len(direct_events) - len(v2_events)
+        status = "partial" if errors else "ok"
         if not dry_run:
             record_imported_object(
                 bucket_name, object_key, etag, status, total_rows, accepted, rejected,
+                stored_event_count=stored_event_count, deduplicated_v2_rows=deduplicated_v2_rows,
                 source_agent=source_agent, errors=errors, db_path=db_path,
             )
         return {
@@ -431,6 +471,8 @@ def import_object(
             "accepted_rows": accepted,
             "rejected_rows": rejected,
             "quarantined_rows": len(rejected_rows),
+            "stored_event_count": stored_event_count,
+            "deduplicated_v2_rows": deduplicated_v2_rows,
             "errors": errors[:10],
         }
     except Exception as exc:
@@ -488,6 +530,7 @@ def main() -> None:
                 bucket, config.bucket, obj.key, obj.etag, obj.size,
                 config.max_object_bytes, args.dry_run, max_rows=config.max_object_rows,
                 max_v1_candidates=config.max_v1_candidates, retry_partial=args.retry_partial,
+                lookback_days=config.lookback_days,
             )
         )
     summary = {
@@ -498,6 +541,7 @@ def main() -> None:
         "objects_seen": len(results),
         "objects_ok": sum(item.get("status") == "ok" for item in results),
         "objects_partial": sum(item.get("status") == "partial" for item in results),
+        "objects_rejected": sum(item.get("status") == "rejected" for item in results),
         "objects_skipped": sum(item.get("status") == "skipped" for item in results),
         "objects_failed": sum(item.get("status") == "failed" for item in results),
         "results": results,

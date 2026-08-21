@@ -239,6 +239,8 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
                 total_rows INTEGER NOT NULL DEFAULT 0,
                 accepted_rows INTEGER NOT NULL DEFAULT 0,
                 rejected_rows INTEGER NOT NULL DEFAULT 0,
+                stored_event_count INTEGER NOT NULL DEFAULT 0,
+                deduplicated_v2_rows INTEGER NOT NULL DEFAULT 0,
                 error_summary TEXT NOT NULL DEFAULT '',
                 PRIMARY KEY (bucket, object_key, etag)
             );
@@ -273,6 +275,10 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
         for column in ("exchange", "source_schema", "agent_record_id", "source_agent", "evidence_text"):
             if column not in columns:
                 conn.execute(f"ALTER TABLE corporate_action_news ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
+        import_columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(corporate_action_imported_objects)").fetchall()}
+        for column in ("stored_event_count", "deduplicated_v2_rows"):
+            if column not in import_columns:
+                conn.execute(f"ALTER TABLE corporate_action_imported_objects ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0")
         legacy_urls = conn.execute(
             "SELECT event_id, source_url FROM corporate_action_news WHERE normalized_url = ''"
         ).fetchall()
@@ -534,15 +540,19 @@ def _load_deepseek_key() -> str:
     return os.getenv("DEEPSEEK_API_KEY", "").strip() or os.getenv("DEEPSEEK_KEY", "").strip()
 
 
-def classify_candidates(candidates: list[dict[str, Any]], market: str, timeout: int = 90) -> list[dict[str, Any]]:
+def classify_candidates(
+    candidates: list[dict[str, Any]], market: str, timeout: int = 90, diagnostics: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Use DeepSeek when available; retain deterministic, source-bound fallback records otherwise."""
     if len(candidates) > MAX_STRUCTURING_CANDIDATES:
         batches = [candidates[start:start + MAX_STRUCTURING_CANDIDATES] for start in range(0, len(candidates), MAX_STRUCTURING_CANDIDATES)]
         with ThreadPoolExecutor(max_workers=min(DEEPSEEK_STRUCTURING_WORKERS, len(batches))) as executor:
-            classified_batches = executor.map(lambda batch: classify_candidates(batch, market, timeout), batches)
+            classified_batches = executor.map(lambda batch: classify_candidates(batch, market, timeout, diagnostics), batches)
             return [event for batch in classified_batches for event in batch]
     key = _load_deepseek_key()
     if not candidates or not key:
+        if candidates and diagnostics is not None:
+            diagnostics.append("llm_degraded: missing DeepSeek API key")
         return [_fallback_extract(item) for item in candidates]
     compact = [
         {key: item.get(key, "") for key in ("headline", "snippet", "published_at", "source_url", "event_type", "event_stage")}
@@ -568,7 +578,9 @@ def classify_candidates(candidates: list[dict[str, Any]], market: str, timeout: 
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
         parsed = json.loads(content)
-    except (requests.RequestException, KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError):
+    except (requests.RequestException, KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        if diagnostics is not None:
+            diagnostics.append(f"llm_degraded: {type(exc).__name__}")
         return [_fallback_extract(item) for item in candidates]
 
     by_url = {str(item["source_url"]): item for item in candidates}
@@ -669,6 +681,7 @@ def deduplicate_events(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]
 def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTION_NEWS_DB) -> int:
     ensure_db(db_path)
     rows = list(events)
+    affected_event_ids: list[str] = []
     now = _now()
     with db_connection(db_path) as conn:
         for event in rows:
@@ -690,6 +703,7 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                 if identity_candidates & existing_identities:
                     event_id = str(existing["event_id"])
                     break
+            affected_event_ids.append(event_id)
             conn.execute(
                 """
                 INSERT INTO corporate_action_news (
@@ -725,14 +739,17 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     str(event.get("evidence_text") or ""), now, now,
                 ),
             )
-    rematch_events(db_path=db_path)
+    rematch_events(event_ids=affected_event_ids, db_path=db_path)
     return len(rows)
 
 
-def archive_candidates(candidates: list[dict[str, Any]], market: str, db_path: Path = CORPORATE_ACTION_NEWS_DB, write: bool = True) -> list[dict[str, Any]]:
+def archive_candidates(
+    candidates: list[dict[str, Any]], market: str, db_path: Path = CORPORATE_ACTION_NEWS_DB, write: bool = True,
+    diagnostics: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Structure externally supplied candidates and archive only valid company events."""
     market = normalize_market(market)
-    events = classify_candidates(candidates, market)
+    events = classify_candidates(candidates, market, diagnostics=diagnostics)
     events = [
         event
         for event in events
@@ -747,10 +764,15 @@ def archive_candidates(candidates: list[dict[str, Any]], market: str, db_path: P
 
 def imported_object_exists(
     bucket: str, object_key: str, etag: str, db_path: Path = CORPORATE_ACTION_NEWS_DB, include_partial: bool = True,
+    include_rejected_oversize: bool = False,
 ) -> bool:
     ensure_db(db_path)
     with db_connection(db_path) as conn:
-        statuses = ("ok", "partial") if include_partial else ("ok",)
+        statuses = ["ok"]
+        if include_partial:
+            statuses.append("partial")
+        if include_rejected_oversize:
+            statuses.append("rejected_oversize")
         placeholders = ", ".join("?" for _ in statuses)
         row = conn.execute(
             f"SELECT 1 FROM corporate_action_imported_objects WHERE bucket=? AND object_key=? AND etag=? AND status IN ({placeholders})",
@@ -767,6 +789,8 @@ def record_imported_object(
     total_rows: int,
     accepted_rows: int,
     rejected_rows: int,
+    stored_event_count: int = 0,
+    deduplicated_v2_rows: int = 0,
     source_agent: str = "",
     errors: list[str] | None = None,
     db_path: Path = CORPORATE_ACTION_NEWS_DB,
@@ -775,15 +799,17 @@ def record_imported_object(
     with db_connection(db_path) as conn:
         conn.execute(
             """INSERT INTO corporate_action_imported_objects
-            (bucket, object_key, etag, source_agent, imported_at, status, total_rows, accepted_rows, rejected_rows, error_summary)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (bucket, object_key, etag, source_agent, imported_at, status, total_rows, accepted_rows, rejected_rows,
+             stored_event_count, deduplicated_v2_rows, error_summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(bucket, object_key, etag) DO UPDATE SET
               source_agent=excluded.source_agent, imported_at=excluded.imported_at, status=excluded.status,
               total_rows=excluded.total_rows, accepted_rows=excluded.accepted_rows,
-              rejected_rows=excluded.rejected_rows, error_summary=excluded.error_summary""",
+              rejected_rows=excluded.rejected_rows, stored_event_count=excluded.stored_event_count,
+              deduplicated_v2_rows=excluded.deduplicated_v2_rows, error_summary=excluded.error_summary""",
             (
                 bucket, object_key, etag, source_agent, _now(), status, total_rows, accepted_rows, rejected_rows,
-                " | ".join(errors or [])[:4000],
+                stored_event_count, deduplicated_v2_rows, " | ".join(errors or [])[:4000],
             ),
         )
 
@@ -821,14 +847,27 @@ def quarantine_import_row(
         )
 
 
-def rematch_events(markets: Iterable[str] = MARKETS, db_path: Path = CORPORATE_ACTION_NEWS_DB) -> int:
+def rematch_events(
+    markets: Iterable[str] = MARKETS, event_ids: Iterable[str] | None = None, db_path: Path = CORPORATE_ACTION_NEWS_DB,
+) -> int:
     ensure_db(db_path)
     normalized_markets = [normalize_market(market) for market in markets]
+    target_ids = list(dict.fromkeys(str(event_id) for event_id in event_ids or [] if event_id))
     total = 0
     with db_connection(db_path) as conn:
         for market in normalized_markets:
             entries = load_pool_entries(market)
-            rows = conn.execute("SELECT event_id, market, ticker, company_name FROM corporate_action_news WHERE market = ?", (market,)).fetchall()
+            if not target_ids:
+                rows = conn.execute("SELECT event_id, market, ticker, company_name FROM corporate_action_news WHERE market = ?", (market,)).fetchall()
+            else:
+                rows = []
+                for start in range(0, len(target_ids), 900):
+                    chunk = target_ids[start:start + 900]
+                    placeholders = ", ".join("?" for _ in chunk)
+                    rows.extend(conn.execute(
+                        f"SELECT event_id, market, ticker, company_name FROM corporate_action_news WHERE market = ? AND event_id IN ({placeholders})",
+                        (market, *chunk),
+                    ).fetchall())
             for row in rows:
                 ticker, method, confidence = match_pool(dict(row), entries)
                 in_pool = bool(ticker)

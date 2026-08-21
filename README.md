@@ -182,7 +182,7 @@ External agents can upload immutable UTF-8 JSONL files below `corporate-actions/
 
 The importer reads the generic OSS variables already supported by the deployment: `END_POINT`, `BUCKET`, `ACCESS_KEY_ID`, and `ACCESS_KEY_SECRET`. To isolate this service from other OSS uses, the equivalent `CORPORATE_ACTION_OSS_ENDPOINT`, `CORPORATE_ACTION_OSS_BUCKET`, `CORPORATE_ACTION_OSS_ACCESS_KEY_ID`, and `CORPORATE_ACTION_OSS_ACCESS_KEY_SECRET` take precedence. Optional `CORPORATE_ACTION_OSS_PREFIX` defaults to `corporate-actions/v1/incoming/` and `CORPORATE_ACTION_OSS_MAX_OBJECT_BYTES` defaults to 5 MiB.
 
-For import safety, `CORPORATE_ACTION_OSS_MAX_OBJECT_ROWS` defaults to `1000` and `CORPORATE_ACTION_OSS_MAX_V1_CANDIDATES` defaults to `200`; excess batches are rejected before any event write or DeepSeek call.
+For import safety, `CORPORATE_ACTION_OSS_MAX_OBJECT_ROWS` defaults to `1000`, `CORPORATE_ACTION_OSS_MAX_V1_CANDIDATES` defaults to `200`, and `CORPORATE_ACTION_OSS_LOOKBACK_DAYS` defaults to `30`; excess batches and news outside the allowed publish-date window are rejected before any event write or DeepSeek call.
 
 Preview a batch import without SQLite writes:
 
@@ -202,7 +202,7 @@ Retry an object previously marked `partial` after a transient model/service fail
 .\.venv\Scripts\python.exe -B scripts\import_corporate_action_oss.py --retry-partial
 ```
 
-The importer tracks `bucket + object_key + ETag` in `corporate_action_imported_objects`; successfully imported and partial objects are skipped on later runs, while an overwritten OSS object has a new ETag and is imported again. Invalid direct-event rows are isolated in `corporate_action_import_rejections` with their original payload and validation error, rather than entering the news table; `/api/corporate-actions/status` reports pending isolation counts per market.
+The importer tracks `bucket + object_key + ETag` in `corporate_action_imported_objects`; successfully imported and partial objects are skipped on later runs, while an overwritten OSS object has a new ETag and is imported again. Oversized objects are recorded once as terminal rejections and skipped on later scans. Import audit rows distinguish structurally accepted rows, isolated rows, stored events, and v2 deduplication. Invalid direct-event rows are isolated in `corporate_action_import_rejections` with their original payload and validation error, rather than entering the news table; `/api/corporate-actions/status` reports pending isolation counts per market.
 
 The scheduled prefix scan requires the OSS RAM policy action `oss:ListObjects` for the incoming prefix plus `oss:GetObject` for its objects. If deployment credentials only have object-read permission, import a known batch key without `ListObjects`:
 

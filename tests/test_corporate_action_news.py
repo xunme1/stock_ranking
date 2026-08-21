@@ -216,6 +216,18 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(candidate["source_domain"], "example.com")
         self.assertEqual(source_agent, "cn-agent-1")
 
+    def test_oss_rejects_published_dates_outside_import_window(self) -> None:
+        candidate = {
+            "schema_version": "corporate-action-candidate/v1", "market": "us", "event_type": "buyback",
+            "headline": "Share repurchase", "published_at": "2026-06-01", "source_url": "https://example.com/old",
+        }
+        rows = (json.dumps(candidate) + "\n").encode()
+        _candidates, _events, rejected, _agent = oss_import_script.parse_import_jsonl(
+            rows, "batch.jsonl", as_of_date=date(2026, 8, 21), lookback_days=30,
+        )
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(rejected[0].error_code, "out_of_window")
+
     def test_oss_parser_keeps_valid_rows_and_reports_invalid_rows(self) -> None:
         valid = json.dumps({
             "schema_version": "corporate-action-candidate/v1", "market": "hk", "event_type": "reduction",
@@ -292,6 +304,19 @@ class CorporateActionNewsTests(unittest.TestCase):
             oss_import_script.read_object_payload(FakeBucket(), "batch.jsonl", 6, "etag-other")
         with self.assertRaisesRegex(ValueError, "exceeds limit"):
             oss_import_script.read_object_payload(FakeBucket(), "batch.jsonl", 5, "etag-a")
+
+    def test_oversize_object_is_recorded_once_then_skipped(self) -> None:
+        class FakeBucket:
+            def get_object(self, _key: str) -> None:
+                raise AssertionError("oversize object must not be downloaded")
+
+        first = oss_import_script.import_object(FakeBucket(), "test-bucket", "incoming/large.jsonl", "etag-large", 101, 100, db_path=self.db_path)
+        second = oss_import_script.import_object(FakeBucket(), "test-bucket", "incoming/large.jsonl", "etag-large", 101, 100, db_path=self.db_path)
+        self.assertEqual(first["status"], "rejected")
+        self.assertEqual(second["status"], "skipped")
+        with service.db_connection(self.db_path) as conn:
+            row = conn.execute("SELECT status FROM corporate_action_imported_objects").fetchone()
+        self.assertEqual(row["status"], "rejected_oversize")
 
     def test_import_parser_enforces_row_and_v1_candidate_limits(self) -> None:
         direct_body = (json.dumps(direct_event()) + "\n" + json.dumps(direct_event(agent_record_id="second"))).encode()
@@ -377,6 +402,33 @@ class CorporateActionNewsTests(unittest.TestCase):
             self.assertTrue(data[0]["evidence_text"])
 
     @patch.object(service, "load_pool_entries", return_value=[])
+    def test_v2_deduplication_is_not_reported_as_rejected_rows(self, _load_pool_entries) -> None:
+        class FakeResponse:
+            def read(self) -> bytes:
+                return (json.dumps(direct_event()) + "\n" + json.dumps(direct_event(
+                    agent_record_id="same-story", source_url="https://example.com/direct/apple-buyback?utm_source=agent",
+                ))).encode()
+
+        class FakeBucket:
+            def get_object(self, _key: str) -> FakeResponse:
+                return FakeResponse()
+
+        result = oss_import_script.import_object(FakeBucket(), "test-bucket", "incoming/dedup.jsonl", "etag-dedup", 1000, 2000, db_path=self.db_path)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["accepted_rows"], 2)
+        self.assertEqual(result["rejected_rows"], 0)
+        self.assertEqual(result["stored_event_count"], 1)
+        self.assertEqual(result["deduplicated_v2_rows"], 1)
+
+    @patch.object(service, "rematch_events")
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_save_events_rematches_only_written_event_ids(self, _load_pool_entries, rematch_events) -> None:
+        service.save_events([event()], self.db_path)
+        event_ids = rematch_events.call_args.kwargs["event_ids"]
+        self.assertEqual(len(event_ids), 1)
+        self.assertEqual(rematch_events.call_args.kwargs["db_path"], self.db_path)
+
+    @patch.object(service, "load_pool_entries", return_value=[])
     def test_invalid_v2_rows_are_quarantined_without_news_write(self, _load_pool_entries) -> None:
         class FakeResponse:
             def read(self) -> bytes:
@@ -426,6 +478,29 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(skipped["status"], "skipped")
         self.assertEqual(retried["status"], "partial")
         self.assertEqual(bucket.calls, 2)
+
+    @patch.object(service, "_load_deepseek_key", return_value="")
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_v1_llm_degradation_is_recorded_as_partial(self, _load_pool_entries, _load_key) -> None:
+        class FakeResponse:
+            def read(self) -> bytes:
+                return json.dumps({
+                    "schema_version": "corporate-action-candidate/v1", "market": "us", "event_type": "buyback",
+                    "headline": "Apple share repurchase", "published_at": "2026-08-19", "source_url": "https://example.com/v1-degraded",
+                }).encode()
+
+        class FakeBucket:
+            def get_object(self, _key: str) -> FakeResponse:
+                return FakeResponse()
+
+        result = oss_import_script.import_object(
+            FakeBucket(), "test-bucket", "incoming/v1-degraded.jsonl", "etag-v1-degraded", 500, 1000,
+            db_path=self.db_path, as_of_date=date(2026, 8, 21),
+        )
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["rejected_rows"], 0)
+        self.assertEqual(result["stored_event_count"], 0)
+        self.assertTrue(any(error.startswith("llm_degraded:") for error in result["errors"]))
 
     def test_tavily_key_pool_uses_round_robin_order(self) -> None:
         pool = ["load-balance-a", "load-balance-b", "load-balance-c"]
