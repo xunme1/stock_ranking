@@ -154,11 +154,11 @@ def ths_code_candidates(ticker: str, market: str, us_exchange_suffixes: dict[str
         return [normalized, f"{normalized}.HK"]
 
     normalized = normalize_us_ticker(ticker)
-    if "." in normalized and normalized.rsplit(".", 1)[-1] in {"O", "N", "A"}:
+    if "." in normalized and normalized.rsplit(".", 1)[-1] in {"O", "N", "A", "P"}:
         return [normalized]
     suffixes = us_exchange_suffixes or {}
     preferred = suffixes.get(normalized)
-    return unique_items([f"{normalized}{preferred or ''}", f"{normalized}.O", f"{normalized}.N", f"{normalized}.A"])
+    return unique_items([f"{normalized}{preferred or ''}", f"{normalized}.O", f"{normalized}.N", f"{normalized}.A", f"{normalized}.P"])
 
 
 def fetch_ifind_history(
