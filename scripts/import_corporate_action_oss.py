@@ -29,6 +29,7 @@ from app.services.corporate_action_news_service import (  # noqa: E402
     deduplicate_events,
     imported_object_exists,
     quarantine_import_row,
+    record_run,
     record_imported_object,
     save_events,
     source_quality,
@@ -463,6 +464,28 @@ def import_object(
                 stored_event_count=stored_event_count, deduplicated_v2_rows=deduplicated_v2_rows,
                 source_agent=source_agent, errors=errors, db_path=db_path,
             )
+            # An imported batch with valid events is a successful data refresh
+            # even though it did not originate from the web search collector.
+            # Recording it here keeps the status endpoint and default 30-day
+            # query window in sync with data delivered by other agents.
+            refresh_as_of = as_of_date or date.today()
+            refresh_start = refresh_as_of - timedelta(days=lookback_days)
+            for market in sorted({str(item.get("market", "")) for item in events}):
+                if market not in MARKETS:
+                    continue
+                market_events = [item for item in events if item.get("market") == market]
+                market_candidates = [item for item in candidates if item.get("market") == market]
+                record_run(
+                    market,
+                    refresh_as_of,
+                    refresh_start,
+                    status,
+                    task_count=0,
+                    candidate_count=len(market_candidates) + len([item for item in direct_events if item.get("market") == market]),
+                    stored_count=len(market_events),
+                    errors=errors,
+                    db_path=db_path,
+                )
         return {
             "object_key": object_key,
             "etag": etag,

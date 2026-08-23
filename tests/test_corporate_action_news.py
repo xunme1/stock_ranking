@@ -98,6 +98,23 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(result["data"][0]["headline_zh"], "苹果授权股份回购")
         self.assertEqual(result["data"][1]["attention_level"], "normal")
 
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_default_query_uses_newest_imported_event_without_collector_run(self, _load_pool_entries) -> None:
+        service.save_events([event(published_at="2026-08-19", event_date="2026-08-19")], self.db_path)
+        result = service.query_news("us", db_path=self.db_path)
+        self.assertEqual(result["as_of_date"], "2026-08-19")
+        self.assertEqual(result["refresh_through_date"], "2026-08-19")
+        self.assertEqual(result["count"], 1)
+        self.assertNotEqual(result["status"], "unavailable")
+
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_default_query_uses_imported_event_newer_than_collector_run(self, _load_pool_entries) -> None:
+        service.record_run("us", date(2026, 7, 31), date(2026, 7, 1), "ok", 4, 10, 2, db_path=self.db_path)
+        service.save_events([event(published_at="2026-08-19", event_date="2026-08-19")], self.db_path)
+        result = service.query_news("us", db_path=self.db_path)
+        self.assertEqual(result["as_of_date"], "2026-08-19")
+        self.assertEqual(result["count"], 1)
+
     @patch.object(service, "load_pool_entries")
     def test_repeated_source_is_idempotent_and_filters_work(self, load_pool_entries) -> None:
         load_pool_entries.return_value = [service.PoolEntry("cn", "000001", "平安银行")]

@@ -975,6 +975,26 @@ def _latest_run(market: str, db_path: Path) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def _latest_event_snapshot(market: str, db_path: Path) -> dict[str, str]:
+    """Return the newest stored event dates for a market.
+
+    OSS v2 batches are a second, controlled ingestion path.  They do not run
+    the web collector, so relying only on ``corporate_action_search_runs``
+    would make newly imported rows invisible until a later web collection.
+    """
+    ensure_db(db_path)
+    with db_connection(db_path) as conn:
+        row = conn.execute(
+            """SELECT MAX(published_at) AS published_at, MAX(updated_at) AS updated_at
+            FROM corporate_action_news WHERE market = ?""",
+            (normalize_market(market),),
+        ).fetchone()
+    return {
+        "published_at": str(row["published_at"] or "") if row else "",
+        "updated_at": str(row["updated_at"] or "") if row else "",
+    }
+
+
 def query_news(
     market: str, as_of_date: date | None = None, lookback_days: int = 30, event_type: str = "all",
     attention: str = "all", in_stock_pool: bool | None = None, ticker: str | None = None, limit: int = 200,
@@ -983,7 +1003,13 @@ def query_news(
     ensure_db(db_path)
     market = normalize_market(market)
     latest = _latest_run(market, db_path)
-    effective_as_of = as_of_date or (_parse_date(latest.get("as_of_date")) if latest else None)
+    latest_event = _latest_event_snapshot(market, db_path)
+    run_as_of = _parse_date(latest.get("as_of_date")) if latest else None
+    event_as_of = _parse_date(latest_event["published_at"])
+    # Explicit historical queries retain their requested boundary.  For the
+    # normal UI path use whichever data source is newest: a collector run or
+    # an OSS-imported event.  This makes a V2 upload visible immediately.
+    effective_as_of = as_of_date or max((value for value in (run_as_of, event_as_of) if value), default=None)
     if effective_as_of is None:
         return {"market": market, "as_of_date": "", "window_start": "", "lookback_days": lookback_days, "status": "unavailable", "stale": True,
                 "last_successful_refresh_at": "", "refresh_through_date": "", "count": 0, "in_stock_pool_count": 0, "outside_stock_pool_count": 0, "data": []}
@@ -1013,14 +1039,18 @@ def query_news(
               CASE source_quality WHEN 'primary' THEN 0 WHEN 'mainstream' THEN 1 ELSE 2 END, confidence DESC
             LIMIT ?""", params + [limit]
         ).fetchall()
-    refresh_through = str(latest.get("as_of_date", "")) if latest else ""
+    refresh_through_date = max((value for value in (run_as_of, event_as_of) if value), default=None)
+    refresh_through = refresh_through_date.isoformat() if refresh_through_date else ""
     stale = not refresh_through or refresh_through < effective_as_of.isoformat()
+    latest_refresh_at = str(latest.get("completed_at", "")) if latest else ""
+    if event_as_of and (not run_as_of or event_as_of >= run_as_of):
+        latest_refresh_at = latest_event["updated_at"]
     count = int(counts["count"] if counts else 0)
     pool_count = int(counts["pool_count"] if counts else 0)
     return {
         "market": market, "as_of_date": effective_as_of.isoformat(), "window_start": start.isoformat(), "lookback_days": lookback_days,
         "status": "stale" if stale else "ok" if count else "empty", "stale": stale,
-        "last_successful_refresh_at": str(latest.get("completed_at", "")) if latest else "", "refresh_through_date": refresh_through,
+        "last_successful_refresh_at": latest_refresh_at, "refresh_through_date": refresh_through,
         "count": count, "in_stock_pool_count": pool_count, "outside_stock_pool_count": count - pool_count,
         "data": [dict(row) for row in rows],
     }

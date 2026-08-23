@@ -268,8 +268,8 @@ function benchmarkForMarket(market: Market) {
   return "QQQ";
 }
 
-async function requestJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { credentials: "include", ...init });
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `HTTP ${response.status}`);
@@ -408,5 +408,7 @@ export function fetchCorporateActionNews(
     lookback_days: String(lookbackDays),
     limit: String(limit)
   });
-  return requestJson<CorporateActionNewsResponse>(`/api/corporate-actions/news?${params}`);
+  // The page's refresh button must always see a newly imported OSS batch,
+  // rather than a browser/proxy response cached from a previous visit.
+  return requestJson<CorporateActionNewsResponse>(`/api/corporate-actions/news?${params}`, { cache: "no-store" });
 }
