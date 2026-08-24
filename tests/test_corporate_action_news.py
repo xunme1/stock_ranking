@@ -7,7 +7,10 @@ import unittest
 from argparse import Namespace
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
+
+import pandas as pd
 
 
 
@@ -263,6 +266,65 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(parsed["evidence_text"], direct_event()["evidence_text"])
         self.assertEqual(source_agent, "direct-agent")
 
+    def test_v2_daily_repurchase_requires_verified_execution_date(self) -> None:
+        valid, _source_agent = oss_import_script.validate_direct_event(
+            direct_event(event_stage="executed", repurchase_shares=1_250_000, repurchase_shares_scope="daily"),
+            "batch.jsonl", 1,
+        )
+        self.assertEqual(valid["repurchase_shares"], 1_250_000)
+        self.assertEqual(valid["repurchase_shares_scope"], "daily")
+        with self.assertRaisesRegex(ValueError, "executed/completed event_date"):
+            oss_import_script.validate_direct_event(
+                direct_event(event_stage="authorized", repurchase_shares=1_250_000, repurchase_shares_scope="daily"),
+                "batch.jsonl", 1,
+            )
+        with self.assertRaisesRegex(ValueError, "only valid for buyback"):
+            oss_import_script.validate_direct_event(
+                direct_event(event_type="reduction", repurchase_shares=1_250_000, repurchase_shares_scope="daily"),
+                "batch.jsonl", 1,
+            )
+
+    @patch("scripts.ths_ifind_daily.load_us_exchange_suffixes", return_value={})
+    @patch("scripts.ths_ifind_daily.ifind_session")
+    @patch("scripts.ths_ifind_daily.fetch_ifind_history")
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_daily_buyback_snapshot_is_captured_once_and_exposed(self, _load_pool_entries, fetch_history, ifind_session, _suffixes) -> None:
+        ifind_session.return_value.__enter__.return_value = None
+        fetch_history.return_value = SimpleNamespace(frame=pd.DataFrame([
+            {"date": "2026-08-15", "close": 193.2},
+            {"date": "2026-08-18", "close": 194.1},
+            {"date": "2026-08-19", "close": 196.5},
+            {"date": "2026-08-20", "close": 195.8},
+        ]))
+        row = direct_event(event_stage="executed", repurchase_shares=1_250_000, repurchase_shares_scope="daily")
+        service.save_events([row], self.db_path)
+        first = service.capture_new_buyback_price_snapshots([row], date(2026, 8, 21), self.db_path)
+        second = service.capture_new_buyback_price_snapshots([row], date(2026, 8, 21), self.db_path)
+        news = service.query_news("us", date(2026, 8, 21), db_path=self.db_path)["data"][0]
+        chart = service.get_buyback_chart(news["event_id"], self.db_path)
+        self.assertEqual(first["captured"], 1)
+        self.assertEqual(second["skipped"], 1)
+        self.assertEqual(fetch_history.call_count, 1)
+        self.assertTrue(news["buyback_chart_available"])
+        self.assertEqual(chart["status"], "available")
+        self.assertEqual(chart["repurchase_shares"], 1_250_000)
+        self.assertEqual(len(chart["data"]), 4)
+
+    @patch("scripts.ths_ifind_daily.load_us_exchange_suffixes", return_value={})
+    @patch("scripts.ths_ifind_daily.ifind_session")
+    @patch("scripts.ths_ifind_daily.fetch_ifind_history")
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_buyback_chart_marks_event_outside_import_window(self, _load_pool_entries, fetch_history, ifind_session, _suffixes) -> None:
+        ifind_session.return_value.__enter__.return_value = None
+        fetch_history.return_value = SimpleNamespace(frame=pd.DataFrame([{"date": "2026-08-20", "close": 195.8}]))
+        row = direct_event(event_stage="executed", event_date="2026-08-01", repurchase_shares=500_000, repurchase_shares_scope="daily")
+        service.save_events([row], self.db_path)
+        service.capture_new_buyback_price_snapshots([row], date(2026, 8, 21), self.db_path)
+        news = service.query_news("us", date(2026, 8, 21), db_path=self.db_path)["data"][0]
+        chart = service.get_buyback_chart(news["event_id"], self.db_path)
+        self.assertEqual(news["buyback_chart_status"], "out_of_window")
+        self.assertEqual(chart["status"], "out_of_window")
+
     def test_v2_parser_quarantines_invalid_fields_and_duplicate_agent_ids(self) -> None:
         invalid_rows = [
             direct_event(evidence_text=""),
@@ -417,6 +479,26 @@ class CorporateActionNewsTests(unittest.TestCase):
             self.assertTrue(data[0]["agent_record_id"])
             self.assertEqual(data[0]["source_agent"], "direct-agent")
             self.assertTrue(data[0]["evidence_text"])
+
+    @patch.object(oss_import_script, "capture_new_buyback_price_snapshots", return_value={"eligible": 1, "captured": 1, "out_of_window": 0, "unavailable": 0, "skipped": 0})
+    @patch.object(service, "load_pool_entries", return_value=[])
+    def test_v2_import_captures_chart_snapshot_without_affecting_event_import(self, _load_pool_entries, capture_snapshots) -> None:
+        class FakeResponse:
+            def read(self) -> bytes:
+                return json.dumps(direct_event(event_stage="executed", repurchase_shares=100_000, repurchase_shares_scope="daily")).encode()
+
+        class FakeBucket:
+            def get_object(self, _key: str) -> FakeResponse:
+                return FakeResponse()
+
+        result = oss_import_script.import_object(
+            FakeBucket(), "test-bucket", "incoming/chart.jsonl", "etag-chart", 1000, 2000,
+            db_path=self.db_path, as_of_date=date(2026, 8, 21),
+        )
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["chart_snapshot"]["captured"], 1)
+        capture_snapshots.assert_called_once()
+        self.assertEqual(capture_snapshots.call_args.args[1], date(2026, 8, 21))
 
     @patch.object(service, "load_pool_entries", return_value=[])
     def test_v2_deduplication_is_not_reported_as_rejected_rows(self, _load_pool_entries) -> None:
@@ -594,6 +676,12 @@ class CorporateActionNewsTests(unittest.TestCase):
         self.assertEqual(query_news.call_args.args[4], "high")
         self.assertEqual(query_news.call_args.args[5], True)
         self.assertEqual(corporate_actions_api.get_corporate_action_status(), {"data": [{"market": "us"}]})
+
+    @patch.object(corporate_actions_api, "get_buyback_chart", return_value={"event_id": "event-1", "status": "available", "data": []})
+    def test_buyback_chart_api_route_forwards_event_id(self, get_buyback_chart) -> None:
+        response = corporate_actions_api.get_corporate_action_buyback_chart("event-1")
+        self.assertEqual(response["status"], "available")
+        get_buyback_chart.assert_called_once_with("event-1")
 
 
 if __name__ == "__main__":

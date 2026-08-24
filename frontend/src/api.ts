@@ -231,6 +231,10 @@ export type CorporateActionNewsItem = {
   source_domain: string;
   source_quality: "primary" | "mainstream" | "other";
   confidence: number;
+  repurchase_shares: number | null;
+  repurchase_shares_scope: "" | "daily" | "cumulative" | "program_total";
+  buyback_chart_status: "available" | "not_eligible" | "out_of_window" | "unavailable";
+  buyback_chart_available: boolean;
   in_stock_pool: boolean | number;
   attention_level: CorporateActionAttention;
   pool_match_method: string;
@@ -252,6 +256,22 @@ export type CorporateActionNewsResponse = {
   in_stock_pool_count: number;
   outside_stock_pool_count: number;
   data: CorporateActionNewsItem[];
+};
+
+export type BuybackChartResponse = {
+  event_id: string;
+  market: Market;
+  ticker: string | null;
+  company_name: string;
+  event_date: string;
+  repurchase_shares: number | null;
+  repurchase_shares_scope: "" | "daily" | "cumulative" | "program_total";
+  status: "available" | "not_eligible" | "out_of_window" | "unavailable";
+  message: string;
+  window_start: string;
+  window_end: string;
+  data_source: string;
+  data: Array<{ price_date: string; close: number }>;
 };
 
 export type AuthSession = {
@@ -411,4 +431,11 @@ export function fetchCorporateActionNews(
   // The page's refresh button must always see a newly imported OSS batch,
   // rather than a browser/proxy response cached from a previous visit.
   return requestJson<CorporateActionNewsResponse>(`/api/corporate-actions/news?${params}`, { cache: "no-store" });
+}
+
+export function fetchBuybackChart(eventId: string) {
+  return requestJson<BuybackChartResponse>(
+    `/api/corporate-actions/news/${encodeURIComponent(eventId)}/buyback-chart`,
+    { cache: "no-store" }
+  );
 }

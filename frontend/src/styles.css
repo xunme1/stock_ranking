@@ -2715,6 +2715,145 @@ tbody td {
   text-decoration: underline;
 }
 
+.buybackChartActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.buybackChartActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a9c7e6;
+  border-radius: 6px;
+  background: #f4f9ff;
+  color: #175ea8;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.buybackChartActions button:hover,
+.buybackChartActions button.active {
+  border-color: #2476c3;
+  background: #e7f2ff;
+}
+
+.buybackChartUnavailable,
+.buybackChartNotice {
+  margin: 12px 0 0;
+  border: 1px solid #eadbb2;
+  border-radius: 6px;
+  background: #fffaf0;
+  color: #7b5f00;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 8px 10px;
+}
+
+.buybackChartPanel {
+  margin-top: 13px;
+  border: 1px solid #d6e2ef;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f9fcff 0, #fff 74px);
+  overflow: hidden;
+}
+
+.buybackChartHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px 8px;
+}
+
+.buybackChartHeader span,
+.buybackChartHeader strong {
+  display: block;
+}
+
+.buybackChartHeader span {
+  color: #5d7691;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.buybackChartHeader strong {
+  margin-top: 3px;
+  color: #1a2d42;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.buybackChartHeader small {
+  flex: 0 0 auto;
+  color: #69778a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.buybackChartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 0 13px 9px;
+  color: #52627a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.buybackChartLegend span::before {
+  display: inline-block;
+  width: 9px;
+  height: 3px;
+  margin-right: 5px;
+  border-radius: 4px;
+  content: "";
+  vertical-align: middle;
+}
+
+.buybackChartLegend .closeLegend::before {
+  background: #1976a8;
+}
+
+.buybackChartLegend .repurchaseLegend::before {
+  background: #db4965;
+}
+
+.buybackChartCanvas {
+  position: relative;
+  min-height: 270px;
+  border-top: 1px solid #e7eef5;
+}
+
+.buybackChartCanvas > div:not(.buybackChartTooltip) {
+  width: 100% !important;
+}
+
+.buybackChartTooltip {
+  position: absolute;
+  z-index: 2;
+  gap: 3px;
+  min-width: 128px;
+  border: 1px solid #cbd8e6;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 12px rgba(33, 57, 82, 0.12);
+  color: #415168;
+  font-size: 11px;
+  padding: 7px 8px;
+  pointer-events: none;
+}
+
+.buybackChartTooltip strong {
+  color: #18212f;
+}
+
 .corporateNewsEmpty {
   border: 1px dashed #ccd6e3;
   border-radius: 8px;
@@ -2858,6 +2997,10 @@ tbody td {
 
   .corporateNewsMeta a {
     margin-left: 0;
+  }
+
+  .buybackChartHeader {
+    flex-direction: column;
   }
 
   .modalBackdrop {

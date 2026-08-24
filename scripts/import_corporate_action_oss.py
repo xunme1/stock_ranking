@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
@@ -26,6 +27,7 @@ from app.services.corporate_action_news_service import (  # noqa: E402
     MARKETS,
     MIN_CONFIDENCE,
     archive_candidates,
+    capture_new_buyback_price_snapshots,
     deduplicate_events,
     imported_object_exists,
     quarantine_import_row,
@@ -38,6 +40,7 @@ from app.services.corporate_action_news_service import (  # noqa: E402
 
 SCHEMA_VERSION = "corporate-action-candidate/v1"
 DIRECT_EVENT_SCHEMA_VERSION = "corporate-action-event/v2"
+REPURCHASE_SHARES_SCOPES = {"daily", "cumulative", "program_total"}
 DEFAULT_PREFIX = "corporate-actions/v1/incoming/"
 DEFAULT_MAX_OBJECT_BYTES = 5 * 1024 * 1024
 DEFAULT_MAX_OBJECT_ROWS = 1000
@@ -308,6 +311,29 @@ def validate_direct_event(
     event_date = _optional_text(value, "event_date", 10)
     if event_date:
         _validate_iso_date(event_date, "event_date", object_key, line_number)
+    repurchase_shares_raw = value.get("repurchase_shares")
+    repurchase_shares: float | None = None
+    if repurchase_shares_raw is not None and repurchase_shares_raw != "":
+        if isinstance(repurchase_shares_raw, bool):
+            raise ValueError(f"{object_key}:{line_number}: repurchase_shares must be a positive number")
+        try:
+            repurchase_shares = float(repurchase_shares_raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{object_key}:{line_number}: repurchase_shares must be a positive number") from exc
+        if not math.isfinite(repurchase_shares) or repurchase_shares <= 0:
+            raise ValueError(f"{object_key}:{line_number}: repurchase_shares must be a positive number")
+    repurchase_shares_scope = _optional_text(value, "repurchase_shares_scope", 30).lower()
+    if repurchase_shares is None and repurchase_shares_scope:
+        raise ValueError(f"{object_key}:{line_number}: repurchase_shares_scope requires repurchase_shares")
+    if repurchase_shares is not None:
+        if event_type != "buyback":
+            raise ValueError(f"{object_key}:{line_number}: repurchase_shares is only valid for buyback events")
+        if repurchase_shares_scope not in REPURCHASE_SHARES_SCOPES:
+            raise ValueError(
+                f"{object_key}:{line_number}: repurchase_shares_scope must be one of {', '.join(sorted(REPURCHASE_SHARES_SCOPES))}"
+            )
+        if repurchase_shares_scope == "daily" and (not event_date or event_stage not in {"executed", "completed"}):
+            raise ValueError(f"{object_key}:{line_number}: daily repurchase_shares requires an executed/completed event_date")
     event = {
         "agent_record_id": agent_record_id,
         "market": market,
@@ -326,6 +352,8 @@ def validate_direct_event(
         "ownership_change_text": _optional_text(value, "ownership_change_text", 500),
         "published_at": published_at,
         "event_date": event_date,
+        "repurchase_shares": repurchase_shares,
+        "repurchase_shares_scope": repurchase_shares_scope,
         "source_url": source_url,
         "source_domain": _optional_text(value, "source_domain", 255) or parsed_url.netloc.lower(),
         "source_quality": quality,
@@ -442,8 +470,16 @@ def import_object(
                     diagnostics.append(f"v1_no_valid_events: market={market}")
                 v1_events.extend(market_events)
         v2_events = deduplicate_events(direct_events)
+        chart_snapshot = {"eligible": 0, "captured": 0, "out_of_window": 0, "unavailable": 0, "skipped": 0}
         if not dry_run and v2_events:
             save_events(v2_events, db_path)
+            # Chart snapshots are auxiliary.  A market-data issue must never
+            # turn an otherwise valid OSS event batch into an import failure.
+            try:
+                chart_snapshot = capture_new_buyback_price_snapshots(v2_events, as_of_date or date.today(), db_path)
+            except Exception as exc:  # noqa: BLE001 - preserve the primary event import.
+                chart_snapshot["unavailable"] = len(v2_events)
+                chart_snapshot["error"] = str(exc)[:500]
         events = v1_events + v2_events
         errors = [row.error_summary for row in rejected_rows] + diagnostics
         if not dry_run:
@@ -496,6 +532,7 @@ def import_object(
             "quarantined_rows": len(rejected_rows),
             "stored_event_count": stored_event_count,
             "deduplicated_v2_rows": deduplicated_v2_rows,
+            "chart_snapshot": chart_snapshot,
             "errors": errors[:10],
         }
     except Exception as exc:

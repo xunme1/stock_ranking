@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Building2,
@@ -10,12 +10,15 @@ import {
   TrendingDown
 } from "lucide-react";
 import {
+  fetchBuybackChart,
   fetchCorporateActionNews,
+  type BuybackChartResponse,
   type CorporateActionEventType,
   type CorporateActionNewsItem,
   type CorporateActionNewsResponse,
   type Market
 } from "./api";
+import { createChart, HistogramSeries, LineSeries, type UTCTimestamp } from "lightweight-charts";
 
 const MARKET_OPTIONS: Array<{ value: Market; label: string; title: string }> = [
   { value: "us", label: "美股", title: "美股回购与减持新闻" },
@@ -98,6 +101,38 @@ function formatDate(value: string, includeTime = false) {
   }).format(parsed);
 }
 
+function chartTimestamp(value: string) {
+  return Math.floor(new Date(`${value}T00:00:00Z`).getTime() / 1000) as UTCTimestamp;
+}
+
+function formatShares(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "--";
+  const format = (number: number) => new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 }).format(number);
+  if (Math.abs(value) >= 100_000_000) return `${format(value / 100_000_000)}亿股`;
+  if (Math.abs(value) >= 10_000) return `${format(value / 10_000)}万股`;
+  return `${format(value)}股`;
+}
+
+function canShowBuybackChart(event: CorporateActionNewsItem) {
+  return event.buyback_chart_available === true;
+}
+
+function hasDailyRepurchaseData(event: CorporateActionNewsItem) {
+  return (
+    event.event_type === "buyback" &&
+    event.repurchase_shares_scope === "daily" &&
+    typeof event.repurchase_shares === "number" &&
+    event.repurchase_shares > 0
+  );
+}
+
+const CHART_STATUS_TEXT: Record<CorporateActionNewsItem["buyback_chart_status"], string> = {
+  available: "",
+  not_eligible: "该回购未提供可核验的单日股数、日期或代码。",
+  out_of_window: "回购日不在入库时保存的 10 日行情窗口内。",
+  unavailable: "该回购的行情快照暂不可用。"
+};
+
 function affectedStocks(events: CorporateActionNewsItem[], market: Market) {
   const stocks = new Map<string, { key: string; label: string; ticker: string; inPool: boolean }>();
   events.forEach((event) => {
@@ -126,6 +161,121 @@ function storyFacts(story: NewsStory) {
   ).slice(0, 4);
 }
 
+function BuybackPriceChart({ chart }: { chart: BuybackChartResponse }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !chart.data.length || !chart.event_date || chart.repurchase_shares === null) return;
+    container.innerHTML = "";
+    const graph = createChart(container, {
+      width: container.clientWidth,
+      height: 270,
+      layout: { background: { color: "#ffffff" }, textColor: "#4d6278" },
+      grid: { vertLines: { color: "#edf1f6" }, horzLines: { color: "#edf1f6" } },
+      leftPriceScale: { visible: true, borderColor: "#cbd6e2" },
+      rightPriceScale: { visible: true, borderColor: "#cbd6e2" },
+      timeScale: { borderColor: "#cbd6e2", timeVisible: false }
+    });
+    const tooltip = document.createElement("div");
+    tooltip.className = "buybackChartTooltip";
+    tooltip.style.display = "none";
+    container.appendChild(tooltip);
+    const closeSeries = graph.addSeries(LineSeries, {
+      priceScaleId: "left",
+      color: "#1976a8",
+      lineWidth: 2,
+      pointMarkersVisible: true,
+      title: "收盘价"
+    });
+    const repurchaseSeries = graph.addSeries(HistogramSeries, {
+      priceScaleId: "right",
+      color: "#db4965",
+      title: "当日回购股数"
+    });
+    const priceData = chart.data.map((point) => ({ time: chartTimestamp(point.price_date), value: point.close }));
+    closeSeries.setData(priceData);
+    repurchaseSeries.setData(
+      chart.data
+        .filter((point) => point.price_date === chart.event_date)
+        .map((point) => ({ time: chartTimestamp(point.price_date), value: chart.repurchase_shares as number, color: "#db4965" }))
+    );
+    graph.timeScale().fitContent();
+    const closeByTime = new Map(chart.data.map((point) => [String(chartTimestamp(point.price_date)), point]));
+    graph.subscribeCrosshairMove((param: any) => {
+      if (!param.point || param.point.x < 0 || param.point.y < 0 || param.time === undefined) {
+        tooltip.style.display = "none";
+        return;
+      }
+      const point = closeByTime.get(String(param.time));
+      if (!point) {
+        tooltip.style.display = "none";
+        return;
+      }
+      const buybackLine = point.price_date === chart.event_date ? `<span>当日回购 ${formatShares(chart.repurchase_shares)}</span>` : "";
+      tooltip.innerHTML = `<strong>${point.price_date}</strong><span>收盘价 ${point.close.toFixed(2)}</span>${buybackLine}`;
+      const box = container.getBoundingClientRect();
+      const left = Math.min(param.point.x + 14, box.width - 160);
+      const top = Math.min(param.point.y + 14, box.height - 90);
+      tooltip.style.transform = `translate(${Math.max(8, left)}px, ${Math.max(8, top)}px)`;
+      tooltip.style.display = "grid";
+    });
+    const resize = () => graph.applyOptions({ width: container.clientWidth });
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      graph.remove();
+    };
+  }, [chart]);
+
+  return <div className="buybackChartCanvas" ref={containerRef} />;
+}
+
+function BuybackChartPanel({ event }: { event: CorporateActionNewsItem }) {
+  const [chart, setChart] = useState<BuybackChartResponse | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    setChart(null);
+    setError("");
+    fetchBuybackChart(event.event_id)
+      .then((response) => {
+        if (alive) setChart(response);
+      })
+      .catch((err: Error) => {
+        if (alive) setError(err.message || "回购走势加载失败");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [event.event_id]);
+
+  if (error) return <div className="buybackChartNotice">回购走势加载失败：{error}</div>;
+  if (!chart) return <div className="buybackChartNotice">正在加载回购走势...</div>;
+  if (chart.status !== "available") return <div className="buybackChartNotice">{chart.message || "该回购走势暂不可用。"}</div>;
+
+  return (
+    <section className="buybackChartPanel">
+      <div className="buybackChartHeader">
+        <div>
+          <span>Buyback Price Snapshot</span>
+          <strong>
+            {chart.company_name}{chart.ticker ? `（${chart.ticker}）` : ""} · 收盘价与回购股数
+          </strong>
+        </div>
+        <small>{chart.window_start} 至 {chart.window_end}</small>
+      </div>
+      <div className="buybackChartLegend">
+        <span className="closeLegend">收盘价</span>
+        <span className="repurchaseLegend">{chart.event_date} 回购 {formatShares(chart.repurchase_shares)}</span>
+      </div>
+      <BuybackPriceChart chart={chart} />
+    </section>
+  );
+}
+
 function NewsCard({
   story,
   market,
@@ -138,11 +288,15 @@ function NewsCard({
   onOpenStock: CorporateActionNewsPageProps["onOpenStock"];
 }) {
   const { lead } = story;
+  const [expandedChartEventId, setExpandedChartEventId] = useState<string | null>(null);
   const title = lead.headline_zh || lead.headline;
   const showOriginalTitle = Boolean(lead.headline_zh && lead.headline_zh !== lead.headline);
   const stocks = affectedStocks(story.events, market);
   const facts = storyFacts(story);
   const sourceUrl = safeExternalUrl(lead.source_url);
+  const chartEvents = story.events.filter(canShowBuybackChart);
+  const unavailableChartEvents = story.events.filter((event) => hasDailyRepurchaseData(event) && !canShowBuybackChart(event));
+  const expandedChartEvent = chartEvents.find((event) => event.event_id === expandedChartEventId) ?? null;
 
   return (
     <article className={`corporateNewsCard ${emphasized ? "emphasized" : ""}`}>
@@ -171,6 +325,28 @@ function NewsCard({
           ))}
         </div>
       ) : null}
+
+      {chartEvents.length ? (
+        <div className="buybackChartActions">
+          {chartEvents.map((event) => (
+            <button
+              key={event.event_id}
+              className={expandedChartEventId === event.event_id ? "active" : ""}
+              type="button"
+              onClick={() => setExpandedChartEventId((current) => (current === event.event_id ? null : event.event_id))}
+            >
+              <TrendingDown size={15} aria-hidden="true" />
+              {expandedChartEventId === event.event_id ? "收起回购走势" : `查看${event.ticker || event.company_name}回购走势`}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {unavailableChartEvents.length ? (
+        <p className="buybackChartUnavailable">
+          {CHART_STATUS_TEXT[unavailableChartEvents[0].buyback_chart_status]}
+        </p>
+      ) : null}
+      {expandedChartEvent ? <BuybackChartPanel event={expandedChartEvent} /> : null}
 
       <div className="affectedStocks">
         <span className="affectedStocksLabel">

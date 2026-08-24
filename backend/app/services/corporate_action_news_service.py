@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import sqlite3
@@ -34,6 +35,8 @@ LAOHU_SEARCH_URL = "https://frontend-community.laohu8.com/search/v1/news"
 MARKETS = ("us", "cn", "hk")
 EVENT_TYPES = ("buyback", "reduction")
 EVENT_STAGES = ("announced", "authorized", "in_progress", "executed", "completed")
+REPURCHASE_SHARES_SCOPES = ("daily", "cumulative", "program_total")
+BUYBACK_CHART_WINDOW_DAYS = 10
 ATTENTION_LEVELS = ("high", "normal")
 MIN_CONFIDENCE = 0.70
 TRACKING_QUERY_KEYS = {"fbclid", "gclid", "dclid", "msclkid", "mc_cid", "mc_eid", "ref", "referrer"}
@@ -192,6 +195,8 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
                 agent_record_id TEXT NOT NULL DEFAULT '',
                 source_agent TEXT NOT NULL DEFAULT '',
                 evidence_text TEXT NOT NULL DEFAULT '',
+                repurchase_shares REAL,
+                repurchase_shares_scope TEXT NOT NULL DEFAULT '',
                 in_stock_pool INTEGER NOT NULL DEFAULT 0,
                 attention_level TEXT NOT NULL DEFAULT 'normal',
                 pool_match_method TEXT NOT NULL DEFAULT '',
@@ -265,6 +270,27 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_corporate_action_import_rejections_market_status
             ON corporate_action_import_rejections (market, status, created_at DESC);
+            CREATE TABLE IF NOT EXISTS corporate_action_price_snapshots (
+                event_id TEXT NOT NULL,
+                price_date TEXT NOT NULL,
+                close REAL NOT NULL,
+                data_source TEXT NOT NULL,
+                fetched_at TEXT NOT NULL,
+                PRIMARY KEY (event_id, price_date),
+                FOREIGN KEY (event_id) REFERENCES corporate_action_news(event_id)
+            );
+            CREATE TABLE IF NOT EXISTS corporate_action_chart_fetches (
+                event_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                data_source TEXT NOT NULL DEFAULT '',
+                window_start TEXT NOT NULL DEFAULT '',
+                window_end TEXT NOT NULL DEFAULT '',
+                attempted_at TEXT NOT NULL,
+                error_summary TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (event_id) REFERENCES corporate_action_news(event_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_corporate_action_chart_fetches_status
+            ON corporate_action_chart_fetches (status, attempted_at DESC);
             """
         )
         columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(corporate_action_news)").fetchall()}
@@ -272,9 +298,11 @@ def ensure_db(db_path: Path = CORPORATE_ACTION_NEWS_DB) -> None:
             conn.execute("ALTER TABLE corporate_action_news ADD COLUMN headline_zh TEXT NOT NULL DEFAULT ''")
         if "normalized_url" not in columns:
             conn.execute("ALTER TABLE corporate_action_news ADD COLUMN normalized_url TEXT NOT NULL DEFAULT ''")
-        for column in ("exchange", "source_schema", "agent_record_id", "source_agent", "evidence_text"):
+        for column in ("exchange", "source_schema", "agent_record_id", "source_agent", "evidence_text", "repurchase_shares_scope"):
             if column not in columns:
                 conn.execute(f"ALTER TABLE corporate_action_news ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
+        if "repurchase_shares" not in columns:
+            conn.execute("ALTER TABLE corporate_action_news ADD COLUMN repurchase_shares REAL")
         import_columns = {str(row["name"]) for row in conn.execute("PRAGMA table_info(corporate_action_imported_objects)").fetchall()}
         for column in ("stored_event_count", "deduplicated_v2_rows"):
             if column not in import_columns:
@@ -710,8 +738,8 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     event_id, market, ticker, company_name, company_identity, event_type, event_stage, actor_name, actor_type,
                     headline, headline_zh, summary_zh, quantity_text, amount_text, ownership_change_text, published_at, event_date,
                     source_url, normalized_url, source_domain, source_quality, confidence, exchange, source_schema, agent_record_id, source_agent, evidence_text,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    repurchase_shares, repurchase_shares_scope, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(event_id) DO UPDATE SET
                     ticker=excluded.ticker, company_name=excluded.company_name, event_stage=excluded.event_stage,
                     actor_name=excluded.actor_name, actor_type=excluded.actor_type, headline=excluded.headline,
@@ -722,7 +750,9 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     source_domain=excluded.source_domain, source_quality=excluded.source_quality,
                     confidence=excluded.confidence, exchange=excluded.exchange, source_schema=excluded.source_schema,
                     agent_record_id=excluded.agent_record_id,
-                    source_agent=excluded.source_agent, evidence_text=excluded.evidence_text, updated_at=excluded.updated_at
+                    source_agent=excluded.source_agent, evidence_text=excluded.evidence_text,
+                    repurchase_shares=excluded.repurchase_shares, repurchase_shares_scope=excluded.repurchase_shares_scope,
+                    updated_at=excluded.updated_at
                 """,
                 (
                     event_id, market, normalized_ticker or None, str(event.get("company_name") or ""), identity,
@@ -736,11 +766,182 @@ def save_events(events: Iterable[dict[str, Any]], db_path: Path = CORPORATE_ACTI
                     str(event.get("source_quality") or source_quality(str(event.get("source_url") or ""))),
                     float(event.get("confidence") or 0), str(event.get("exchange") or ""),
                     str(event.get("source_schema") or ""), str(event.get("agent_record_id") or ""), str(event.get("source_agent") or ""),
-                    str(event.get("evidence_text") or ""), now, now,
+                    str(event.get("evidence_text") or ""),
+                    float(event["repurchase_shares"]) if event.get("repurchase_shares") is not None else None,
+                    str(event.get("repurchase_shares_scope") or ""), now, now,
                 ),
             )
     rematch_events(event_ids=affected_event_ids, db_path=db_path)
     return len(rows)
+
+
+def is_buyback_chart_eligible(event: dict[str, Any]) -> bool:
+    """A chart column must represent a verified, single-day execution."""
+    try:
+        shares = float(event.get("repurchase_shares"))
+    except (TypeError, ValueError):
+        return False
+    return (
+        event.get("event_type") == "buyback"
+        and event.get("event_stage") in {"executed", "completed"}
+        and event.get("repurchase_shares_scope") == "daily"
+        and shares > 0
+        and bool(str(event.get("event_date") or "").strip())
+        and bool(str(event.get("ticker") or "").strip())
+    )
+
+
+def _stored_event_ids_for_events(events: Iterable[dict[str, Any]], db_path: Path) -> list[str]:
+    """Resolve current IDs after upsert, including legacy company-name event IDs."""
+    resolved: list[str] = []
+    with db_connection(db_path) as conn:
+        for event in events:
+            market = normalize_market(event.get("market"))
+            ticker = normalize_ticker_for_market(str(event.get("ticker") or ""), market) if event.get("ticker") else ""
+            normalized_url = normalize_source_url(str(event.get("normalized_url") or event.get("source_url") or ""))
+            candidates = {
+                value for value in (_norm_text(ticker), _norm_text(event.get("company_name"))) if value
+            }
+            rows = conn.execute(
+                """SELECT event_id, ticker, company_name, company_identity FROM corporate_action_news
+                WHERE market=? AND event_type=? AND normalized_url=?""",
+                (market, str(event.get("event_type") or ""), normalized_url),
+            ).fetchall()
+            for row in rows:
+                identities = {_norm_text(row["ticker"]), _norm_text(row["company_name"]), _norm_text(row["company_identity"])}
+                if candidates & identities:
+                    resolved.append(str(row["event_id"]))
+                    break
+    return list(dict.fromkeys(resolved))
+
+
+def _record_chart_fetch(
+    event_id: str, status: str, window_start: date, window_end: date, data_source: str = "", error_summary: str = "",
+    db_path: Path = CORPORATE_ACTION_NEWS_DB,
+) -> None:
+    with db_connection(db_path) as conn:
+        conn.execute(
+            """INSERT INTO corporate_action_chart_fetches
+            (event_id, status, data_source, window_start, window_end, attempted_at, error_summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(event_id) DO UPDATE SET
+              status=excluded.status, data_source=excluded.data_source, window_start=excluded.window_start,
+              window_end=excluded.window_end, attempted_at=excluded.attempted_at, error_summary=excluded.error_summary""",
+            (event_id, status, data_source, window_start.isoformat(), window_end.isoformat(), _now(), error_summary[:2000]),
+        )
+
+
+def capture_new_buyback_price_snapshots(
+    events: Iterable[dict[str, Any]], as_of: date, db_path: Path = CORPORATE_ACTION_NEWS_DB,
+) -> dict[str, int]:
+    """Capture a one-time, event-scoped 10-calendar-day price snapshot.
+
+    This intentionally does not update the project's raw daily CSV cache: it
+    serves imported corporate actions only and keeps out-of-pool price data
+    isolated from ranking inputs.
+    """
+    ensure_db(db_path)
+    window_start = as_of - timedelta(days=BUYBACK_CHART_WINDOW_DAYS - 1)
+    event_ids = _stored_event_ids_for_events(events, db_path)
+    if not event_ids:
+        return {"eligible": 0, "captured": 0, "out_of_window": 0, "unavailable": 0, "skipped": 0}
+    placeholders = ", ".join("?" for _ in event_ids)
+    with db_connection(db_path) as conn:
+        rows = conn.execute(
+            f"""SELECT news.*, fetch.event_id AS already_fetched
+            FROM corporate_action_news AS news
+            LEFT JOIN corporate_action_chart_fetches AS fetch ON fetch.event_id = news.event_id
+            WHERE news.event_id IN ({placeholders})""",
+            event_ids,
+        ).fetchall()
+    eligible = [dict(row) for row in rows if is_buyback_chart_eligible(dict(row))]
+    targets = [row for row in eligible if not row.get("already_fetched")]
+    result = {"eligible": len(eligible), "captured": 0, "out_of_window": 0, "unavailable": 0, "skipped": len(eligible) - len(targets)}
+    if not targets:
+        return result
+
+    try:
+        from scripts.ths_ifind_daily import fetch_ifind_history, ifind_session, load_us_exchange_suffixes
+
+        us_exchange_suffixes = load_us_exchange_suffixes()
+        with ifind_session():
+            for event in targets:
+                event_id = str(event["event_id"])
+                try:
+                    fetched = fetch_ifind_history(
+                        str(event["ticker"]), str(event["market"]), window_start, as_of, us_exchange_suffixes,
+                    )
+                    snapshots = []
+                    for item in fetched.frame.itertuples(index=False):
+                        try:
+                            close = float(getattr(item, "close", None))
+                        except (TypeError, ValueError):
+                            continue
+                        price_date = str(getattr(item, "date", ""))
+                        if price_date and math.isfinite(close):
+                            snapshots.append((event_id, price_date, close, "ifind", _now()))
+                    if not snapshots:
+                        raise ValueError("iFinD returned no daily closes")
+                    event_date = str(event["event_date"])
+                    chart_status = "available" if event_date in {row[1] for row in snapshots} else "out_of_window"
+                    with db_connection(db_path) as conn:
+                        conn.executemany(
+                            """INSERT INTO corporate_action_price_snapshots (event_id, price_date, close, data_source, fetched_at)
+                            VALUES (?, ?, ?, ?, ?) ON CONFLICT(event_id, price_date) DO UPDATE SET
+                            close=excluded.close, data_source=excluded.data_source, fetched_at=excluded.fetched_at""",
+                            snapshots,
+                        )
+                    _record_chart_fetch(event_id, chart_status, window_start, as_of, "ifind", db_path=db_path)
+                    result["captured" if chart_status == "available" else "out_of_window"] += 1
+                except Exception as exc:  # noqa: BLE001 - a single vendor failure must not abort an OSS batch.
+                    _record_chart_fetch(event_id, "unavailable", window_start, as_of, "ifind", str(exc), db_path)
+                    result["unavailable"] += 1
+    except Exception as exc:  # noqa: BLE001 - login/SDK failures apply to every remaining event.
+        for event in targets:
+            _record_chart_fetch(str(event["event_id"]), "unavailable", window_start, as_of, "ifind", str(exc), db_path)
+            result["unavailable"] += 1
+    return result
+
+
+def _buyback_chart_status(event: dict[str, Any], fetch: dict[str, Any] | None) -> str:
+    if not is_buyback_chart_eligible(event):
+        return "not_eligible"
+    return str(fetch.get("status") or "unavailable") if fetch else "unavailable"
+
+
+def get_buyback_chart(event_id: str, db_path: Path = CORPORATE_ACTION_NEWS_DB) -> dict[str, Any] | None:
+    ensure_db(db_path)
+    with db_connection(db_path) as conn:
+        row = conn.execute("SELECT * FROM corporate_action_news WHERE event_id = ?", (event_id,)).fetchone()
+        if not row:
+            return None
+        event = dict(row)
+        fetch_row = conn.execute("SELECT * FROM corporate_action_chart_fetches WHERE event_id = ?", (event_id,)).fetchone()
+        fetch = dict(fetch_row) if fetch_row else None
+        snapshots = conn.execute(
+            "SELECT price_date, close FROM corporate_action_price_snapshots WHERE event_id = ? ORDER BY price_date", (event_id,)
+        ).fetchall()
+    status = _buyback_chart_status(event, fetch)
+    messages = {
+        "not_eligible": "该事件未提供可核验的单日实际回购股数、回购日期或证券代码。",
+        "out_of_window": "回购日不在入库时保存的 10 个自然日行情窗口内。",
+        "unavailable": str(fetch.get("error_summary") or "该事件的行情快照尚未取得。") if fetch else "该事件的行情快照尚未取得。",
+    }
+    return {
+        "event_id": event_id,
+        "market": event["market"],
+        "ticker": event["ticker"],
+        "company_name": event["company_name"],
+        "event_date": event["event_date"],
+        "repurchase_shares": event["repurchase_shares"],
+        "repurchase_shares_scope": event["repurchase_shares_scope"],
+        "status": status,
+        "message": messages.get(status, ""),
+        "window_start": str(fetch.get("window_start") or "") if fetch else "",
+        "window_end": str(fetch.get("window_end") or "") if fetch else "",
+        "data_source": str(fetch.get("data_source") or "") if fetch else "",
+        "data": [dict(item) for item in snapshots],
+    }
 
 
 def archive_candidates(
@@ -1039,6 +1240,16 @@ def query_news(
               CASE source_quality WHEN 'primary' THEN 0 WHEN 'mainstream' THEN 1 ELSE 2 END, confidence DESC
             LIMIT ?""", params + [limit]
         ).fetchall()
+        event_ids = [str(row["event_id"]) for row in rows]
+        fetches: dict[str, dict[str, Any]] = {}
+        if event_ids:
+            placeholders = ", ".join("?" for _ in event_ids)
+            fetches = {
+                str(row["event_id"]): dict(row)
+                for row in conn.execute(
+                    f"SELECT * FROM corporate_action_chart_fetches WHERE event_id IN ({placeholders})", event_ids
+                ).fetchall()
+            }
     refresh_through_date = max((value for value in (run_as_of, event_as_of) if value), default=None)
     refresh_through = refresh_through_date.isoformat() if refresh_through_date else ""
     stale = not refresh_through or refresh_through < effective_as_of.isoformat()
@@ -1052,7 +1263,14 @@ def query_news(
         "status": "stale" if stale else "ok" if count else "empty", "stale": stale,
         "last_successful_refresh_at": latest_refresh_at, "refresh_through_date": refresh_through,
         "count": count, "in_stock_pool_count": pool_count, "outside_stock_pool_count": count - pool_count,
-        "data": [dict(row) for row in rows],
+        "data": [
+            {
+                **dict(row),
+                "buyback_chart_status": _buyback_chart_status(dict(row), fetches.get(str(row["event_id"]))),
+                "buyback_chart_available": _buyback_chart_status(dict(row), fetches.get(str(row["event_id"]))) == "available",
+            }
+            for row in rows
+        ],
     }
 
 

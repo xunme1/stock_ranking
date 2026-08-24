@@ -65,11 +65,15 @@
 | `source_quality` | `primary` / `mainstream` / `other` |
 | `confidence` | agent 置信度，必须在 `0.70` 到 `1.00` |
 | `evidence_text` | 支撑该事件的短原文证据，最多 1,000 字符；不得只写链接、结论或模型推理 |
+| `repurchase_shares` | 可选；仅回购事件使用，必须是原文明确披露的实际股数数值，统一以“股”为单位，不得填“万股/百万股”等缩写单位或估算值 |
+| `repurchase_shares_scope` | `repurchase_shares` 存在时必填：`daily`（单日实际回购）、`cumulative`（截至某日累计回购）或 `program_total`（计划/授权总额） |
 
-可选字段：`ticker`、`exchange`、`actor_name`、`actor_type`、`quantity_text`、`amount_text`、`ownership_change_text`、`event_date`、`source_domain`。日期字段一律为 `YYYY-MM-DD`。可选事实缺失时使用空字符串或省略，禁止补造。
+可选字段：`ticker`、`exchange`、`actor_name`、`actor_type`、`quantity_text`、`amount_text`、`ownership_change_text`、`event_date`、`source_domain`、`repurchase_shares`、`repurchase_shares_scope`。日期字段一律为 `YYYY-MM-DD`。可选事实缺失时使用空字符串或省略，禁止补造。
+
+`daily` 口径用于页面的回购走势柱状图，因此必须同时提供实际 `event_date`，且阶段必须是 `executed` 或 `completed`。累计口径和计划总额会保留为文字事实，**不会**被绘制成“当日回购”柱。
 
 ```jsonl
-{"schema_version":"corporate-action-event/v2","agent_record_id":"hk-repurchase-20260820-001","source_agent":"hk-repurchase-agent","market":"hk","ticker":"00020.HK","company_name":"示例公司","exchange":"HKEX","event_type":"buyback","event_stage":"executed","headline":"Example Company repurchased shares","headline_zh":"示例公司已回购股份","summary_zh":"公告披露公司于指定日期回购股份，数量和金额以原公告为准。","quantity_text":"1,000,000 shares","amount_text":"HK$10,000,000","ownership_change_text":"","published_at":"2026-08-20","event_date":"2026-08-19","source_url":"https://example.com/announcement/example-buyback","source_domain":"example.com","source_quality":"primary","confidence":0.95,"evidence_text":"The Company repurchased 1,000,000 shares on 19 August 2026."}
+{"schema_version":"corporate-action-event/v2","agent_record_id":"hk-repurchase-20260820-001","source_agent":"hk-repurchase-agent","market":"hk","ticker":"00020.HK","company_name":"示例公司","exchange":"HKEX","event_type":"buyback","event_stage":"executed","headline":"Example Company repurchased shares","headline_zh":"示例公司已回购股份","summary_zh":"公告披露公司于指定日期回购股份，数量和金额以原公告为准。","quantity_text":"1,000,000 shares","repurchase_shares":1000000,"repurchase_shares_scope":"daily","amount_text":"HK$10,000,000","ownership_change_text":"","published_at":"2026-08-20","event_date":"2026-08-19","source_url":"https://example.com/announcement/example-buyback","source_domain":"example.com","source_quality":"primary","confidence":0.95,"evidence_text":"The Company repurchased 1,000,000 shares on 19 August 2026."}
 ```
 
 未通过 v2 校验的行不会进入新闻主表，而会带着原始 JSON、来源对象键和错误原因进入隔离区，等待修复。不要把无效 v2 记录改为 v1 来规避校验。
