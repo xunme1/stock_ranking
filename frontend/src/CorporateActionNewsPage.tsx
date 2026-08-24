@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarDays,
+  ChevronDown,
   ExternalLink,
   Newspaper,
   RefreshCw,
@@ -75,15 +76,22 @@ function safeExternalUrl(value: string) {
 function groupStories(rows: CorporateActionNewsItem[]) {
   const grouped = new Map<string, CorporateActionNewsItem[]>();
   rows.forEach((row) => {
-    const key = `${row.source_url}|${row.event_type}|${row.headline}|${row.published_at}`;
+    // A single company can be mentioned by several follow-up stories.  Keep the
+    // latest item on the card and retain the previous collection results below
+    // it instead of making the market feed repetitive.
+    const companyKey = (row.company_identity || row.ticker || row.company_name).replace(/\s+/g, "").toLocaleUpperCase();
+    const key = `${row.market}|${row.event_type}|${companyKey}`;
     grouped.set(key, [...(grouped.get(key) ?? []), row]);
   });
   return Array.from(grouped.entries()).map(([key, events]): NewsStory => {
-    const lead = events.reduce((best, item) => {
-      if (isPoolEvent(item) && !isPoolEvent(best)) return item;
-      return item.summary_zh.length > best.summary_zh.length ? item : best;
-    }, events[0]);
-    return { key, lead, events, inStockPool: events.some(isPoolEvent) };
+    const sortedEvents = [...events].sort((left, right) => {
+      const publishedDifference = Date.parse(right.published_at) - Date.parse(left.published_at);
+      if (Number.isFinite(publishedDifference) && publishedDifference !== 0) return publishedDifference;
+      const updatedDifference = Date.parse(right.updated_at) - Date.parse(left.updated_at);
+      if (Number.isFinite(updatedDifference) && updatedDifference !== 0) return updatedDifference;
+      return right.confidence - left.confidence;
+    });
+    return { key, lead: sortedEvents[0], events: sortedEvents, inStockPool: sortedEvents.some(isPoolEvent) };
   });
 }
 
@@ -151,12 +159,10 @@ function affectedStocks(events: CorporateActionNewsItem[], market: Market) {
   return Array.from(stocks.values());
 }
 
-function storyFacts(story: NewsStory) {
+function eventFacts(event: CorporateActionNewsItem) {
   return Array.from(
     new Set(
-      story.events.flatMap((event) =>
-        [event.amount_text, event.quantity_text, event.ownership_change_text].filter((value) => value.trim())
-      )
+      [event.amount_text, event.quantity_text, event.ownership_change_text].filter((value) => value.trim())
     )
   ).slice(0, 4);
 }
@@ -289,14 +295,18 @@ function NewsCard({
 }) {
   const { lead } = story;
   const [expandedChartEventId, setExpandedChartEventId] = useState<string | null>(null);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const title = lead.headline_zh || lead.headline;
   const showOriginalTitle = Boolean(lead.headline_zh && lead.headline_zh !== lead.headline);
-  const stocks = affectedStocks(story.events, market);
-  const facts = storyFacts(story);
+  const stocks = affectedStocks([lead], market);
+  const facts = eventFacts(lead);
   const sourceUrl = safeExternalUrl(lead.source_url);
+  // A newer authorization story must not hide an earlier, eligible execution
+  // chart in the same company's folded history.
   const chartEvents = story.events.filter(canShowBuybackChart);
-  const unavailableChartEvents = story.events.filter((event) => hasDailyRepurchaseData(event) && !canShowBuybackChart(event));
+  const unavailableChartEvents = [lead].filter((event) => hasDailyRepurchaseData(event) && !canShowBuybackChart(event));
   const expandedChartEvent = chartEvents.find((event) => event.event_id === expandedChartEventId) ?? null;
+  const historicalEvents = story.events.slice(1);
 
   return (
     <article className={`corporateNewsCard ${emphasized ? "emphasized" : ""}`}>
@@ -347,6 +357,43 @@ function NewsCard({
         </p>
       ) : null}
       {expandedChartEvent ? <BuybackChartPanel event={expandedChartEvent} /> : null}
+
+      {historicalEvents.length ? (
+        <section className="corporateNewsHistory">
+          <button
+            className={historyExpanded ? "expanded" : ""}
+            type="button"
+            onClick={() => setHistoryExpanded((current) => !current)}
+            aria-expanded={historyExpanded}
+          >
+            <ChevronDown size={15} aria-hidden="true" />
+            {historyExpanded ? "收起历史搜集记录" : `查看历史搜集记录（${historicalEvents.length}）`}
+          </button>
+          {historyExpanded ? (
+            <ol>
+              {historicalEvents.map((event) => {
+                const historyUrl = safeExternalUrl(event.source_url);
+                const historyTitle = event.headline_zh || event.headline;
+                return (
+                  <li key={event.event_id}>
+                    <div className="corporateNewsHistoryMeta">
+                      <span>{formatDate(event.published_at)}</span>
+                      <span className="stageBadge">{STAGE_LABELS[event.event_stage]}</span>
+                      <span>{event.source_domain || "来源待确认"}</span>
+                    </div>
+                    <p>{historyTitle}</p>
+                    {historyUrl ? (
+                      <a href={historyUrl} target="_blank" rel="noreferrer">
+                        查看原文 <ExternalLink size={12} aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
+        </section>
+      ) : null}
 
       <div className="affectedStocks">
         <span className="affectedStocksLabel">
@@ -474,16 +521,16 @@ export default function CorporateActionNewsPage({
             <strong>{response?.window_start && response?.as_of_date ? `${response.window_start} 至 ${response.as_of_date}` : "最近 30 天"}</strong>
           </div>
           <div>
-            <span>公司事件</span>
-            <strong>{response?.count ?? "--"}</strong>
+            <span>公司动态</span>
+            <strong>{response ? stories.length : "--"}</strong>
           </div>
           <div className="highStat">
             <span>股票池命中</span>
-            <strong>{response?.in_stock_pool_count ?? "--"}</strong>
+            <strong>{response ? highlightedStories.length : "--"}</strong>
           </div>
           <div>
             <span>股票池外</span>
-            <strong>{response?.outside_stock_pool_count ?? "--"}</strong>
+            <strong>{response ? regularStories.length : "--"}</strong>
           </div>
         </div>
         <div className="corporateActionControlRow">
@@ -528,7 +575,7 @@ export default function CorporateActionNewsPage({
                 </h2>
                 <p>仅展示影响到当前市场股票池成分的回购或减持新闻。</p>
               </div>
-              <strong>{highlightedStories.length} 条新闻</strong>
+              <strong>{highlightedStories.length} 个公司动态</strong>
             </div>
             {highlightedStories.length ? (
               <div className="corporateNewsGrid">
@@ -551,7 +598,7 @@ export default function CorporateActionNewsPage({
                 </h2>
                 <p>保留股票池外公司的事件，便于观察市场层面的资本动作。</p>
               </div>
-              <strong>{regularStories.length} 条新闻</strong>
+              <strong>{regularStories.length} 个公司动态</strong>
             </div>
             {regularStories.length ? (
               <div className="corporateNewsGrid">
