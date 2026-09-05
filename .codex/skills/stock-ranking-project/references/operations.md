@@ -133,7 +133,7 @@ $tickers = ((Get-Content config\nasdaq100_tickers.txt | Where-Object { $_ -and -
 Full server script:
 
 ```bash
-cd /root/stock_ranking
+cd /opt/stock_ranking
 bash scripts/server_daily_update.sh
 ```
 
@@ -223,7 +223,7 @@ Send latest HTML report links to configured recipients:
 Server all-in-one:
 
 ```bash
-cd /root/stock_ranking
+cd /opt/stock_ranking
 MARKET_GROUP=us bash scripts/run_daily_brief_email.sh
 MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh
 ```
@@ -263,19 +263,17 @@ journalctl -u stock-ranking-api -n 80 --no-pager
 curl -fsS http://127.0.0.1:8001/api/health
 ```
 
-Build and deploy frontend on server:
+Build and deploy frontend on server (nginx serves the in-repo `dist` directly; no rsync step):
 
 ```bash
-cd /root/stock_ranking/frontend
+cd /opt/stock_ranking/frontend
 npm install
 npm run build
-mkdir -p /var/www/stock_ranking
-rsync -a --delete dist/ /var/www/stock_ranking/dist/
 nginx -t
 systemctl reload nginx
 ```
 
-If nginx returns 500 with `Permission denied` on `/root/stock_ranking/frontend/dist/index.html`, do not serve static files directly from `/root`; copy `dist` to `/var/www/stock_ranking/dist`.
+The nginx site uses `root /opt/stock_ranking/frontend/dist`. The project lives under `/opt` (owned by the `ubuntu` user), so nginx workers can read it without permission workarounds.
 
 Example nginx site concept:
 
@@ -283,7 +281,7 @@ Example nginx site concept:
 server {
     listen 8081;
     server_name _;
-    root /var/www/stock_ranking/dist;
+    root /opt/stock_ranking/frontend/dist;
     index index.html;
 
     location /api/ {
@@ -303,14 +301,14 @@ server {
 Beijing 09:00 daily data update:
 
 ```cron
-0 9 * * 1-5 cd /root/stock_ranking && bash scripts/server_daily_update.sh >> logs/cron_daily_update.log 2>&1
+0 9 * * 1-5 cd /opt/stock_ranking && bash scripts/server_daily_update.sh >> logs/cron_daily_update.log 2>&1
 ```
 
 Beijing 08:00 US daily brief email and 17:00 A/HK daily brief email:
 
 ```cron
-0 8 * * 1-5 cd /root/stock_ranking && MARKET_GROUP=us bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_us.log 2>&1
-0 17 * * 1-5 cd /root/stock_ranking && MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_asia.log 2>&1
+0 8 * * 1-5 cd /opt/stock_ranking && MARKET_GROUP=us bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_us.log 2>&1
+0 17 * * 1-5 cd /opt/stock_ranking && MARKET_GROUP=asia bash scripts/run_daily_brief_email.sh >> logs/cron_daily_brief_email_asia.log 2>&1
 ```
 
 Ensure server timezone is Asia/Shanghai:

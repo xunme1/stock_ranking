@@ -243,13 +243,13 @@ npm run build
 Known server root:
 
 ```text
-/root/stock_ranking
+/opt/stock_ranking
 ```
 
 Run the all-in-one server update:
 
 ```bash
-cd /root/stock_ranking
+cd /opt/stock_ranking
 bash scripts/server_daily_update.sh
 ```
 

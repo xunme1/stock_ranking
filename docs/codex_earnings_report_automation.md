@@ -9,7 +9,7 @@ Codex heartbeat 在工作日北京时间 10:00 于本地刷新 Alpha Vantage 财
 3. 服务器安装同步 cron（Asia/Shanghai）：
 
 ```cron
-*/15 10-16 * * 1-5 cd /root/stock_ranking && bash scripts/sync_earnings_reports_from_git.sh >> logs/cron_earnings_report_sync.log 2>&1
+*/15 10-16 * * 1-5 cd /opt/stock_ranking && bash scripts/sync_earnings_reports_from_git.sh >> logs/cron_earnings_report_sync.log 2>&1
 ```
 
 ## Codex heartbeat 工作流

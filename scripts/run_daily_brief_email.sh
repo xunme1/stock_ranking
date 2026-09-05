@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-/root/stock_ranking}"
+PROJECT_ROOT="${PROJECT_ROOT:-/opt/stock_ranking}"
 PYTHON_BIN="${PYTHON_BIN:-$PROJECT_ROOT/.venv/bin/python}"
 WINDOW="${WINDOW:-10}"
 MARKET_GROUP="${MARKET_GROUP:-all}"

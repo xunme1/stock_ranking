@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-/root/stock_ranking}"
+PROJECT_ROOT="${PROJECT_ROOT:-/opt/stock_ranking}"
 SERVICE_NAME="${SERVICE_NAME:-stock-ranking-api}"
 PYTHON_BIN="${PYTHON_BIN:-$PROJECT_ROOT/.venv/bin/python}"
 END_DATE="${END_DATE:-$(date -d 'yesterday' +%F)}"

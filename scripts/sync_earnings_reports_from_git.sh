@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Fetch only the dedicated report branch, then replace the report archive as one staged update.
-PROJECT_ROOT="${PROJECT_ROOT:-/root/stock_ranking}"
+PROJECT_ROOT="${PROJECT_ROOT:-/opt/stock_ranking}"
 BRANCH="${EARNINGS_REPORTS_BRANCH:-earnings-reports}"
 REMOTE="${EARNINGS_REPORTS_REMOTE:-origin}"
 REPORT_DIR="$PROJECT_ROOT/data/processed/earnings_sentiment_reports"

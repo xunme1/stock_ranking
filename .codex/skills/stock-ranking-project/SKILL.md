@@ -20,7 +20,7 @@ E:\stock_ranking\us_stock_data_project
 Server root used so far:
 
 ```text
-/root/stock_ranking
+/opt/stock_ranking
 ```
 
 The repo is a Nasdaq-100 relative-strength ranking web app. It downloads Polygon daily OHLCV data, computes ranking metrics, exposes a FastAPI backend, renders a Vite/React frontend, and has experiments for HTML daily briefs and sector treemaps.
